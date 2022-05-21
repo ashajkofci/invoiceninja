@@ -789,7 +789,7 @@ class Design extends BaseDesign
 
         \Log::debug($this->type);
 
-        if ($this->type == 'product') {
+        if ($this->type == 'product' && $this->entity->balance > 0) {
 
             $qrBill = QrBill\QrBill::create();
 
@@ -842,14 +842,16 @@ class Design extends BaseDesign
                 }
                 exit;
             }
+            $el = ['element'=>'img', 'content' => '', 'properties' => ['style'=>'margin:auto;margin-top:20px;width:200px;','src' =>$dataUri]];
         }
         else
         {
             $dataUri = "";
+            $el = ['element' => 'span', 'content' => ''];
         }
 
         $elements[1]['elements'][] = ['element' => 'div', 'elements' => [
-            ['element'=>'img', 'content' => '', 'properties' => ['style'=>'margin:auto;margin-top:20px;width:200px;','src' =>$dataUri]],
+            $el,
             ['element' => 'span', 'content' => '',],
             ['element' => 'span', 'content' => ''],
         ]];
