@@ -24,6 +24,8 @@ use App\Utils\Traits\MakesDates;
 use App\Utils\Traits\MakesInvoiceValues;
 use DOMDocument;
 use Illuminate\Support\Str;
+use Sprain\SwissQrBill as QrBill;
+
 
 class Design extends BaseDesign
 {
@@ -227,7 +229,7 @@ class Design extends BaseDesign
         if ($this->type === 'statement') {
 
             $s_date = $this->translateDate(now(), $this->client->date_format(), $this->client->locale());
-            
+
             return [
                 ['element' => 'tr', 'properties' => ['data-ref' => 'statement-label'], 'elements' => [
                     ['element' => 'th', 'properties' => [], 'content' => ""],
@@ -248,7 +250,7 @@ class Design extends BaseDesign
 
         if ($this->entity instanceof Quote) {
             $variables = $this->context['pdf_variables']['quote_details'];
-            
+
             if ($this->entity->partial > 0) {
                 $variables[] = '$quote.balance_due';
             }
@@ -464,7 +466,7 @@ class Design extends BaseDesign
                 $element['elements'][] = ['element' => 'td', 'content' => Number::formatMoney($payment->pivot->amount, $this->client) ?: '&nbsp;'];
 
                 $tbody[] = $element;
-                
+
             }
         }
 
@@ -483,7 +485,7 @@ class Design extends BaseDesign
         if (\array_key_exists('show_payments_table', $this->options) && $this->options['show_payments_table'] === false) {
             return [];
         }
-        
+
         $payment = $this->payments->first();
 
         return [
@@ -785,7 +787,69 @@ class Design extends BaseDesign
             }
         }
 
+        \Log::debug($this->type);
+
+        if ($this->type == 'product') {
+
+            $qrBill = QrBill\QrBill::create();
+
+            // Add creditor information
+            // Who will receive the payment and to which bank account?
+            \Log::debug($this->context['pdf_variables']['company_details']);
+
+            $qrBill->setCreditor(
+                QrBill\DataGroup\Element\CombinedAddress::create(
+                    "DKProd",
+                    "Rue des Champs du Bourg 28",
+                    'Martigny',
+                    'CH'
+                ));
+
+            $qrBill->setCreditorInformation(
+                QrBill\DataGroup\Element\CreditorInformation::create(
+                    'CH0209000000125865273' // This is a special QR-IBAN. Classic IBANs will not be valid here.
+                ));
+
+            // Add payment amount information
+            // What amount is to be paid?
+            $qrBill->setPaymentAmountInformation(
+                QrBill\DataGroup\Element\PaymentAmountInformation::create(
+                    'CHF',
+                    $this->entity->balance
+                ));
+
+            $qrBill->setPaymentReference(
+                QrBill\DataGroup\Element\PaymentReference::create(
+                    QrBill\DataGroup\Element\PaymentReference::TYPE_NON
+                ));
+
+            // Optionally, add some human-readable information about what the bill is for.
+            $qrBill->setAdditionalInformation(
+                QrBill\DataGroup\Element\AdditionalInformation::create(
+                    $this->entity->number
+                )
+            );
+
+            $dataUri = "";
+
+            // Now get the QR code image and save it as a file.
+            try {
+                // Generate a data URI to include image data inline (i.e. inside an <img> tag)
+                $dataUri = $qrBill->getQrCode()->writeDataUri();
+            } catch (\Exception $e) {
+                foreach($qrBill->getViolations() as $violation) {
+                    print $violation->getMessage()."\n";
+                }
+                exit;
+            }
+        }
+        else
+        {
+            $dataUri = "";
+        }
+
         $elements[1]['elements'][] = ['element' => 'div', 'elements' => [
+            ['element'=>'img', 'content' => '', 'properties' => ['style'=>'margin:auto;margin-top:20px;width:200px;','src' =>$dataUri]],
             ['element' => 'span', 'content' => '',],
             ['element' => 'span', 'content' => ''],
         ]];
