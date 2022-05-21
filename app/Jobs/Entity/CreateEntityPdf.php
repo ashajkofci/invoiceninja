@@ -43,6 +43,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Storage;
+use Sprain\SwissQrBill as QrBill;
 
 class CreateEntityPdf implements ShouldQueue
 {
@@ -95,7 +96,7 @@ class CreateEntityPdf implements ShouldQueue
 
         $this->client = $invitation->contact->client;
         $this->client->load('company');
-        
+
         $this->disk = Ninja::isHosted() ? config('filesystems.default') : $disk;
 
     }
@@ -158,6 +159,7 @@ class CreateEntityPdf implements ShouldQueue
 
         $variables = $html->generateLabelsAndValues();
 
+
         $state = [
             'template' => $template->elements([
                 'client' => $this->client,
@@ -202,7 +204,7 @@ class CreateEntityPdf implements ShouldQueue
         if ($pdf) {
 
             try{
-                
+
                 if(!Storage::disk($this->disk)->exists($path))
 
                     Storage::disk($this->disk)->makeDirectory($path, 0775);
@@ -224,5 +226,5 @@ class CreateEntityPdf implements ShouldQueue
     {
 
     }
-    
+
 }
