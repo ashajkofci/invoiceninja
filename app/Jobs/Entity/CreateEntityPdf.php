@@ -34,6 +34,8 @@ use App\Utils\PhantomJS\Phantom;
 use App\Utils\Traits\MakesHash;
 use App\Utils\Traits\MakesInvoiceHtml;
 use App\Utils\Traits\NumberFormatter;
+use App\Utils\Traits\Pdf\PageNumbering;
+use App\Utils\Traits\Pdf\PDF;
 use App\Utils\Traits\Pdf\PdfMaker;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -44,10 +46,11 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Storage;
 use Sprain\SwissQrBill as QrBill;
+use setasign\Fpdi\PdfParser\StreamReader;
 
 class CreateEntityPdf implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, NumberFormatter, MakesInvoiceHtml, PdfMaker, MakesHash;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, NumberFormatter, MakesInvoiceHtml, PdfMaker, MakesHash, PageNumbering;
 
     public $entity;
 
@@ -103,6 +106,7 @@ class CreateEntityPdf implements ShouldQueue
 
     public function handle()
     {
+
         MultiDB::setDb($this->company->db);
 
         /* Forget the singleton*/
@@ -188,9 +192,23 @@ class CreateEntityPdf implements ShouldQueue
 
             if(config('ninja.invoiceninja_hosted_pdf_generation') || config('ninja.pdf_generator') == 'hosted_ninja'){
                 $pdf = (new NinjaPdf())->build($maker->getCompiledHTML(true));
+
+                $numbered_pdf = $this->pageNumbering($pdf, $this->company);
+
+                if($numbered_pdf)
+                    $pdf = $numbered_pdf;
+
             }
             else {
+
                 $pdf = $this->makePdf(null, null, $maker->getCompiledHTML(true));
+                
+                $numbered_pdf = $this->pageNumbering($pdf, $this->company);
+
+                if($numbered_pdf)
+                    $pdf = $numbered_pdf;
+                
+
             }
 
         } catch (\Exception $e) {
@@ -218,7 +236,7 @@ class CreateEntityPdf implements ShouldQueue
 
             }
         }
-
+        
         return $file_path;
     }
 
