@@ -1,13 +1,24 @@
 <?php
+/**
+ * Invoice Ninja (https://invoiceninja.com).
+ *
+ * @link https://github.com/invoiceninja/invoiceninja source repository
+ *
+ * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ *
+ * @license https://www.elastic.co/licensing/elastic-license
+ */
 
 
 namespace App\Models;
 
 
+use App\Utils\Ninja;
 use App\Utils\Traits\Inviteable;
 use App\Utils\Traits\MakesDates;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class PurchaseOrderInvitation extends BaseModel
 {
@@ -75,6 +86,64 @@ class PurchaseOrderInvitation extends BaseModel
     {
         $this->viewed_date = Carbon::now();
         $this->save();
+    }
+
+    public function getPortalLink() :string
+    {
+
+        if(Ninja::isHosted())
+            $domain = $this->company->domain();
+        else
+            $domain = config('ninja.app_url');
+
+        switch ($this->company->portal_mode) {
+            case 'subdomain':
+                return $domain.'/vendor/';
+                break;
+            case 'iframe':
+                return $domain.'/vendor/';
+                break;
+            case 'domain':
+                return $domain.'/vendor/';
+                break;
+
+            default:
+                return '';
+                break;
+        }
+
+    }
+
+    public function getLink() :string
+    {
+        $entity_type = Str::snake(class_basename($this->entityType()));
+
+        if(Ninja::isHosted()){
+            $domain = $this->company->domain();
+        }
+        else
+            $domain = config('ninja.app_url');
+
+        switch ($this->company->portal_mode) {
+            case 'subdomain':
+                return $domain.'/vendor/'.$entity_type.'/'.$this->key;
+                break;
+            case 'iframe':
+                return $domain.'/vendor/'.$entity_type.'/'.$this->key;
+                break;
+            case 'domain':
+                return $domain.'/vendor/'.$entity_type.'/'.$this->key;
+                break;
+
+            default:
+                return '';
+                break;
+        }
+    }
+
+    public function getAdminLink() :string
+    {
+        return $this->getLink().'?silent=true';
     }
 
 
