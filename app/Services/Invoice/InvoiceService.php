@@ -310,6 +310,9 @@ class InvoiceService
         elseif ($this->invoice->balance > 0 && $this->invoice->balance < $this->invoice->amount) {
             $this->invoice->status_id = Invoice::STATUS_PARTIAL;
         }
+        elseif ($this->invoice->balance < 0) {
+            $this->invoice->status_id = Invoice::STATUS_SENT;
+        }
 
         return $this;
     }
@@ -341,7 +344,7 @@ class InvoiceService
             if(Storage::disk(config('filesystems.default'))->exists($this->invoice->client->invoice_filepath($invitation) . $this->invoice->numberFormatter().'.pdf'))
                 Storage::disk(config('filesystems.default'))->delete($this->invoice->client->invoice_filepath($invitation) . $this->invoice->numberFormatter().'.pdf');
             
-            if(Ninja::isHosted() && Storage::disk(config('filesystems.default'))->exists($this->invoice->client->invoice_filepath($invitation) . $this->invoice->numberFormatter().'.pdf')) {
+            if(Ninja::isHosted() && Storage::disk('public')->exists($this->invoice->client->invoice_filepath($invitation) . $this->invoice->numberFormatter().'.pdf')) {
                 Storage::disk('public')->delete($this->invoice->client->invoice_filepath($invitation) . $this->invoice->numberFormatter().'.pdf');
             }
 

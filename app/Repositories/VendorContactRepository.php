@@ -50,7 +50,7 @@ class VendorContactRepository extends BaseRepository
             $update_contact = null;
 
             if (isset($contact['id'])) {
-                $update_contact = VendorContact::find($this->decodePrimaryKey($contact['id']));
+                $update_contact = VendorContact::find($contact['id']);
             }
 
             if (! $update_contact) {

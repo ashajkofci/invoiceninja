@@ -14,6 +14,7 @@ namespace App\Transformers;
 
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderInvitation;
+use App\Transformers\DocumentTransformer;
 use App\Utils\Traits\MakesHash;
 
 class PurchaseOrderTransformer extends EntityTransformer
@@ -22,6 +23,11 @@ class PurchaseOrderTransformer extends EntityTransformer
 
     protected $defaultIncludes = [
         'invitations',
+        'documents'
+    ];
+
+    protected $availableIncludes = [
+        'expense'
     ];
 
     public function includeInvitations(PurchaseOrder $purchase_order)
@@ -29,6 +35,21 @@ class PurchaseOrderTransformer extends EntityTransformer
         $transformer = new PurchaseOrderInvitationTransformer($this->serializer);
 
         return $this->includeCollection($purchase_order->invitations, $transformer, PurchaseOrderInvitation::class);
+    }
+
+
+    public function includeDocuments(PurchaseOrder $purchase_order)
+    {
+        $transformer = new DocumentTransformer($this->serializer);
+
+        return $this->includeCollection($purchase_order->documents, $transformer, Document::class);
+    }
+    
+    public function includeExpense(PurchaseOrder $purchase_order)
+    {
+        $transformer = new ExpenseTransformer($this->serializer);
+
+        return $this->includeItem($purchase_order->expense, $transformer, Document::class);
     }
 
     public function transform(PurchaseOrder $purchase_order)
@@ -89,10 +110,11 @@ class PurchaseOrderTransformer extends EntityTransformer
             'custom_surcharge_tax3' => (bool)$purchase_order->custom_surcharge_tax3,
             'custom_surcharge_tax4' => (bool)$purchase_order->custom_surcharge_tax4,
             'line_items' => $purchase_order->line_items ?: (array)[],
-            'entity_type' => 'purchase_order',
+            'entity_type' => 'purchaseOrder',
             'exchange_rate' => (float)$purchase_order->exchange_rate,
             'paid_to_date' => (float)$purchase_order->paid_to_date,
             'subscription_id' => $this->encodePrimaryKey($purchase_order->subscription_id),
+            'expense_id' => $this->encodePrimaryKey($purchase_order->expense_id),
         ];
     }
 

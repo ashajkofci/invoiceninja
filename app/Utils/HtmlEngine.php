@@ -12,6 +12,7 @@
 
 namespace App\Utils;
 
+use App\Helpers\SwissQr\SwissQrGenerator;
 use App\Models\Country;
 use App\Models\CreditInvitation;
 use App\Models\GatewayType;
@@ -108,6 +109,7 @@ class HtmlEngine
         $t->replace(Ninja::transformTranslations($this->settings));
 
         $data = [];
+        //$data['<html>'] = ['value' => '<html dir="rtl">', 'label' => ''];
         $data['$global_margin'] = ['value' => '6.35mm', 'label' => ''];
         $data['$tax'] = ['value' => '', 'label' => ctrans('texts.tax')];
         $data['$app_url'] = ['value' => $this->generateAppUrl(), 'label' => ''];
@@ -162,6 +164,17 @@ class HtmlEngine
             if($this->entity->vendor) {
                 $data['$invoice.vendor'] = ['value' => $this->entity->vendor->present()->name(), 'label' => ctrans('texts.vendor_name')];
             }
+
+            if(strlen($this->company->getSetting('qr_iban')) > 5 && strlen($this->company->getSetting('besr_id')) > 1)
+            {
+                try{
+                    $data['$swiss_qr'] = ['value' => (new SwissQrGenerator($this->entity, $this->company))->run(), 'label' => ''];
+                }
+                catch(\Exception $e){
+                    $data['$swiss_qr'] = ['value' => '', 'label' => ''];
+                }
+            }
+
         }
 
         if ($this->entity_string == 'quote') {
@@ -281,6 +294,7 @@ class HtmlEngine
         $data['$assigned_to_user'] = ['value' => $this->entity->assigned_user ? $this->entity->assigned_user->present()->name() : '', 'label' => ctrans('texts.name')];
 
         $data['$user_iban'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'company1', $this->settings->custom_value1, $this->client) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'company1')];
+
         $data['$invoice.custom1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice1', $this->entity->custom_value1, $this->client) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice1')];
         $data['$invoice.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice2', $this->entity->custom_value2, $this->client) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice2')];
         $data['$invoice.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice3', $this->entity->custom_value3, $this->client) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice3')];
@@ -395,6 +409,8 @@ class HtmlEngine
 
         $data['$contact.last_name'] = ['value' => isset($this->contact) ? $this->contact->last_name : '', 'label' => ctrans('texts.last_name')];
 
+        $data['$portal_button'] = ['value' => '<a class="button" href="'.$this->contact->getLoginLink().'?client_hash='.$this->client->client_hash.'">'.ctrans('texts.view_client_portal').'</a>', 'label' => ctrans('view_client_portal')];
+        $data['$contact.portal_button'] = &$data['$portal_button'];
 
         $data['$contact.custom1'] = ['value' => isset($this->contact) ? $this->contact->custom_value1 : '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'contact1')];
         $data['$contact.custom2'] = ['value' => isset($this->contact) ? $this->contact->custom_value2 : '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'contact2')];
@@ -526,8 +542,8 @@ class HtmlEngine
         $data['$payment_url'] = &$data['$payment_link'];
         $data['$portalButton'] = &$data['$paymentLink'];
 
-        $data['$dir'] = ['value' => optional($this->client->language())->locale === 'ar' ? 'rtl' : 'ltr', 'label' => ''];
-        $data['$dir_text_align'] = ['value' => optional($this->client->language())->locale === 'ar' ? 'right' : 'left', 'label' => ''];
+        $data['$dir'] = ['value' => in_array(optional($this->client->language())->locale, ['ar', 'he']) ? 'rtl' : 'ltr', 'label' => ''];
+        $data['$dir_text_align'] = ['value' => in_array(optional($this->client->language())->locale, ['ar', 'he']) ? 'right' : 'left', 'label' => ''];
 
         $data['$payment.date'] = ['value' => '&nbsp;', 'label' => ctrans('texts.payment_date')];
         $data['$method'] = ['value' => '&nbsp;', 'label' => ctrans('texts.method')];

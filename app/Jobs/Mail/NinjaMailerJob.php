@@ -184,10 +184,55 @@ class NinjaMailerJob implements ShouldQueue
                 $this->mailer = 'gmail';
                 $this->setGmailMailer();
                 break;
+            case 'office365':
+                $this->mailer = 'office365';
+                $this->setOfficeMailer();
+                break;
             default:
                 break;
         }
 
+    }
+
+    private function setOfficeMailer()
+    {
+        $sending_user = $this->nmo->settings->gmail_sending_user_id;
+
+        $user = User::find($this->decodePrimaryKey($sending_user));
+        
+        /* Always ensure the user is set on the correct account */
+        if($user->account_id != $this->company->account_id){
+
+            $this->nmo->settings->email_sending_method = 'default';
+            return $this->setMailDriver();
+
+        }
+
+        nlog("Sending via {$user->name()}");
+
+        $token = $this->refreshOfficeToken($user);
+
+        if($token)
+        {
+            $user->oauth_user_token = $token;
+            $user->save();
+
+        }
+        else {
+
+            $this->nmo->settings->email_sending_method = 'default';
+            return $this->setMailDriver();
+        
+        }
+
+        $this->nmo
+             ->mailable
+             ->from($user->email, $user->name())
+             ->withSwiftMessage(function ($message) use($token) {
+                $message->getHeaders()->addTextHeader('GmailToken', $token);     
+             });
+
+        sleep(rand(1,3));
     }
 
     private function setGmailMailer()
@@ -199,6 +244,14 @@ class NinjaMailerJob implements ShouldQueue
 
         $user = User::find($this->decodePrimaryKey($sending_user));
 
+        /* Always ensure the user is set on the correct account */
+        if($user->account_id != $this->company->account_id){
+
+            $this->nmo->settings->email_sending_method = 'default';
+            return $this->setMailDriver();
+
+        }
+        
         nlog("Sending via {$user->name()}");
 
         $google = (new Google())->init();
@@ -255,8 +308,9 @@ class NinjaMailerJob implements ShouldQueue
 
     private function preFlightChecksFail()
     {
+
         /* If we are migrating data we don't want to fire any emails */
-        if ($this->nmo->company->is_disabled && !$this->override) 
+        if($this->company->is_disabled && !$this->override) 
             return true;
 
         /* On the hosted platform we set default contacts a @example.com email address - we shouldn't send emails to these types of addresses */
@@ -264,17 +318,29 @@ class NinjaMailerJob implements ShouldQueue
             return true;
 
         /* GMail users are uncapped */
-        if(Ninja::isHosted() && $this->nmo->settings->email_sending_method == 'gmail')
+        if(Ninja::isHosted() && ($this->nmo->settings->email_sending_method == 'gmail' || $this->nmo->settings->email_sending_method == 'office365')) 
             return false;
 
         /* On the hosted platform, if the user is over the email quotas, we do not send the email. */
         if(Ninja::isHosted() && $this->company->account && $this->company->account->emailQuotaExceeded())
             return true;
 
+        /* To handle spam users we drop all emails from flagged accounts */
+        if(Ninja::isHosted() && $this->company->account && $this->company->account->is_flagged) 
+            return true;
+
+        /* If the account is verified, we allow emails to flow */
+        if(Ninja::isHosted() && $this->company->account && $this->company->account->is_verified_account) 
+            return false;
+
         /* Ensure the user has a valid email address */
         if(!str_contains($this->nmo->to_user->email, "@"))
             return true;
-        
+     
+        /* On the hosted platform we actively scan all outbound emails to ensure outbound email quality remains high */
+        if(class_exists(\Modules\Admin\Jobs\Account\EmailQuality::class))
+            return (new \Modules\Admin\Jobs\Account\EmailQuality($this->nmo, $this->company))->run();
+
         return false;
     }
 
@@ -302,5 +368,51 @@ class NinjaMailerJob implements ShouldQueue
     {
         
     }
+
+    private function refreshOfficeToken($user)
+    {
+        $expiry = $user->oauth_user_token_expiry ?: now()->subDay();
+
+        if($expiry->lt(now()))
+        {
+            $guzzle = new \GuzzleHttp\Client(); 
+            $url = 'https://login.microsoftonline.com/common/oauth2/v2.0/token'; 
+
+            $token = json_decode($guzzle->post($url, [
+                'form_params' => [
+                    'client_id' => config('ninja.o365.client_id') ,
+                    'client_secret' => config('ninja.o365.client_secret') ,
+                    'scope' => 'email Mail.Send offline_access profile User.Read openid',
+                    'grant_type' => 'refresh_token',
+                    'refresh_token' => $user->oauth_user_refresh_token
+                ],
+            ])->getBody()->getContents());
+
+            nlog($token);
+            
+            if($token){
+                
+                $user->oauth_user_refresh_token = property_exists($token, 'refresh_token') ? $token->refresh_token : $user->oauth_user_refresh_token;
+                $user->oauth_user_token = $token->access_token;
+                $user->oauth_user_token_expiry = now()->addSeconds($token->expires_in);
+                $user->save();
+
+                return $token->access_token;
+            }
+
+            return false;
+        }
+
+        return $user->oauth_user_token;
+        
+    }
+
+    /**
+     * Is this the cleanest way to requeue a job?
+     * 
+     * $this->delete();
+     *
+     * $job = NinjaMailerJob::dispatch($this->nmo, $this->override)->delay(3600);
+    */
 
 }

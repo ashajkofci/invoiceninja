@@ -79,11 +79,13 @@ class BaseController extends Controller
           'company.groups.documents',
           'company.invoices.invitations.contact',
           'company.invoices.invitations.company',
+          'company.purchase_orders.invitations',
           'company.invoices.documents',
           'company.products',
           'company.products.documents',
           'company.payments.paymentables',
           'company.payments.documents',
+          'company.purchase_orders.documents',
           'company.payment_terms.company',
           'company.projects.documents',
           'company.recurring_expenses',
@@ -171,7 +173,12 @@ class BaseController extends Controller
      */
     public function notFoundClient()
     {
-        abort(404, 'Page not found in client portal.');
+        abort(404, 'Page not found in the client portal.');
+    }
+
+    public function notFoundVendor()
+    {
+        abort(404, 'Page not found in the vendor portal.');
     }
 
     /**
@@ -295,6 +302,13 @@ class BaseController extends Controller
 
                 if(!$user->hasPermission('view_project'))
                   $query->where('projects.user_id', $user->id)->orWhere('projects.assigned_user_id', $user->id);
+
+            },
+            'company.purchase_orders'=> function ($query) use ($updated_at, $user) {
+                $query->where('updated_at', '>=', $updated_at)->with('documents');
+
+                if(!$user->hasPermission('view_purchase_order'))
+                  $query->where('purchase_orders.user_id', $user->id)->orWhere('purchase_orders.assigned_user_id', $user->id);
 
             },
             'company.quotes'=> function ($query) use ($updated_at, $user) {
@@ -534,6 +548,13 @@ class BaseController extends Controller
                   $query->where('projects.user_id', $user->id)->orWhere('projects.assigned_user_id', $user->id);
 
             },
+            'company.purchase_orders'=> function ($query) use ($created_at, $user) {
+                $query->where('created_at', '>=', $created_at)->with('documents');
+
+                if(!$user->hasPermission('view_purchase_order'))
+                  $query->where('purchase_orders.user_id', $user->id)->orWhere('purchase_orders.assigned_user_id', $user->id);
+
+            },
             'company.quotes'=> function ($query) use ($created_at, $user) {
                 $query->where('created_at', '>=', $created_at)->with('invitations', 'documents');
 
@@ -758,8 +779,13 @@ class BaseController extends Controller
             }
 
             /* Clean up URLs and remove query parameters from the URL*/
-            if(request()->has('login') && request()->input('login') == 'true')
-                return redirect('/')->with(['login' => "true"]);
+            if (request()->has('login') && request()->input('login') == 'true') {
+                return redirect('/')->with(['login' => 'true']);
+            }
+
+            if (request()->has('signup') && request()->input('signup') == 'true') {
+                return redirect('/')->with(['signup' => 'true']);
+            }
 
             $data = [];
 
@@ -769,10 +795,16 @@ class BaseController extends Controller
             //pass referral code to front end
             $data['rc'] = request()->has('rc') ? request()->input('rc') : '';
             $data['build'] = request()->has('build') ? request()->input('build') : '';
-            $data['login'] = request()->has('login') ? request()->input('login') : "false";
-            
-            if(request()->session()->has('login'))
-                $data['login'] = "true";
+            $data['login'] = request()->has('login') ? request()->input('login') : 'false';
+            $data['signup'] = request()->has('signup') ? request()->input('signup') : 'false';
+
+            if (request()->session()->has('login')) {
+                $data['login'] = 'true';
+            }
+
+            if(request()->session()->has('signup')){
+                $data['signup'] = 'true';
+            }
 
             $data['user_agent'] = request()->server('HTTP_USER_AGENT');
 
@@ -780,7 +812,7 @@ class BaseController extends Controller
 
             $this->buildCache();
 
-            if(config('ninja.react_app_enabled'))
+            if(Ninja::isSelfHost() && $account->set_react_as_default_ap)
                 return response()->view('react.index', $data)->header('X-Frame-Options', 'SAMEORIGIN', false);
             else
                 return response()->view('index.index', $data)->header('X-Frame-Options', 'SAMEORIGIN', false);
