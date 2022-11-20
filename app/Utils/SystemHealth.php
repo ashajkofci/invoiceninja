@@ -188,7 +188,7 @@ class SystemHealth
     private static function checkPhpCli()
     {
         try {
-            exec('php -v', $foo, $exitCode);
+            //exec('php -v', $foo, $exitCode);
 
             if ($exitCode === 0) {
                 return empty($foo[0]) ? 'Found php cli, but no version information' : $foo[0];

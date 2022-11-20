@@ -18,6 +18,7 @@ use App\Jobs\Entity\CreateEntityPdf;
 use App\Jobs\Vendor\CreatePurchaseOrderPdf;
 use App\Services\PurchaseOrder\PurchaseOrderService;
 use App\Utils\Ninja;
+use App\Utils\Traits\MakesDates;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -26,13 +27,12 @@ class PurchaseOrder extends BaseModel
 {
     use Filterable;
     use SoftDeletes;
+    use MakesDates;
 
     protected $fillable = [
         'number',
         'discount',
-        'company_id',
         'status_id',
-        'user_id',
         'last_sent_date',
         'is_deleted',
         'po_number',
@@ -71,10 +71,6 @@ class PurchaseOrder extends BaseModel
         'custom_surcharge2',
         'custom_surcharge3',
         'custom_surcharge4',
-//        'custom_surcharge_tax1',
-//        'custom_surcharge_tax2',
-//        'custom_surcharge_tax3',
-//        'custom_surcharge_tax4',
         'design_id',
         'invoice_id',
         'assigned_user_id',
@@ -82,7 +78,6 @@ class PurchaseOrder extends BaseModel
         'balance',
         'partial',
         'paid_to_date',
-        'subscription_id',
         'vendor_id',
         'last_viewed'
     ];
@@ -99,8 +94,52 @@ class PurchaseOrder extends BaseModel
 
     const STATUS_DRAFT = 1;
     const STATUS_SENT = 2;
-    const STATUS_PARTIAL = 3;
-    const STATUS_APPLIED = 4;
+    const STATUS_ACCEPTED = 3;
+    const STATUS_RECEIVED = 4;
+    const STATUS_CANCELLED = 5;
+
+    public static function stringStatus(int $status)
+    {
+        switch ($status) {
+            case self::STATUS_DRAFT:
+                return ctrans('texts.draft');
+                break;
+            case self::STATUS_SENT:
+                return ctrans('texts.sent');
+                break;
+            case self::STATUS_ACCEPTED:
+                return ctrans('texts.accepted');
+                break;
+            case self::STATUS_CANCELLED:
+                return ctrans('texts.cancelled');
+                break;
+                // code...
+                break;
+        }
+    }
+
+
+    public static function badgeForStatus(int $status)
+    {
+        switch ($status) {
+            case self::STATUS_DRAFT:
+                return '<h5><span class="badge badge-light">'.ctrans('texts.draft').'</span></h5>';
+                break;
+            case self::STATUS_SENT:
+                return '<h5><span class="badge badge-primary">'.ctrans('texts.sent').'</span></h5>';
+                break;
+            case self::STATUS_ACCEPTED:
+                return '<h5><span class="badge badge-primary">'.ctrans('texts.accepted').'</span></h5>';
+                break;
+            case self::STATUS_CANCELLED:
+                return '<h5><span class="badge badge-secondary">'.ctrans('texts.cancelled').'</span></h5>';
+                break;
+            default:
+                // code...
+                break;
+        }
+    }
+
 
     public function assigned_user()
     {
@@ -109,7 +148,7 @@ class PurchaseOrder extends BaseModel
 
     public function vendor()
     {
-        return $this->belongsTo(Vendor::class);
+        return $this->belongsTo(Vendor::class)->withTrashed();
     }
 
     public function history()
@@ -125,6 +164,11 @@ class PurchaseOrder extends BaseModel
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function expense()
+    {
+        return $this->belongsTo(Expense::class);
     }
 
     public function user()
@@ -227,4 +271,8 @@ class PurchaseOrder extends BaseModel
         return $purchase_order_calc->build();
     }
 
+    public function translate_entity()
+    {
+        return ctrans('texts.purchase_order');
+    }
 }

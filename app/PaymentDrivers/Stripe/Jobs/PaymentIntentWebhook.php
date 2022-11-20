@@ -118,7 +118,22 @@ class PaymentIntentWebhook implements ShouldQueue
             if(!$payment_hash)
                 return;
 
-            if(optional($this->stripe_request['object']['charges']['data'][0]['metadata']['payment_hash']) && in_array('card', $this->stripe_request['object']['allowed_source_types']))
+            nlog("payment intent");
+            nlog($this->stripe_request);
+
+            if(array_key_exists('allowed_source_types', $this->stripe_request['object']) && optional($this->stripe_request['object']['charges']['data'][0]['metadata']['payment_hash']) && in_array('card', $this->stripe_request['object']['allowed_source_types']))
+            {
+                nlog("hash found");
+
+                $hash = $this->stripe_request['object']['charges']['data'][0]['metadata']['payment_hash'];
+
+                $payment_hash = PaymentHash::where('hash', $hash)->first();
+                $invoice = Invoice::with('client')->find($payment_hash->fee_invoice_id);
+                $client = $invoice->client;
+
+                $this->updateCreditCardPayment($payment_hash, $client);
+            }
+            elseif(array_key_exists('payment_method_types', $this->stripe_request['object']) && optional($this->stripe_request['object']['charges']['data'][0]['metadata']['payment_hash']) && in_array('card', $this->stripe_request['object']['payment_method_types']))
             {
                 nlog("hash found");
 

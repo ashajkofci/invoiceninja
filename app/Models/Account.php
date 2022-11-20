@@ -11,6 +11,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\ModelNotFoundException;
 use App\Jobs\Mail\NinjaMailerJob;
 use App\Jobs\Mail\NinjaMailerObject;
 use App\Mail\Ninja\EmailQuotaExceeded;
@@ -32,7 +33,7 @@ class Account extends BaseModel
     use PresentableTrait;
     use MakesHash;
 
-    private $free_plan_email_quota = 250;
+    private $free_plan_email_quota = 50;
 
     private $paid_plan_email_quota = 500;
     /**
@@ -57,7 +58,7 @@ class Account extends BaseModel
         'utm_content',
         'user_agent',
         'platform',
-        // 'set_react_as_default_ap',
+        'set_react_as_default_ap',
     ];
 
     /**
@@ -75,7 +76,8 @@ class Account extends BaseModel
         'updated_at' => 'timestamp',
         'created_at' => 'timestamp',
         'deleted_at' => 'timestamp',
-        'onboarding' => 'object'
+        'onboarding' => 'object',
+        'set_react_as_default_ap' => 'bool'
     ];
 
     const PLAN_FREE = 'free';
@@ -88,6 +90,7 @@ class Account extends BaseModel
     const FEATURE_TASKS = 'tasks';
     const FEATURE_EXPENSES = 'expenses';
     const FEATURE_QUOTES = 'quotes';
+    const FEATURE_PURCHASE_ORDERS = 'purchase_orders';
     const FEATURE_CUSTOMIZE_INVOICE_DESIGN = 'custom_designs';
     const FEATURE_DIFFERENT_DESIGNS = 'different_designs';
     const FEATURE_EMAIL_TEMPLATES_REMINDERS = 'template_reminders';
@@ -163,6 +166,7 @@ class Account extends BaseModel
             case self::FEATURE_TASKS:
             case self::FEATURE_EXPENSES:
             case self::FEATURE_QUOTES:
+            case self::FEATURE_PURCHASE_ORDERS:
                 return true;
 
             case self::FEATURE_CUSTOMIZE_INVOICE_DESIGN:
@@ -223,6 +227,9 @@ class Account extends BaseModel
             return false;
         }
 
+        if($this->plan_expires && Carbon::parse($this->plan_expires)->lt(now()))
+            return false;
+
         return $this->plan == 'pro' || $this->plan == 'enterprise';
     }
 
@@ -232,7 +239,10 @@ class Account extends BaseModel
             return false;
         }
 
-        return $this->plan == 'free' || is_null($this->plan);
+        if($this->plan_expires && Carbon::parse($this->plan_expires)->lt(now()))
+            return true;
+
+        return $this->plan == 'free' || is_null($this->plan) || empty($this->plan);
     }
 
     public function isEnterpriseClient()
@@ -369,6 +379,14 @@ class Account extends BaseModel
 
     public function getDailyEmailLimit()
     {
+        if($this->is_flagged)
+            return 0;
+
+        if(Carbon::createFromTimestamp($this->created_at)->diffInWeeks() == 0)
+            return 20;
+
+        if(Carbon::createFromTimestamp($this->created_at)->diffInWeeks() <= 2 && !$this->payment_id)
+            return 20;
 
         if($this->isPaid()){
             $limit = $this->paid_plan_email_quota;
@@ -467,6 +485,36 @@ class Account extends BaseModel
         return false;
 
 
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (is_numeric($value)) {
+            throw new ModelNotFoundException("Record with value {$value} not found");
+        }
+
+        return $this
+            ->where('id', $this->decodePrimaryKey($value))->firstOrFail();
+    }
+
+    public function getTrialDays()
+    {
+        if($this->payment_id)
+            return 0;
+
+        $plan_expires = Carbon::parse($this->plan_expires);
+
+        if(!$this->payment_id && $plan_expires->gt(now())){
+
+            $diff = $plan_expires->diffInDays();
+            
+            if($diff > 14);
+                return 0;
+
+            return $diff;
+        }
+
+        return 0;
     }
 
 }

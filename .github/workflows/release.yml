@@ -41,7 +41,6 @@ jobs:
           
       - name: Prepare React FrontEnd
         run: |
-          mkdir public/react
           git clone https://${{secrets.commit_secret}}@github.com/invoiceninja/ui.git
           cd ui
           git checkout main
@@ -51,7 +50,7 @@ jobs:
           cd ..
           rm -rf ui
           php artisan ninja:react
-          
+
       - name: Prepare JS/CSS assets
         run: |
           npm i

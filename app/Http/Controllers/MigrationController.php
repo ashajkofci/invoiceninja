@@ -179,6 +179,8 @@ class MigrationController extends BaseController
         $company->tasks()->forceDelete();
         $company->vendors()->forceDelete();
         $company->expenses()->forceDelete();
+        $company->purchase_orders()->forceDelete();
+        $company->all_activities()->forceDelete();
 
         $settings = $company->settings;
 
@@ -196,6 +198,7 @@ class MigrationController extends BaseController
         $settings->ticket_number_counter = 1;
         $settings->payment_number_counter = 1;
         $settings->project_number_counter = 1;
+        $settings->purchase_order_number_counter = 1;
 
         $company->settings = $settings;
 

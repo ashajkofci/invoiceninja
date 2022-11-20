@@ -25,6 +25,7 @@ use App\Models\GatewayType;
 use App\Models\Invoice;
 use App\Models\RecurringInvoice;
 use App\Models\Subscription;
+use App\Notifications\Ninja\NewAccountNotification;
 use App\Repositories\SubscriptionRepository;
 use App\Utils\Ninja;
 use App\Utils\Traits\MakesHash;
@@ -154,6 +155,7 @@ class NinjaPlanController extends Controller
         $recurring_invoice->auto_bill_enabled =  $this->setAutoBillFlag($recurring_invoice->auto_bill);
         $recurring_invoice->due_date_days = 'terms';
         $recurring_invoice->next_send_date = now()->addDays(14)->format('Y-m-d');
+        $recurring_invoice->next_send_date_client = now()->addDays(14)->format('Y-m-d');
 
         $recurring_invoice->save();
         $r = $recurring_invoice->calc()->getRecurringInvoice();
@@ -163,6 +165,9 @@ class NinjaPlanController extends Controller
         LightLogs::create(new TrialStarted())
                  ->increment()
                  ->queue();
+
+        $ninja_company = Company::on('db-ninja-01')->find(config('ninja.ninja_default_company_id'));
+        $ninja_company->notification(new NewAccountNotification($account, $client))->ninja();
 
         return $this->render('plan.trial_confirmed', $data);
 
