@@ -25,7 +25,7 @@ class RecurringInvoicesTable extends Component
     public $per_page = 10;
 
     public $company;
-    
+
     public function mount()
     {
         MultiDB::setDb($this->company->db);
@@ -40,7 +40,7 @@ class RecurringInvoicesTable extends Component
         $query = RecurringInvoice::query();
 
         $query = $query
-            ->where('client_id', auth()->guard('contact')->user()->client->id)
+            ->where('client_id', auth()->guard('contact')->user()->client_id)
             ->where('company_id', $this->company->id)
             ->whereIn('status_id', [RecurringInvoice::STATUS_ACTIVE])
             ->orderBy('status_id', 'asc')

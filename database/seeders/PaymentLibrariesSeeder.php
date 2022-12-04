@@ -74,7 +74,7 @@ class PaymentLibrariesSeeder extends Seeder
             ['id' => 47, 'name' => 'Secure Trading', 'provider' => 'SecureTrading', 'key' => '231cb401487b9f15babe04b1ac4f7a27', 'fields' => '{"siteReference":"","username":"","password":"","applyThreeDSecure":false,"accountType":"ECOM"}'],
             ['id' => 48, 'name' => 'SecPay', 'provider' => 'SecPay', 'key' => 'bad8699d581d9fa040e59c0bb721a76c', 'fields' => '{"mid":"","vpnPswd":"","remotePswd":"","usageType":"","confirmEmail":"","testStatus":"true","mailCustomer":"true","additionalOptions":""}'],
             ['id' => 49, 'name' => 'WePay', 'provider' => 'WePay', 'is_offsite' => false, 'sort_order' => 3, 'key' => '8fdeed552015b3c7b44ed6c8ebd9e992', 'fields' => '{"accountId":"","accessToken":"","type":"goods","testMode":false,"feePayer":"payee"}'],
-            ['id' => 50, 'name' => 'Braintree', 'provider' => 'Braintree', 'sort_order' => 3, 'key' => 'f7ec488676d310683fb51802d076d713', 'fields' => '{"merchantId":"","merchantAccountId":"","publicKey":"","privateKey":"","testMode":false}'],
+            ['id' => 50, 'name' => 'Braintree', 'provider' => 'Braintree', 'sort_order' => 3, 'key' => 'f7ec488676d310683fb51802d076d713', 'fields' => '{"merchantId":"","merchantAccountId":"","publicKey":"","privateKey":"","testMode":false,"threeds":false}'],
             ['id' => 51, 'name' => 'FirstData Payeezy', 'provider' => 'FirstData_Payeezy', 'key' => '30334a52fb698046572c627ca10412e8', 'fields' => '{"gatewayId":"","password":"","keyId":"","hmac":"","testMode":false}'],
             ['id' => 52, 'name' => 'GoCardless', 'provider' => 'GoCardless', 'sort_order' => 9, 'is_offsite' => true, 'key' => 'b9886f9257f0c6ee7c302f1c74475f6c', 'fields' => '{"accessToken":"","webhookSecret":"","testMode":true}'],
             ['id' => 53, 'name' => 'PagSeguro', 'provider' => 'PagSeguro', 'key' => 'ef498756b54db63c143af0ec433da803', 'fields' => '{"email":"","token":"","sandbox":false}'],
@@ -82,6 +82,7 @@ class PaymentLibrariesSeeder extends Seeder
             ['id' => 55, 'name' => 'Custom', 'provider' => 'Custom', 'is_offsite' => true, 'sort_order' => 21, 'key' => '54faab2ab6e3223dbe848b1686490baa', 'fields' => '{"name":"","text":""}'],
             ['id' => 57, 'name' => 'Square', 'provider' => 'Square', 'is_offsite' => false, 'sort_order' => 21, 'key' => '65faab2ab6e3223dbe848b1686490baz', 'fields' => '{"accessToken":"","applicationId":"","locationId":"","testMode":false}'],
             ['id' => 58, 'name' => 'Razorpay', 'provider' => 'Razorpay', 'is_offsite' => false, 'sort_order' => 21, 'key' => 'hxd6gwg3ekb9tb3v9lptgx1mqyg69zu9', 'fields' => '{"apiKey":"","apiSecret":""}'],
+            ['id' => 59, 'name' => 'Forte', 'provider' => 'Forte', 'is_offsite' => false, 'sort_order' => 21, 'key' => 'kivcvjexxvdiyqtj3mju5d6yhpeht2xs', 'fields' => '{"testMode":false,"apiLoginId":"","apiAccessId":"","secureKey":"","authOrganizationId":"","organizationId":"","locationId":""}'],
         ];
 
         foreach ($gateways as $gateway) {

@@ -21,10 +21,10 @@ class ContactRegister
     {
         $domain_name = $request->getHost();
 
-        if (strpos($domain_name, 'invoicing.co') !== false) 
-        {
+        /* Hosted */
+        if (strpos($domain_name, 'invoicing.co') !== false) {
             $subdomain = explode('.', $domain_name)[0];
-            
+
             $query = [
                 'subdomain' => $subdomain,
                 'portal_mode' => 'subdomain',
@@ -32,47 +32,43 @@ class ContactRegister
 
             $company = Company::where($query)->first();
 
-            if($company)
-            {
-                if(! $company->client_can_register)
+            if ($company) {
+                if (! $company->client_can_register) {
                     abort(400, 'Registration disabled');
+                }
 
-                    session()->put('company_key', $company->company_key);
+                session()->put('company_key', $company->company_key);
 
                 return $next($request);
             }
-
         }
 
-        if(Ninja::isHosted())
-        {
+        /* Hosted */
+        if (Ninja::isHosted()) {
             $query = [
                 'portal_domain' => $request->getSchemeAndHttpHost(),
                 'portal_mode' => 'domain',
             ];
 
-            if($company = Company::where($query)->first())
-            {
-
-                if(! $company->client_can_register)
+            if ($company = Company::where($query)->first()) {
+                if (! $company->client_can_register) {
                     abort(400, 'Registration disabled');
+                }
 
-               // $request->merge(['key' => $company->company_key]);
+                // $request->merge(['key' => $company->company_key]);
                 session()->put('company_key', $company->company_key);
 
                 return $next($request);
             }
-
         }
-
 
         // For self-hosted platforms with multiple companies, resolving is done using company key
         // if it doesn't resolve using a domain.
-        
+
         if ($request->company_key && Ninja::isSelfHost() && $company = Company::where('company_key', $request->company_key)->first()) {
-         
-            if(! (bool)$company->client_can_register)
+            if (! (bool) $company->client_can_register) {
                 abort(400, 'Registration disabled');
+            }
 
             //$request->merge(['key' => $company->company_key]);
             session()->put('company_key', $company->company_key);
@@ -82,11 +78,12 @@ class ContactRegister
 
         // As a fallback for self-hosted, it will use default company in the system
         // if key isn't provided in the url.
-        if (!$request->route()->parameter('company_key') && Ninja::isSelfHost()) {
+        if (! $request->route()->parameter('company_key') && Ninja::isSelfHost()) {
             $company = Account::first()->default_company;
 
-            if(! $company->client_can_register)
+            if (! $company->client_can_register) {
                 abort(400, 'Registration disabled');
+            }
 
             //$request->merge(['key' => $company->company_key]);
             session()->put('company_key', $company->company_key);

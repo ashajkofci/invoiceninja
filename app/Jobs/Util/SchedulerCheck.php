@@ -12,6 +12,7 @@
 namespace App\Jobs\Util;
 
 use App\Models\Account;
+use App\Utils\Ninja;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -38,15 +39,16 @@ class SchedulerCheck implements ShouldQueue
     {
         set_time_limit(0);
 
-        if(config('ninja.app_version') != base_path('VERSION.txt'))
-        {
 
-             try {
+        if(Ninja::isHosted())
+            return;
+        
+        if (config('ninja.app_version') != base_path('VERSION.txt')) {
+            try {
                 Artisan::call('migrate', ['--force' => true]);
             } catch (\Exception $e) {
                 nlog("I wasn't able to migrate the data.");
                 nlog($e->getMessage());
-
             }
 
             try {
@@ -58,7 +60,6 @@ class SchedulerCheck implements ShouldQueue
                 nlog($e->getMessage());
             }
 
-
             try {
                 Artisan::call('view:clear');
             } catch (\Exception $e) {
@@ -66,10 +67,7 @@ class SchedulerCheck implements ShouldQueue
                 nlog($e->getMessage());
             }
 
-
-        VersionCheck::dispatch();
-
+            VersionCheck::dispatch();
         }
-
     }
 }

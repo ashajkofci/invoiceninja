@@ -23,9 +23,9 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Turbo124\Beacon\Jobs\Database\MySQL\DbStatus;
-use Illuminate\Support\Facades\Cache;
 
 class CheckCompanyData implements ShouldQueue
 {
@@ -38,6 +38,7 @@ class CheckCompanyData implements ShouldQueue
     public $company_data = [];
 
     public $is_valid;
+
     /**
      * Create a new job instance.
      *
@@ -51,8 +52,6 @@ class CheckCompanyData implements ShouldQueue
 
     /**
      * Execute the job.
-     *
-     * @return void
      */
     public function handle()
     {
@@ -65,11 +64,11 @@ class CheckCompanyData implements ShouldQueue
         $this->checkContacts();
         $this->checkCompanyData();
 
-
-        if(Cache::has($this->hash))
+        if (Cache::has($this->hash)) {
             $cache_instance = Cache::get($this->hash);
-        else
+        } else {
             $cache_instance = Cache::add($this->hash, '');
+        }
 
         $this->company_data['company_hash'] = $this->company->company_hash;
 
@@ -78,20 +77,19 @@ class CheckCompanyData implements ShouldQueue
         nlog(Cache::get($this->hash));
         nlog($this->company_data);
 
-        if(!$this->is_valid)
+        if (! $this->is_valid) {
             $this->company_data['status'] = 'errors';
-        else
+        } else {
             $this->company_data['status'] = 'success';
+        }
 
         return $this->company_data;
-        
     }
 
     public function middleware()
     {
         return [new RateLimited('checkdata')];
     }
-
 
     private function checkInvoiceBalances()
     {
@@ -108,10 +106,9 @@ class CheckCompanyData implements ShouldQueue
             $ledger = CompanyLedger::where('client_id', $client->id)->orderBy('id', 'DESC')->first();
 
             if ($ledger && number_format($invoice_balance, 4) != number_format($client->balance, 4)) {
-
                 $wrong_balances++;
 
-                $this->company_data[] = "# {$client->id} " . $client->present()->name.' - '.$client->number." - Balance Failure - Invoice Balances = {$invoice_balance} Client Balance = {$client->balance} Ledger Balance = {$ledger->balance} ";
+                $this->company_data[] = "# {$client->id} ".$client->present()->name().' - '.$client->number." - Balance Failure - Invoice Balances = {$invoice_balance} Client Balance = {$client->balance} Ledger Balance = {$ledger->balance} ";
 
                 $this->is_valid = false;
             }
@@ -134,10 +131,10 @@ class CheckCompanyData implements ShouldQueue
                 $total_paid = $total_amount - $total_refund;
                 $calculated_paid_amount = $invoice->amount - $invoice->balance - $total_credit;
 
-                if ((string)$total_paid != (string)($invoice->amount - $invoice->balance - $total_credit)) {
+                if ((string) $total_paid != (string) ($invoice->amount - $invoice->balance - $total_credit)) {
                     $wrong_balances++;
 
-                    $this->company_data[] = $client->present()->name.' - '.$client->id." - Total Amount = {$total_amount} != Calculated Total = {$calculated_paid_amount} - Total Refund = {$total_refund} Total credit = {$total_credit}";
+                    $this->company_data[] = $client->present()->name().' - '.$client->id." - Total Amount = {$total_amount} != Calculated Total = {$calculated_paid_amount} - Total Refund = {$total_refund} Total credit = {$total_credit}";
 
                     $this->is_valid = false;
                 }
@@ -156,8 +153,6 @@ class CheckCompanyData implements ShouldQueue
             $total_invoice_payments = 0;
 
             foreach ($client->invoices->where('is_deleted', false)->where('status_id', '>', 1) as $invoice) {
-
-
                 $total_amount = $invoice->payments->where('is_deleted', false)->whereIn('status_id', [Payment::STATUS_COMPLETED, Payment:: STATUS_PENDING, Payment::STATUS_PARTIALLY_REFUNDED, Payment::STATUS_REFUNDED])->sum('pivot.amount');
                 $total_refund = $invoice->payments->where('is_deleted', false)->whereIn('status_id', [Payment::STATUS_COMPLETED, Payment:: STATUS_PENDING, Payment::STATUS_PARTIALLY_REFUNDED, Payment::STATUS_REFUNDED])->sum('pivot.refunded');
 
@@ -178,7 +173,7 @@ class CheckCompanyData implements ShouldQueue
             if (round($total_invoice_payments, 2) != round($client->paid_to_date, 2)) {
                 $wrong_paid_to_dates++;
 
-                $this->company_data[] = $client->present()->name.'id = # '.$client->id." - Paid to date does not match Client Paid To Date = {$client->paid_to_date} - Invoice Payments = {$total_invoice_payments}";
+                $this->company_data[] = $client->present()->name().'id = # '.$client->id." - Paid to date does not match Client Paid To Date = {$client->paid_to_date} - Invoice Payments = {$total_invoice_payments}";
 
                 $this->is_valid = false;
             }
@@ -186,7 +181,6 @@ class CheckCompanyData implements ShouldQueue
 
         $this->company_data[] = "{$wrong_paid_to_dates} clients with incorrect paid to dates";
     }
-
 
     private function checkClientBalances()
     {
@@ -207,8 +201,8 @@ class CheckCompanyData implements ShouldQueue
 
             if ($ledger && (string) $invoice_balance != (string) $client->balance) {
                 $wrong_paid_to_dates++;
-                
-                $this->company_data[] = $client->present()->name.' - '.$client->id." - calculated client balances do not match {$invoice_balance} - ".rtrim($client->balance, '0')."";
+
+                $this->company_data[] = $client->present()->name().' - '.$client->id." - calculated client balances do not match {$invoice_balance} - ".rtrim($client->balance, '0').'';
 
                 $this->is_valid = false;
             }
@@ -226,7 +220,7 @@ class CheckCompanyData implements ShouldQueue
                         ->orderBy('id')
                         ->get(['id']);
 
-        $this->company_data[] =  $contacts->count().' contacts without a contact_key';
+        $this->company_data[] = $contacts->count().' contacts without a contact_key';
 
         if ($contacts->count() > 0) {
             $this->is_valid = false;
@@ -259,7 +253,7 @@ class CheckCompanyData implements ShouldQueue
         // }
 
         $clients = $clients->get(['clients.id', 'clients.user_id', 'clients.company_id']);
-        
+
         $this->company_data[] = $clients->count().' clients without any contacts';
 
         if ($clients->count() > 0) {
@@ -342,7 +336,6 @@ class CheckCompanyData implements ShouldQueue
                 }
             }
         }
-
     }
 
     public function pluralizeEntityType($type)

@@ -17,11 +17,13 @@ use App\Libraries\MultiDB;
 use App\Mail\User\UserNotificationMailer;
 use App\Models\Company;
 use App\Models\User;
+use App\Utils\Ninja;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Mail;
 use stdClass;
 
@@ -54,10 +56,13 @@ class UserEmailChanged implements ShouldQueue
 
     public function handle()
     {
-        nlog("notifying user of email change");
-        
         //Set DB
         MultiDB::setDb($this->company->db);
+
+        App::forgetInstance('translator');
+        $t = app('translator');
+        $t->replace(Ninja::transformTranslations($this->company->settings));
+        App::setLocale($this->company->getLocale());
 
         /*Build the object*/
         $mail_obj = new stdClass;
@@ -68,7 +73,7 @@ class UserEmailChanged implements ShouldQueue
         $mail_obj->data = $this->getData();
 
         //Send email via a Mailable class
-        
+
         $nmo = new NinjaMailerObject;
         $nmo->mailable = new UserNotificationMailer($mail_obj);
         $nmo->settings = $this->settings;
@@ -78,7 +83,6 @@ class UserEmailChanged implements ShouldQueue
         NinjaMailerJob::dispatch($nmo, true);
 
         $this->new_user->service()->invite($this->company);
-
     }
 
     private function getData()
@@ -88,8 +92,8 @@ class UserEmailChanged implements ShouldQueue
             'message' => ctrans(
                 'texts.email_address_changed_message',
                 ['old_email' => $this->old_user->email,
-                'new_email' => $this->new_user->email,
-            ]
+                    'new_email' => $this->new_user->email,
+                ]
             ),
             'url' => config('ninja.app_url'),
             'button' => ctrans('texts.account_login'),

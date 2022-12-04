@@ -12,6 +12,7 @@
 namespace App\Services\Client;
 
 use App\Models\Client;
+use App\Models\Credit;
 use App\Services\Client\Merge;
 use App\Services\Client\PaymentMethod;
 use App\Utils\Number;
@@ -28,14 +29,47 @@ class ClientService
 
     public function updateBalance(float $amount)
     {
-        $this->client->balance += $amount;
+        // $this->client->balance += $amount;
+
+        \DB::connection(config('database.default'))->transaction(function () use($amount) {
+
+            $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
+            $this->client->balance += $amount;
+            $this->client->save();
+
+        }, 2);
+
+        return $this;
+    }
+
+    public function updateBalanceAndPaidToDate(float $balance, float $paid_to_date)
+    {
+        // $this->client->balance += $amount;
+        // $this->client->paid_to_date += $amount;
+
+        \DB::connection(config('database.default'))->transaction(function () use($balance, $paid_to_date) {
+
+            $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
+            $this->client->balance += $balance;
+            $this->client->paid_to_date += $paid_to_date;
+            $this->client->save();
+
+        }, 2);
 
         return $this;
     }
 
     public function updatePaidToDate(float $amount)
     {
-        $this->client->paid_to_date += $amount;
+        // $this->client->paid_to_date += $amount;
+
+        \DB::connection(config('database.default'))->transaction(function () use($amount) {
+
+            $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
+            $this->client->paid_to_date += $amount;
+            $this->client->save();
+
+        }, 2);
 
         return $this;
     }
@@ -49,28 +83,28 @@ class ClientService
 
     public function getCreditBalance() :float
     {
-        $credits = $this->client->credits()
+        $credits = Credit::withTrashed()->where('client_id', $this->client->id)
                       ->where('is_deleted', false)
                       ->where('balance', '>', 0)
-                      ->where(function ($query){
-                            $query->whereDate('due_date', '<=', now()->format('Y-m-d'))
+                      ->where(function ($query) {
+                          $query->whereDate('due_date', '<=', now()->format('Y-m-d'))
                                   ->orWhereNull('due_date');
                       })
-                      ->orderBy('created_at','ASC');
+                      ->orderBy('created_at', 'ASC');
 
         return Number::roundValue($credits->sum('balance'), $this->client->currency()->precision);
     }
 
-    public function getCredits() 
+    public function getCredits()
     {
-        return $this->client->credits()
+        return Credit::where('client_id', $this->client->id)
                   ->where('is_deleted', false)
                   ->where('balance', '>', 0)
-                  ->where(function ($query){
-                        $query->whereDate('due_date', '<=', now()->format('Y-m-d'))
+                  ->where(function ($query) {
+                      $query->whereDate('due_date', '<=', now()->format('Y-m-d'))
                               ->orWhereNull('due_date');
                   })
-                  ->orderBy('created_at','ASC')->get();
+                  ->orderBy('created_at', 'ASC')->get();
     }
 
     public function getPaymentMethods(float $amount)
@@ -87,8 +121,8 @@ class ClientService
 
     /**
      * Generate the client statement.
-     * 
-     * @param array $options 
+     *
+     * @param array $options
      */
     public function statement(array $options = [])
     {

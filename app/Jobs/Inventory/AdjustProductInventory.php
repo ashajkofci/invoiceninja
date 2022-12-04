@@ -37,7 +37,7 @@ class AdjustProductInventory implements ShouldQueue
 
     public array $old_invoice;
 
-    public function __construct(Company $company, Invoice $invoice, ?array $old_invoice = [])
+    public function __construct(Company $company, Invoice $invoice, $old_invoice = [])
     {
         $this->company = $company;
         $this->invoice = $invoice;
@@ -54,13 +54,50 @@ class AdjustProductInventory implements ShouldQueue
     {
         MultiDB::setDb($this->company->db);
 
-        if(count($this->old_invoice) > 0)
+        if (count($this->old_invoice) > 0) {
             $this->existingInventoryAdjustment();
+        }
 
         return $this->newInventoryAdjustment();
+    }
+
+    public function handleDeletedInvoice()
+    {
+
+       MultiDB::setDb($this->company->db);
+
+       foreach ($this->invoice->line_items as $item) {
+
+            $p = Product::where('product_key', $item->product_key)->where('company_id', $this->company->id)->first();
+
+            if (! $p) {
+                continue;
+            }
+
+            $p->in_stock_quantity += $item->quantity;
+
+            $p->saveQuietly();
+        }
 
     }
 
+    public function handleRestoredInvoice()
+    {
+
+       MultiDB::setDb($this->company->db);
+
+       foreach ($this->invoice->line_items as $item) {
+            $p = Product::where('product_key', $item->product_key)->where('company_id', $this->company->id)->first();
+
+            if (! $p) {
+                continue;
+            }
+
+            $p->in_stock_quantity -= $item->quantity;
+            $p->saveQuietly();
+        }
+
+    }
 
     public function middleware()
     {
@@ -69,57 +106,48 @@ class AdjustProductInventory implements ShouldQueue
 
     private function newInventoryAdjustment()
     {
-        
         $line_items = $this->invoice->line_items;
 
-        foreach($line_items as $item)
-        {
-
+        foreach ($line_items as $item) {
             $p = Product::where('product_key', $item->product_key)->where('company_id', $this->company->id)->where('in_stock_quantity', '>', 0)->first();
 
-            if(!$p)
+            if (! $p) {
                 continue;
+            }
 
             $p->in_stock_quantity -= $item->quantity;
             $p->saveQuietly();
 
-            if($p->stock_notification_threshold && $p->in_stock_quantity <= $p->stock_notification_threshold)
+            if ($this->company->stock_notification && $p->stock_notification && $p->stock_notification_threshold && $p->in_stock_quantity <= $p->stock_notification_threshold) {
                 $this->notifyStockLevels($p, 'product');
-            elseif($this->company->stock_notification_threshold && $p->in_stock_quantity <= $this->company->stock_notification_threshold)
+            } elseif ($this->company->stock_notification && $p->stock_notification && $this->company->inventory_notification_threshold && $p->in_stock_quantity <= $this->company->inventory_notification_threshold) {
                 $this->notifyStocklevels($p, 'company');
-            
+            }
         }
-
     }
 
     private function existingInventoryAdjustment()
     {
-
-        foreach($this->old_invoice as $item)
-        {
+        foreach ($this->old_invoice as $item) {
             $p = Product::where('product_key', $item->product_key)->where('company_id', $this->company->id)->first();
 
-            if(!$p)
+            if (! $p) {
                 continue;
+            }
 
             $p->in_stock_quantity += $item->quantity;
             $p->saveQuietly();
-
         }
-
     }
 
     private function notifyStocklevels(Product $product, string $notification_level)
     {
-
         $nmo = new NinjaMailerObject;
-        $nmo->mailable = new NinjaMailer( (new InventoryNotificationObject($product, $notification_level))->build() );
+        $nmo->mailable = new NinjaMailer((new InventoryNotificationObject($product, $notification_level))->build());
         $nmo->company = $this->company;
         $nmo->settings = $this->company->settings;
         $nmo->to_user = $this->company->owner();
 
         NinjaMailerJob::dispatch($nmo);
-
     }
-
 }

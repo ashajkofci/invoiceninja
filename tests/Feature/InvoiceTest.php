@@ -6,8 +6,9 @@
  *
  * @copyright Copyright (c) 2021. Invoice Ninja LLC (https://invoiceninja.com)
  *
- * @license https://www.elastic.co/licensing/elastic-license 
+ * @license https://www.elastic.co/licensing/elastic-license
  */
+
 namespace Tests\Feature;
 
 use App\Helpers\Invoice\InvoiceSum;
@@ -32,7 +33,7 @@ class InvoiceTest extends TestCase
     use DatabaseTransactions;
     use MockAccountData;
 
-    public function setUp() :void
+    protected function setUp() :void
     {
         parent::setUp();
 
@@ -45,10 +46,21 @@ class InvoiceTest extends TestCase
         $this->makeTestData();
     }
 
-    public function testMarkingDeletedInvoiceAsSent()
+
+    public function testInvoiceArchiveAction()
     {
 
-     Client::factory()->create(['user_id' => $this->user->id, 'company_id' => $this->company->id])->each(function ($c) {
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->get('/api/v1/invoices/'.$this->invoice->hashed_id.'/archive',)
+        ->assertStatus(200);
+    }
+
+
+    public function testMarkingDeletedInvoiceAsSent()
+    {
+        Client::factory()->create(['user_id' => $this->user->id, 'company_id' => $this->company->id])->each(function ($c) {
             ClientContact::factory()->create([
                 'user_id' => $this->user->id,
                 'client_id' => $c->id,
@@ -87,9 +99,8 @@ class InvoiceTest extends TestCase
         $this->assertEquals(10, $invoice->amount);
         $this->assertEquals(0, $invoice->balance);
 
-        $invoice_repository  = new InvoiceRepository();
+        $invoice_repository = new InvoiceRepository();
         $invoice = $invoice_repository->delete($invoice);
-
 
         $this->assertEquals(10, $invoice->amount);
         $this->assertEquals(0, $invoice->balance);
@@ -98,7 +109,6 @@ class InvoiceTest extends TestCase
         $invoice->service()->markSent()->save();
 
         $this->assertEquals(0, $invoice->balance);
-
     }
 
     public function testInvoiceList()
@@ -123,9 +133,9 @@ class InvoiceTest extends TestCase
         Invoice::factory()->create(['user_id' => $this->user->id, 'company_id' => $this->company->id, 'client_id' => $this->client->id]);
 
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->get('/api/v1/invoices');
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->get('/api/v1/invoices');
 
         $response->assertStatus(200);
     }
@@ -133,16 +143,16 @@ class InvoiceTest extends TestCase
     public function testInvoiceRESTEndPoints()
     {
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->get('/api/v1/invoices/'.$this->encodePrimaryKey($this->invoice->id));
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->get('/api/v1/invoices/'.$this->encodePrimaryKey($this->invoice->id));
 
         $response->assertStatus(200);
 
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->get('/api/v1/invoices/'.$this->encodePrimaryKey($this->invoice->id).'/edit');
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->get('/api/v1/invoices/'.$this->encodePrimaryKey($this->invoice->id).'/edit');
 
         $response->assertStatus(200);
 
@@ -153,9 +163,9 @@ class InvoiceTest extends TestCase
         $this->assertNotNull($this->invoice);
 
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->put('/api/v1/invoices/'.$this->encodePrimaryKey($this->invoice->id), $invoice_update)
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->put('/api/v1/invoices/'.$this->encodePrimaryKey($this->invoice->id), $invoice_update)
             ->assertStatus(200);
     }
 
@@ -178,33 +188,32 @@ class InvoiceTest extends TestCase
         ];
 
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->post('/api/v1/invoices/', $invoice)
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->post('/api/v1/invoices/', $invoice)
             ->assertStatus(200);
-
 
         $arr = $response->json();
 
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->put('/api/v1/invoices/'.$arr['data']['id'], $invoice)
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->put('/api/v1/invoices/'.$arr['data']['id'], $invoice)
             ->assertStatus(200);
 
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->post('/api/v1/invoices/', $invoice)
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->post('/api/v1/invoices/', $invoice)
             ->assertStatus(302);
     }
 
     public function testDeleteInvoice()
     {
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->delete('/api/v1/invoices/'.$this->encodePrimaryKey($this->invoice->id));
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->delete('/api/v1/invoices/'.$this->encodePrimaryKey($this->invoice->id));
 
         $response->assertStatus(200);
     }
@@ -255,33 +264,33 @@ class InvoiceTest extends TestCase
         }
 
         $data = [
-                'client_id' => $this->client->hashed_id,
-                'number' => 'style',
-            ];
+            'client_id' => $this->client->hashed_id,
+            'number' => 'style',
+        ];
 
         /* test number passed validation*/
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->put('/api/v1/invoices/'.$arr['data']['id'], $data)
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->put('/api/v1/invoices/'.$arr['data']['id'], $data)
             ->assertStatus(200);
 
         $data = [
-                'client_id' => $this->client->hashed_id,
-                'number' => 'style',
-            ];
+            'client_id' => $this->client->hashed_id,
+            'number' => 'style',
+        ];
 
         /* Make sure we can UPDATE using the same number*/
         $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->put('/api/v1/invoices/'.$arr['data']['id'], $data)
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->put('/api/v1/invoices/'.$arr['data']['id'], $data)
             ->assertStatus(200);
     }
 
     public function testClientedDeletedAttemptingToCreateInvoice()
     {
-                /* Test fire new invoice */
+        /* Test fire new invoice */
         $data = [
             'client_id' => $this->client->hashed_id,
             'number' => 'dude',
@@ -293,4 +302,6 @@ class InvoiceTest extends TestCase
         ])->post('/api/v1/invoices/', $data)
         ->assertStatus(200);
     }
+
+
 }

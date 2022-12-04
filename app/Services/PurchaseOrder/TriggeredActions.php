@@ -39,7 +39,6 @@ class TriggeredActions extends AbstractService
 
     public function run()
     {
-
         if ($this->request->has('send_email') && $this->request->input('send_email') == 'true') {
             $this->purchase_order->service()->markSent()->touchPdf()->save();
             $this->sendEmail();
@@ -51,15 +50,29 @@ class TriggeredActions extends AbstractService
 
         // if ($this->request->has('cancel') && $this->request->input('cancel') == 'true') {
         //     $this->purchase_order = $this->purchase_order->service()->handleCancellation()->save();
-        // }        
+        // }
+
+        if($this->request->has('save_default_footer') && $this->request->input('save_default_footer') == 'true') {
+            $company = $this->purchase_order->company;
+            $settings = $company->settings;
+            $settings->purchase_order_footer = $this->purchase_order->footer;
+            $company->settings = $settings;
+            $company->save();
+        }
+
+        if($this->request->has('save_default_terms') && $this->request->input('save_default_terms') == 'true') {
+            $company = $this->purchase_order->company;
+            $settings = $company->settings;
+            $settings->purchase_order_terms = $this->purchase_order->terms;
+            $company->settings = $settings;
+            $company->save();
+        }
 
         return $this->purchase_order;
     }
 
     private function sendEmail()
     {
-
         PurchaseOrderEmail::dispatch($this->purchase_order, $this->purchase_order->company);
-
     }
 }

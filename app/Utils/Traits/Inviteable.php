@@ -13,6 +13,11 @@ namespace App\Utils\Traits;
 
 use App\Utils\Ninja;
 use Illuminate\Support\Str;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
+
 
 /**
  * Class Inviteable.
@@ -45,38 +50,53 @@ trait Inviteable
 
     public function getPaymentLink()
     {
-        if(Ninja::isHosted()){
+        if (Ninja::isHosted()) {
             $domain = $this->company->domain();
-        }
-        else
+        } else {
             $domain = config('ninja.app_url');
+        }
 
         return $domain.'/client/pay/'.$this->key;
     }
 
+    public function getPaymentQrCode()
+    {
+
+        $renderer = new ImageRenderer(
+            new RendererStyle(200),
+            new SvgImageBackEnd()
+        );
+        $writer = new Writer($renderer);
+
+        $qr = $writer->writeString($this->getPaymentLink());
+
+        return "<svg viewBox='0 0 200 200' width='200' height='200' x='0' y='0' xmlns='http://www.w3.org/2000/svg'>
+          <rect x='0' y='0' width='100%'' height='100%' />{$qr}</svg>";
+
+    }
+
     public function getUnsubscribeLink()
     {
-        if(Ninja::isHosted()){
+        if (Ninja::isHosted()) {
             $domain = $this->company->domain();
-        }
-        else
+        } else {
             $domain = config('ninja.app_url');
+        }
 
         $entity_type = Str::snake(class_basename($this->entityType()));
 
         return $domain.'/client/unsubscribe/'.$entity_type.'/'.$this->key;
-
     }
 
     public function getLink() :string
     {
         $entity_type = Str::snake(class_basename($this->entityType()));
 
-        if(Ninja::isHosted()){
+        if (Ninja::isHosted()) {
             $domain = $this->company->domain();
-        }
-        else
+        } else {
             $domain = config('ninja.app_url');
+        }
 
         switch ($this->company->portal_mode) {
             case 'subdomain':
@@ -98,11 +118,11 @@ trait Inviteable
 
     public function getPortalLink() :string
     {
-
-        if(Ninja::isHosted())
+        if (Ninja::isHosted()) {
             $domain = $this->company->domain();
-        else
+        } else {
             $domain = config('ninja.app_url');
+        }
 
         switch ($this->company->portal_mode) {
             case 'subdomain':
@@ -120,7 +140,6 @@ trait Inviteable
                 return '';
                 break;
         }
-
     }
 
     public function getAdminLink() :string

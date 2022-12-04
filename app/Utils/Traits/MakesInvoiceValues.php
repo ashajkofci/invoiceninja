@@ -161,8 +161,6 @@ trait MakesInvoiceValues
 
         if (strlen($user_columns) > 1) {
             foreach ($items as $key => $item) {
-//                $tmp = str_replace(array_keys($data), array_values($data), $user_columns);
-//                $tmp = str_replace(array_keys($item), array_values($item), $tmp);
                 $tmp = strtr($user_columns, $data);
                 $tmp = strtr($tmp, $item);
 
@@ -178,8 +176,6 @@ trait MakesInvoiceValues
             $table_row .= '</tr>';
 
             foreach ($items as $key => $item) {
-                // $tmp = str_replace(array_keys($item), array_values($item), $table_row);
-                // $tmp = str_replace(array_keys($data), array_values($data), $tmp);
                 $tmp = strtr($table_row, $item);
                 $tmp = strtr($tmp, $data);
 
@@ -210,8 +206,10 @@ trait MakesInvoiceValues
                 'tax_name1',
                 'tax_name2',
                 'tax_name3',
+                'tax_amount',
             ],
             [
+                'tax',
                 'tax',
                 'tax',
                 'tax',
@@ -264,16 +262,18 @@ trait MakesInvoiceValues
      * @return array
      */
     public function transformLineItems($items, $table_type = '$product') :array
-    {
+    {   //$start = microtime(true);
+
         $entity = $this->client ? $this->client : $this->company;
 
         $data = [];
 
         if (! is_array($items)) {
-            $data;
         }
-       
+
         $locale_info = localeconv();
+
+        $entity_currency = $entity->currency();
 
         foreach ($items as $key => $item) {
             if ($table_type == '$product' && $item->type_id != 1) {
@@ -283,14 +283,13 @@ trait MakesInvoiceValues
             }
 
             if ($table_type == '$task' && $item->type_id != 2) {
-                if ($item->type_id != 4 && $item->type_id != 5) {
+                // if ($item->type_id != 4 && $item->type_id != 5) {
                     continue;
-                }
+                // }
             }
 
             $helpers = new Helpers();
             $_table_type = ltrim($table_type, '$'); // From $product -> product.
-
 
             $data[$key][$table_type.'.product_key'] = is_null(optional($item)->product_key) ? $item->item : $item->product_key;
             $data[$key][$table_type.'.item'] = is_null(optional($item)->item) ? $item->product_key : $item->item;
@@ -298,40 +297,42 @@ trait MakesInvoiceValues
 
             $data[$key][$table_type.'.notes'] = Helpers::processReservedKeywords($item->notes, $entity);
             $data[$key][$table_type.'.description'] = Helpers::processReservedKeywords($item->notes, $entity);
-    
-            $data[$key][$table_type . ".{$_table_type}1"] = $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}1", $item->custom_value1, $entity);
-            $data[$key][$table_type . ".{$_table_type}2"] = $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}2", $item->custom_value2, $entity);
-            $data[$key][$table_type . ".{$_table_type}3"] = $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}3", $item->custom_value3, $entity);
-            $data[$key][$table_type . ".{$_table_type}4"] = $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}4", $item->custom_value4, $entity);
-            
-            if($item->quantity > 0 || $item->cost > 0){
 
-                $data[$key][$table_type.'.quantity'] = Number::formatValueNoTrailingZeroes($item->quantity, $entity->currency());
-                
+            $data[$key][$table_type.".{$_table_type}1"] = strlen($item->custom_value1) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}1", $item->custom_value1, $entity) : '';
+            $data[$key][$table_type.".{$_table_type}2"] = strlen($item->custom_value2) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}2", $item->custom_value2, $entity) : '';
+            $data[$key][$table_type.".{$_table_type}3"] = strlen($item->custom_value3) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}3", $item->custom_value3, $entity) : '';
+            $data[$key][$table_type.".{$_table_type}4"] = strlen($item->custom_value4) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}4", $item->custom_value4, $entity) : '';
+
+            if ($item->quantity > 0 || $item->cost > 0) {
+                $data[$key][$table_type.'.quantity'] = Number::formatValueNoTrailingZeroes($item->quantity, $entity);
+
                 $data[$key][$table_type.'.unit_cost'] = Number::formatMoneyNoRounding($item->cost, $entity);
 
                 $data[$key][$table_type.'.cost'] = Number::formatMoney($item->cost, $entity);
 
-                $data[$key][$table_type.'.line_total'] =  Number::formatMoney($item->line_total, $entity);
-
-            }
-            else {
-
+                $data[$key][$table_type.'.line_total'] = Number::formatMoney($item->line_total, $entity);
+            } else {
                 $data[$key][$table_type.'.quantity'] = '';
-                
+
                 $data[$key][$table_type.'.unit_cost'] = '';
 
                 $data[$key][$table_type.'.cost'] = '';
 
-                $data[$key][$table_type.'.line_total'] =  '';
-                
+                $data[$key][$table_type.'.line_total'] = '';
             }
 
-            if(property_exists($item, 'gross_line_total'))
-                $data[$key][$table_type.'.gross_line_total'] =  ($item->gross_line_total == 0) ? '' :Number::formatMoney($item->gross_line_total, $entity);
-            else
+            if (property_exists($item, 'gross_line_total')) {
+                $data[$key][$table_type.'.gross_line_total'] = ($item->gross_line_total == 0) ? '' : Number::formatMoney($item->gross_line_total, $entity);
+            } else {
                 $data[$key][$table_type.'.gross_line_total'] = '';
-        
+            }
+
+            if (property_exists($item, 'tax_amount')) {
+                $data[$key][$table_type.'.tax_amount'] = ($item->tax_amount == 0) ? '' : Number::formatMoney($item->tax_amount, $entity);
+            } else {
+                $data[$key][$table_type.'.tax_amount'] = '';
+            }
+
             if (isset($item->discount) && $item->discount > 0) {
                 if ($item->is_amount_discount) {
                     $data[$key][$table_type.'.discount'] = Number::formatMoney($item->discount, $entity);
@@ -360,9 +361,11 @@ trait MakesInvoiceValues
                 $data[$key][$table_type.'.tax3'] = &$data[$key][$table_type.'.tax_rate3'];
             }
 
-            $data[$key]['task_id'] = optional($item)->task_id;
+            $data[$key]['task_id'] = property_exists($item, 'task_id') ? $item->task_id : '';
         }
 
+        //nlog(microtime(true) - $start);
+        
         return $data;
     }
 
@@ -487,8 +490,7 @@ trait MakesInvoiceValues
      */
     public function generateCustomCSS() :string
     {
-
-        $settings = $this->client ? $this->client->getMergedSettings() :  $this->company->settings;
+        $settings = $this->client ? $this->client->getMergedSettings() : $this->company->settings;
 
         $header_and_footer = '
 .header, .header-space {

@@ -51,11 +51,13 @@ class HandleCancellation extends AbstractService
 
         //adjust client balance
         $this->invoice->client->service()->updateBalance($adjustment)->save();
-        $this->invoice->fresh();
+        // $this->invoice->fresh();
 
         $this->invoice->service()->workFlow()->save();
-        
+
         event(new InvoiceWasCancelled($this->invoice, $this->invoice->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
+
+        event('eloquent.updated: App\Models\Invoice', $this->invoice);
 
         $transaction = [
             'invoice' => $this->invoice->transaction_event(),
@@ -65,7 +67,7 @@ class HandleCancellation extends AbstractService
             'metadata' => [],
         ];
 
-        TransactionLog::dispatch(TransactionEvent::INVOICE_CANCELLED, $transaction, $this->invoice->company->db);
+        // TransactionLog::dispatch(TransactionEvent::INVOICE_CANCELLED, $transaction, $this->invoice->company->db);
 
         return $this->invoice;
     }
@@ -80,7 +82,7 @@ class HandleCancellation extends AbstractService
 
         $this->invoice->ledger()->updateInvoiceBalance($adjustment, "Invoice {$this->invoice->number} reversal");
         $this->invoice->fresh();
-        
+
         /* Reverse the invoice status and balance */
         $this->invoice->balance += $adjustment;
         $this->invoice->status_id = $cancellation->status_id;
@@ -93,7 +95,7 @@ class HandleCancellation extends AbstractService
         $this->invoice->backup = $backup;
         $this->invoice->saveQuietly();
         $this->invoice->fresh();
-        
+
         return $this->invoice;
     }
 

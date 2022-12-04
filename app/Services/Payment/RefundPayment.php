@@ -16,10 +16,12 @@ use App\Factory\CreditFactory;
 use App\Factory\InvoiceItemFactory;
 use App\Jobs\Ninja\TransactionLog;
 use App\Jobs\Payment\EmailRefundPayment;
+use App\Jobs\Util\SystemLogger;
 use App\Models\Activity;
 use App\Models\Credit;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\SystemLog;
 use App\Models\TransactionEvent;
 use App\Repositories\ActivityRepository;
 use App\Utils\Ninja;
@@ -55,33 +57,32 @@ class RefundPayment
     public function run()
     {
         $this->payment = $this->calculateTotalRefund() //sets amount for the refund (needed if we are refunding multiple invoices in one payment)
-            ->setStatus() //sets status of payment
-            //->reversePayment()
-            //->buildCreditNote() //generate the credit note
-            //->buildCreditLineItems() //generate the credit note items
-            ->updateCreditables() //return the credits first
-            ->updatePaymentables() //update the paymentable items
-            ->adjustInvoices()
-            ->processGatewayRefund() //process the gateway refund if needed
-            ->save();
+                            ->setStatus() //sets status of payment
+                            ->updateCreditables() //return the credits first
+                            ->updatePaymentables() //update the paymentable items
+                            ->adjustInvoices()
+                            ->processGatewayRefund() //process the gateway refund if needed
+                            ->save();
 
-        
-            if(array_key_exists('email_receipt', $this->refund_data) && $this->refund_data['email_receipt'] == 'true'){
-            
-                $contact = $this->payment->client->contacts()->whereNotNull('email')->first();
-                    EmailRefundPayment::dispatch($this->payment, $this->payment->company, $contact);
-                
-            }
+        if (array_key_exists('email_receipt', $this->refund_data) && $this->refund_data['email_receipt'] == 'true') {
+            $contact = $this->payment->client->contacts()->whereNotNull('email')->first();
+            EmailRefundPayment::dispatch($this->payment, $this->payment->company, $contact);
+        }
 
-            $transaction = [
-                'invoice' => [],
-                'payment' => $this->payment->transaction_event(),
-                'client' => $this->payment->client->transaction_event(),
-                'credit' => [],
-                'metadata' => [],
-            ];
+        $transaction = [
+            'invoice' => [],
+            'payment' => $this->payment->transaction_event(),
+            'client' => $this->payment->client->transaction_event(),
+            'credit' => [],
+            'metadata' => [],
+        ];
 
-            TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $this->payment->company->db);
+        // TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $this->payment->company->db);
+
+        $notes = ctrans('texts.refunded') . " : {$this->total_refund} - " . ctrans('texts.gateway_refund') . " : ";
+        $notes .= $this->refund_data['gateway_refund'] !== false ? ctrans('texts.yes') : ctrans('texts.no');
+
+        $this->createActivity($notes);
 
         return $this->payment;
     }
@@ -100,18 +101,15 @@ class RefundPayment
 
                 $this->payment->refunded += $this->total_refund;
 
-                $this->createActivity($this->payment);
-
                 if ($response['success'] == false) {
                     $this->payment->save();
 
-                    if(array_key_exists('description', $response))
+                    if (array_key_exists('description', $response)) {
                         throw new PaymentRefundFailed($response['description']);
-                    else
+                    } else {
                         throw new PaymentRefundFailed();
-
+                    }
                 }
-
             }
         } else {
             $this->payment->refunded += $this->total_refund;
@@ -136,7 +134,7 @@ class RefundPayment
         $fields->company_id = $this->payment->company_id;
         $fields->activity_type_id = Activity::REFUNDED_PAYMENT;
         // $fields->credit_id = $this->credit_note->id; // TODO
-        $fields->notes = json_encode($notes);
+        $fields->notes = $notes;
 
         if (isset($this->refund_data['invoices'])) {
             foreach ($this->refund_data['invoices'] as $invoice) {
@@ -217,17 +215,15 @@ class RefundPayment
                 if ($available_credit > $this->total_refund) {
                     $paymentable_credit->pivot->refunded += $this->total_refund;
                     $paymentable_credit->pivot->save();
-                    
+
                     $paymentable_credit->service()
                                        ->setStatus(Credit::STATUS_SENT)
                                        ->updateBalance($this->total_refund)
-                                       ->updatePaidToDate($this->total_refund*-1)
+                                       ->updatePaidToDate($this->total_refund * -1)
                                        ->save();
 
                     $this->total_refund = 0;
-
                 } else {
-
                     $paymentable_credit->pivot->refunded += $available_credit;
                     $paymentable_credit->pivot->save();
 
@@ -235,7 +231,7 @@ class RefundPayment
                     $paymentable_credit->service()
                                       ->setStatus(Credit::STATUS_SENT)
                                        ->adjustBalance($available_credit)
-                                       ->updatePaidToDate($available_credit*-1)
+                                       ->updatePaidToDate($available_credit * -1)
                                       ->save();
 
                     $this->total_refund -= $available_credit;
@@ -257,35 +253,40 @@ class RefundPayment
      */
     private function adjustInvoices()
     {
-        $adjustment_amount = 0;
 
         if (isset($this->refund_data['invoices']) && count($this->refund_data['invoices']) > 0) {
             foreach ($this->refund_data['invoices'] as $refunded_invoice) {
                 $invoice = Invoice::withTrashed()->find($refunded_invoice['invoice_id']);
 
-                if($invoice->trashed())
+                if ($invoice->trashed()) {
                     $invoice->restore();
+                }
 
                 $invoice->service()
                         ->updateBalance($refunded_invoice['amount'])
                         ->updatePaidToDate($refunded_invoice['amount'] * -1)
                         ->save();
 
-                $invoice->ledger()->updateInvoiceBalance($refunded_invoice['amount'], "Refund of payment # {$this->payment->number}")->save();
-                
+                $invoice->ledger()
+                        ->updateInvoiceBalance($refunded_invoice['amount'], "Refund of payment # {$this->payment->number}")
+                        ->save();
+
                 if ($invoice->amount == $invoice->balance) {
                     $invoice->service()->setStatus(Invoice::STATUS_SENT);
                 } else {
                     $invoice->service()->setStatus(Invoice::STATUS_PARTIAL);
                 }
 
+                //26-10-2022 - disable autobill to prevent future billings;
+                $invoice->auto_bill_enabled = false;
+
                 $invoice->saveQuietly();
 
-                $client = $invoice->client;
-                $adjustment_amount += $refunded_invoice['amount'];
-                $client->balance += $refunded_invoice['amount'];
-                $client->save();
-
+                //06-09-2022
+                $client = $invoice->client
+                                  ->service()
+                                  ->updateBalance($refunded_invoice['amount'])
+                                  ->save();
 
                 $transaction = [
                     'invoice' => $invoice->transaction_event(),
@@ -295,50 +296,50 @@ class RefundPayment
                     'metadata' => [],
                 ];
 
-                TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $invoice->company->db);
+                // TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $invoice->company->db);
 
-                if($invoice->is_deleted)
+                if ($invoice->is_deleted) {
                     $invoice->delete();
-
+                }
             }
 
-            $client = $this->payment->client->fresh();            
+            $client = $this->payment->client->fresh();
 
-            if($client->trashed())
+            if ($client->trashed()) {
                 $client->restore();
+            }
 
             $client->service()->updatePaidToDate(-1 * $refunded_invoice['amount'])->save();
 
-                $transaction = [
-                    'invoice' => [],
-                    'payment' => [],
-                    'client' => $client->transaction_event(),
-                    'credit' => [],
-                    'metadata' => [],
-                ];
+            $transaction = [
+                'invoice' => [],
+                'payment' => [],
+                'client' => $client->transaction_event(),
+                'credit' => [],
+                'metadata' => [],
+            ];
 
-                TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $client->company->db);
-
-        }
-        else{
+            // TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $client->company->db);
+        } else {
             //if we are refunding and no payments have been tagged, then we need to decrement the client->paid_to_date by the total refund amount.
-            
+
             $client = $this->payment->client->fresh();
 
-            if($client->trashed())
+            if ($client->trashed()) {
                 $client->restore();
+            }
 
             $client->service()->updatePaidToDate(-1 * $this->total_refund)->save();
 
-                $transaction = [
-                    'invoice' => [],
-                    'payment' => [],
-                    'client' => $client->transaction_event(),
-                    'credit' => [],
-                    'metadata' => [],
-                ];
+            $transaction = [
+                'invoice' => [],
+                'payment' => [],
+                'client' => $client->transaction_event(),
+                'credit' => [],
+                'metadata' => [],
+            ];
 
-                TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $client->company->db);
+            // TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $client->company->db);
         }
 
         return $this;
@@ -356,75 +357,4 @@ class RefundPayment
         return $this->payment;
     }
 
-    // public function updateCreditNoteBalance()
-    // {
-    //     $this->credit_note->balance -= $this->total_refund;
-    //     $this->credit_note->status_id = Credit::STATUS_APPLIED;
-
-    //     $this->credit_note->balance === 0
-    //         ? $this->credit_note->status_id = Credit::STATUS_APPLIED
-    //         : $this->credit_note->status_id = Credit::STATUS_PARTIAL;
-
-    //     $this->credit_note->save();
-
-    //     return $this;
-    // }
-
-    // private function buildCreditNote()
-    // {
-    //     $this->credit_note = CreditFactory::create($this->payment->company_id, $this->payment->user_id);
-    //     $this->credit_note->assigned_user_id = isset($this->payment->assigned_user_id) ?: null;
-    //     $this->credit_note->date = $this->refund_data['date'];
-    //     $this->credit_note->status_id = Credit::STATUS_SENT;
-    //     $this->credit_note->client_id = $this->payment->client->id;
-    //     $this->credit_note->amount = $this->total_refund;
-    //     $this->credit_note->balance = $this->total_refund;
-
-    //     $this->credit_note->save();
-    //     $this->credit_note->number = $this->payment->client->getNextCreditNumber($this->payment->client);
-    //     $this->credit_note->save();
-
-    //     return $this;
-    // }
-
-    // private function buildCreditLineItems()
-    // {
-    //     $ledger_string = '';
-
-    //     if (isset($this->refund_data['invoices']) && count($this->refund_data['invoices']) > 0) {
-    //         foreach ($this->refund_data['invoices'] as $invoice) {
-
-    //             $inv = Invoice::find($invoice['invoice_id']);
-
-    //             $credit_line_item = InvoiceItemFactory::create();
-    //             $credit_line_item->quantity = 1;
-    //             $credit_line_item->cost = $invoice['amount'];
-    //             $credit_line_item->product_key = ctrans('texts.invoice');
-    //             $credit_line_item->notes = ctrans('texts.refund_body', ['amount' => $invoice['amount'], 'invoice_number' => $inv->number]);
-    //             $credit_line_item->line_total = $invoice['amount'];
-    //             $credit_line_item->date = $this->refund_data['date'];
-
-    //             $ledger_string .= $credit_line_item->notes . ' ';
-
-    //             $line_items[] = $credit_line_item;
-    //         }
-    //     } else {
-
-    //         $credit_line_item = InvoiceItemFactory::create();
-    //         $credit_line_item->quantity = 1;
-    //         $credit_line_item->cost = $this->refund_data['amount'];
-    //         $credit_line_item->product_key = ctrans('texts.credit');
-    //         $credit_line_item->notes = ctrans('texts.credit_created_by', ['transaction_reference' => $this->payment->number]);
-    //         $credit_line_item->line_total = $this->refund_data['amount'];
-    //         $credit_line_item->date = $this->refund_data['date'];
-
-    //         $line_items = [];
-    //         $line_items[] = $credit_line_item;
-    //     }
-
-    //     $this->credit_note->line_items = $line_items;
-    //     $this->credit_note->save();
-
-    //     return $this;
-    // }
 }

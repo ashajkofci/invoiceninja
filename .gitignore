@@ -3,6 +3,8 @@
 /public/storage
 /public/react
 /storage/*.key
+/storage/debugbar
+/storage/*
 /vendor
 /.idea
 /.vscode

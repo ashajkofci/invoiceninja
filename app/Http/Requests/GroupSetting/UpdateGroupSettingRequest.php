@@ -36,7 +36,7 @@ class UpdateGroupSettingRequest extends Request
         return $rules;
     }
 
-    protected function prepareForValidation()
+    public function prepareForValidation()
     {
         $input = $this->all();
 
@@ -73,6 +73,6 @@ class UpdateGroupSettingRequest extends Request
             }
         }
 
-        return $settings;
+        return (array)$settings;
     }
 }

@@ -33,6 +33,7 @@ use App\Models\Client;
 use App\Models\Credit;
 use App\Models\Invoice;
 use App\Repositories\CreditRepository;
+use App\Services\PdfMaker\PdfMerge;
 use App\Transformers\CreditTransformer;
 use App\Utils\Ninja;
 use App\Utils\TempFile;
@@ -48,7 +49,7 @@ class CreditController extends BaseController
 {
     use MakesHash;
     use SavesDocuments;
-    
+
     protected $entity_type = Credit::class;
 
     protected $entity_transformer = CreditTransformer::class;
@@ -205,7 +206,7 @@ class CreditController extends BaseController
                          ->triggeredActions($request)
                          ->save();
 
-        if($credit->invoice_id){
+        if ($credit->invoice_id) {
             $credit = $credit->service()->markSent()->save();
             $credit->client->service()->updatePaidToDate(-1 * $credit->balance)->save();
         }
@@ -388,7 +389,7 @@ class CreditController extends BaseController
         $credit->service()
                ->triggeredActions($request)
                ->deletePdf();
-        
+
         event(new CreditWasUpdated($credit, $credit->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
 
         return $this->itemResponse($credit);
@@ -507,6 +508,9 @@ class CreditController extends BaseController
 
         $ids = request()->input('ids');
 
+        if(Ninja::isHosted() && (stripos($action, 'email') !== false) && !auth()->user()->company()->account->account_sms_verified)
+            return response(['message' => 'Please verify your account to send emails.'], 400);
+
         $credits = Credit::withTrashed()->whereIn('id', $this->transformKeys($ids))->company()->get();
 
         if (! $credits) {
@@ -520,7 +524,8 @@ class CreditController extends BaseController
         if ($action == 'bulk_download' && $credits->count() > 1) {
             $credits->each(function ($credit) {
                 if (auth()->user()->cannot('view', $credit)) {
-                    nlog("access denied");
+                    nlog('access denied');
+
                     return response()->json(['message' => ctrans('text.access_denied')]);
                 }
             });
@@ -530,6 +535,19 @@ class CreditController extends BaseController
             return response()->json(['message' => ctrans('texts.sent_message')], 200);
         }
 
+        if($action == 'bulk_print' && auth()->user()->can('view', $credits->first())){
+
+            $paths = $credits->map(function ($credit){
+                return $credit->service()->getCreditPdf($credit->invitations->first());
+            });
+
+            $merge = (new PdfMerge($paths->toArray()))->run();
+
+                return response()->streamDownload(function () use ($merge) {
+                    echo ($merge);
+                }, 'print.pdf', ['Content-Type' => 'application/pdf']);
+
+        }
 
         $credits->each(function ($credit, $key) use ($action) {
             if (auth()->user()->can('edit', $credit)) {
@@ -551,6 +569,7 @@ class CreditController extends BaseController
         switch ($action) {
             case 'mark_paid':
                 $credit->service()->markPaid()->save();
+
                 return $this->itemResponse($credit);
             break;
 
@@ -569,35 +588,35 @@ class CreditController extends BaseController
                     return $this->itemResponse($credit);
                 }
                 break;
-            case 'download':    
+            case 'download':
                 // $file = $credit->pdf_file_path();
                 $file = $credit->service()->getCreditPdf($credit->invitations->first());
 
                 // return response()->download($file, basename($file), ['Cache-Control:' => 'no-cache'])->deleteFileAfterSend(true);
 
-                return response()->streamDownload(function () use($file) {
-                        echo Storage::get($file);
-                },  basename($file), ['Content-Type' => 'application/pdf']);
+                return response()->streamDownload(function () use ($file) {
+                    echo Storage::get($file);
+                }, basename($file), ['Content-Type' => 'application/pdf']);
               break;
             case 'archive':
                 $this->credit_repository->archive($credit);
 
                 if (! $bulk) {
-                    return $this->listResponse($credit);
+                    return $this->itemResponse($credit);
                 }
                 break;
             case 'restore':
                 $this->credit_repository->restore($credit);
 
                 if (! $bulk) {
-                    return $this->listResponse($credit);
+                    return $this->itemResponse($credit);
                 }
                 break;
             case 'delete':
                 $this->credit_repository->delete($credit);
 
                 if (! $bulk) {
-                    return $this->listResponse($credit);
+                    return $this->itemResponse($credit);
                 }
                 break;
             case 'email':
@@ -618,7 +637,6 @@ class CreditController extends BaseController
                     EmailEntity::dispatch($invitation, $credit->company, 'credit');
                 });
 
-
                 if (! $bulk) {
                     return response()->json(['message'=>'email sent'], 200);
                 }
@@ -637,17 +655,16 @@ class CreditController extends BaseController
         $credit = $invitation->credit;
 
         $file = $credit->service()->getCreditPdf($invitation);
-        
+
         $headers = ['Content-Type' => 'application/pdf'];
 
-        if(request()->input('inline') == 'true')
+        if (request()->input('inline') == 'true') {
             $headers = array_merge($headers, ['Content-Disposition' => 'inline']);
+        }
 
-        return response()->streamDownload(function () use($file) {
-                echo Storage::get($file);
-        },  basename($file), $headers);
-        
-
+        return response()->streamDownload(function () use ($file) {
+            echo Storage::get($file);
+        }, basename($file), $headers);
     }
 
     /**
@@ -703,15 +720,14 @@ class CreditController extends BaseController
      */
     public function upload(UploadCreditRequest $request, Credit $credit)
     {
-
-        if(!$this->checkFeature(Account::FEATURE_DOCUMENTS))
+        if (! $this->checkFeature(Account::FEATURE_DOCUMENTS)) {
             return $this->featureFailure();
-        
-        if ($request->has('documents')) 
+        }
+
+        if ($request->has('documents')) {
             $this->saveDocuments($request->file('documents'), $credit);
+        }
 
         return $this->itemResponse($credit->fresh());
-
     }
-
 }

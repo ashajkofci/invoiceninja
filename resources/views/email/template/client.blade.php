@@ -80,7 +80,43 @@
         #content .left {
             text-align: left !important;
         }
+
+        .stamp {
+            transform: rotate(12deg);
+            color: #555;
+            font-size: 3rem;
+            font-weight: 700;
+            border: 0.25rem solid #555;
+            text-transform: uppercase;
+            border-radius: 1rem;
+            font-family: 'Courier';
+            mix-blend-mode: multiply;
+            z-index:200 !important;
+            position: relative;
+        }
+
+        .is-paid {
+            color:  #D23;
+            border: 1rem double  #D23;
+            transform: rotate(-5deg);
+            font-size: 6rem;
+            font-family: "Open sans", Helvetica, Arial, sans-serif;
+            border-radius: 0;
+            padding: 0.5rem;
+            opacity: 0.2;
+            z-index:200 !important;
+            position: relative;
+        } 
     </style>
+
+    <!--[if gte mso 9]>
+    <xml>
+        <o:OfficeDocumentSettings>
+        <o:AllowPNG/>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+    </xml>
+    <![endif]-->
 </head>
 
 <body
@@ -95,14 +131,13 @@
                 </tr>
                 <tr>
                     <td align="center" cellpadding="20">
-                        <div
-                            style="border: 1px solid #c2c2c2; border-bottom: none; padding-bottom: 10px; border-top-left-radius: 3px; border-top-right-radius: 3px;">
+                        <div style="border: 1px solid #c2c2c2; border-bottom: none; padding-bottom: 10px; border-top-left-radius: 3px; border-top-right-radius: 3px;">
 
                             <!--[if gte mso 9]>
                             <img src="{{ $logo ?? '' }}" alt="" width="400" border="0" align="middle" style="display:block;" />
                             <div style="mso-hide:all;">
                             <![endif]-->
-                            <img src="{{ $logo ?? '' }}" alt="" style="margin-top: 40px; max-width: 155px; display: block; margin-left: auto; margin-right: auto;"/>
+                            <img src="{{ $logo ?? '' }}" alt="" width="400" style="margin-top: 40px; max-width: 200px; display: block; margin-left: auto; margin-right: auto;"/>
                             <!--[if gte mso 9]>
                             </div>
                             <![endif]-->

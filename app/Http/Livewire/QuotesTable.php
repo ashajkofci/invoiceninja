@@ -20,7 +20,6 @@ use Livewire\WithPagination;
 
 class QuotesTable extends Component
 {
-    use WithSorting;
     use WithPagination;
 
     public $per_page = 10;
@@ -28,60 +27,61 @@ class QuotesTable extends Component
     public $status = [];
 
     public $company;
-    
+
+    public $sort = 'status_id'; // Default sortBy. Feel free to change or pull from client/company settings.
+
+    public $sort_asc = true;
+
+    public function sortBy($field)
+    {
+        $this->sort === $field
+            ? $this->sort_asc = ! $this->sort_asc
+            : $this->sort_asc = true;
+
+        $this->sort = $field;
+    }
+
     public function mount()
     {
         MultiDB::setDb($this->company->db);
-
     }
 
     public function render()
     {
+
         $query = Quote::query()
-            ->with('client.gateway_tokens','company','client.contacts')
-            ->orderBy($this->sort_field, $this->sort_asc ? 'asc' : 'desc');
+            ->with('client.gateway_tokens', 'company', 'client.contacts')
+            ->orderBy($this->sort, $this->sort_asc ? 'asc' : 'desc');
 
         if (count($this->status) > 0) {
-            
+
             /* Special filter for expired*/
-            if(in_array("-1", $this->status)){
-                // $query->whereDate('due_date', '<=', now()->startOfDay());
-    
-                $query->where(function ($query){
+            if (in_array('-1', $this->status)) {
+
+                $query->where(function ($query) {
                     $query->whereDate('due_date', '<=', now()->startOfDay())
                           ->whereNotNull('due_date')
                           ->where('status_id', '<>', Quote::STATUS_CONVERTED);
                 });
-
             }
-            
-            if(in_array("2", $this->status)){
 
-                $query->where(function ($query){
+            if (in_array('2', $this->status)) {
+                $query->where(function ($query) {
                     $query->whereDate('due_date', '>=', now()->startOfDay())
                           ->orWhereNull('due_date');
                 })->where('status_id', Quote::STATUS_SENT);
-            
             }
 
-            if(in_array("3", $this->status)){
+            if (in_array('3', $this->status)) {
                 $query->whereIn('status_id', [Quote::STATUS_APPROVED, Quote::STATUS_CONVERTED]);
             }
-
-
         }
-
-
 
         $query = $query
             ->where('company_id', $this->company->id)
-            ->where('client_id', auth()->guard('contact')->user()->client->id)
-            ->where('status_id', '<>', Quote::STATUS_DRAFT)
-            // ->where(function ($query){
-            //     $query->whereDate('due_date', '>=', now())
-            //           ->orWhereNull('due_date');
-            // })
+            ->where('client_id', auth()->guard('contact')->user()->client_id)
             ->where('is_deleted', 0)
+            ->where('status_id', '<>', Quote::STATUS_DRAFT)
             ->withTrashed()
             ->paginate($this->per_page);
 

@@ -6,8 +6,9 @@
  *
  * @copyright Copyright (c) 2021. Invoice Ninja LLC (https://invoiceninja.com)
  *
- * @license https://www.elastic.co/licensing/elastic-license 
+ * @license https://www.elastic.co/licensing/elastic-license
  */
+
 namespace Tests\Unit;
 
 use App\Factory\PaymentFactory;
@@ -26,7 +27,7 @@ class InvoiceActionsTest extends TestCase
     use DatabaseTransactions;
     use ActionsInvoice;
 
-    public function setUp() :void
+    protected function setUp() :void
     {
         parent::setUp();
 
@@ -44,7 +45,7 @@ class InvoiceActionsTest extends TestCase
     {
         $this->withoutEvents();
 
-        $this->invoice->service()->markPaid()->save();
+        $this->invoice = $this->invoice->service()->markPaid()->save();
 
         $this->assertFalse($this->invoiceDeletable($this->invoice));
         $this->assertTrue($this->invoiceReversable($this->invoice));

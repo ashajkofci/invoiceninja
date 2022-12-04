@@ -44,7 +44,7 @@ class RecurringExpenseController extends BaseController
     use Uploadable;
     use BulkOptions;
     use SavesDocuments;
-    
+
     protected $entity_type = RecurringExpense::class;
 
     protected $entity_transformer = RecurringExpenseTransformer::class;
@@ -277,7 +277,7 @@ class RecurringExpenseController extends BaseController
 
         $recurring_expense = $this->recurring_expense_repo->save($request->all(), $recurring_expense);
         $recurring_expense->service()->triggeredActions($request)->save();
-        
+
         $this->uploadLogo($request->file('company_logo'), $recurring_expense->company, $recurring_expense);
 
         event(new RecurringExpenseWasUpdated($recurring_expense, $recurring_expense->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
@@ -511,21 +511,21 @@ class RecurringExpenseController extends BaseController
                 $this->recurring_expense_repo->archive($recurring_expense);
 
                 if (! $bulk) {
-                    return $this->listResponse($recurring_expense);
+                    return $this->itemResponse($recurring_expense);
                 }
                 break;
             case 'restore':
                 $this->recurring_expense_repo->restore($recurring_expense);
 
                 if (! $bulk) {
-                    return $this->listResponse($recurring_expense);
+                    return $this->itemResponse($recurring_expense);
                 }
                 break;
             case 'delete':
                 $this->recurring_expense_repo->delete($recurring_expense);
 
                 if (! $bulk) {
-                    return $this->listResponse($recurring_expense);
+                    return $this->itemResponse($recurring_expense);
                 }
                 break;
             case 'email':
@@ -605,14 +605,14 @@ class RecurringExpenseController extends BaseController
      */
     public function upload(UploadRecurringExpenseRequest $request, RecurringExpense $recurring_expense)
     {
-
-        if(!$this->checkFeature(Account::FEATURE_DOCUMENTS))
+        if (! $this->checkFeature(Account::FEATURE_DOCUMENTS)) {
             return $this->featureFailure();
-        
-        if ($request->has('documents')) 
+        }
+
+        if ($request->has('documents')) {
             $this->saveDocuments($request->file('documents'), $recurring_expense);
+        }
 
         return $this->itemResponse($recurring_expense->fresh());
-
-    }    
+    }
 }

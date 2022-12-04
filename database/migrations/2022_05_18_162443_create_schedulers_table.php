@@ -6,15 +6,14 @@
  *
  * @copyright Copyright (c) 2021. Invoice Ninja LLC (https://invoiceninja.com)
  *
- * @license https://www.elastic.co/licensing/elastic-license 
+ * @license https://www.elastic.co/licensing/elastic-license
  */
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateSchedulersTable extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      *
@@ -27,8 +26,8 @@ class CreateSchedulersTable extends Migration
             $table->boolean('paused')->default(false);
             $table->boolean('is_deleted')->default(false);
             $table->string('repeat_every');
-            $table->timestamp('start_from');
-            $table->timestamp('scheduled_run');
+            $table->timestamp('start_from')->nullable();
+            $table->timestamp('scheduled_run')->nullable();
             $table->foreignIdFor(\App\Models\Company::class);
             $table->timestamps();
             $table->softDeletes();
@@ -42,6 +41,6 @@ class CreateSchedulersTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('schedulers');
+
     }
-}
+};

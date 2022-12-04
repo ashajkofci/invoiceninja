@@ -51,7 +51,7 @@ class NinjaMailerJob implements ShouldQueue
 
     public $tries = 3; //number of retries
 
-    public $backoff = 10; //seconds to wait until retry
+    public $backoff = 30; //seconds to wait until retry
 
     public $deleteWhenMissingModels = true;
 
@@ -100,8 +100,22 @@ class NinjaMailerJob implements ShouldQueue
             $this->nmo->mailable->replyTo($this->company->owner()->email, $this->company->owner()->present()->name());
         }
 
+        $this->nmo->mailable->tag($this->company->company_key);
+
+        if($this->nmo->invitation)
+        {
+
+            $this->nmo
+                 ->mailable
+                 ->withSymfonyMessage(function ($message) {
+                    $message->getHeaders()->addTextHeader('x-invitation', $this->nmo->invitation->key);     
+                 });
+
+        }
+
         //send email
         try {
+
             nlog("trying to send to {$this->nmo->to_user->email} ". now()->toDateTimeString());
             nlog("Using mailer => ". $this->mailer);
 
@@ -109,17 +123,30 @@ class NinjaMailerJob implements ShouldQueue
                 ->to($this->nmo->to_user->email)
                 ->send($this->nmo->mailable);
 
-            LightLogs::create(new EmailSuccess($this->nmo->company->company_key))
-                     ->queue();
-
             /* Count the amount of emails sent across all the users accounts */
             Cache::increment($this->company->account->key);
 
-        } catch (\Exception $e) {
+            LightLogs::create(new EmailSuccess($this->nmo->company->company_key))
+                     ->send();
+
+            // nlog('Using ' . ((int) (memory_get_usage(true) / (1024 * 1024))) . 'MB ');
+
+            $this->nmo = null;
+            $this->company = null;
+            app('queue.worker')->shouldQuit  = 1;
+    
+        } catch (\Exception | \RuntimeException | \Google\Service\Exception $e) {
             
             nlog("error failed with {$e->getMessage()}");
 
             $message = $e->getMessage();
+
+            if($e instanceof \Google\Service\Exception){
+
+                if(($e->getCode() == 429) && ($this->nmo->to_user instanceof ClientContact))
+                    $this->logMailError("Google rate limiter hit, we will retry in 30 seconds.", $this->nmo->to_user->client);
+
+            }
 
             /**
              * Post mark buries the proper message in a a guzzle response
@@ -145,7 +172,15 @@ class NinjaMailerJob implements ShouldQueue
             /* Don't send postmark failures to Sentry */
             if(Ninja::isHosted() && (!$e instanceof ClientException)) 
                 app('sentry')->captureException($e);
+
+            $message = null;
+            $this->nmo = null;
+            $this->company = null;
+    
         }
+
+        
+        
     }
 
     /* Switch statement to handle failure notifications */
@@ -167,6 +202,7 @@ class NinjaMailerJob implements ShouldQueue
 
         if ($this->nmo->to_user instanceof ClientContact) 
             $this->logMailError($message, $this->nmo->to_user->client);
+
     }
 
     private function setMailDriver()
@@ -192,7 +228,40 @@ class NinjaMailerJob implements ShouldQueue
                 break;
         }
 
+
+        if(Ninja::isSelfHost())
+            $this->setSelfHostMultiMailer();
+
+
     }
+
+    private function setSelfHostMultiMailer()
+    {
+
+        if (env($this->company->id . '_MAIL_HOST')) 
+        {
+
+            config([
+                'mail.mailers.smtp' => [
+                    'transport' => 'smtp',
+                    'host' => env($this->company->id . '_MAIL_HOST'),
+                    'port' => env($this->company->id . '_MAIL_PORT'),
+                    'username' => env($this->company->id . '_MAIL_USERNAME'),
+                    'password' => env($this->company->id . '_MAIL_PASSWORD'),
+                ],
+            ]);
+
+            if(env($this->company->id . '_MAIL_FROM_ADDRESS'))
+            {
+            $this->nmo
+                 ->mailable
+                 ->from(env($this->company->id . '_MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')), env($this->company->id . '_MAIL_FROM_NAME', env('MAIL_FROM_NAME')));
+             }
+
+        }
+
+    }
+
 
     private function setOfficeMailer()
     {
@@ -228,8 +297,8 @@ class NinjaMailerJob implements ShouldQueue
         $this->nmo
              ->mailable
              ->from($user->email, $user->name())
-             ->withSwiftMessage(function ($message) use($token) {
-                $message->getHeaders()->addTextHeader('GmailToken', $token);     
+             ->withSymfonyMessage(function ($message) use($token) {
+                $message->getHeaders()->addTextHeader('gmailtoken', $token);     
              });
 
         sleep(rand(1,3));
@@ -237,8 +306,6 @@ class NinjaMailerJob implements ShouldQueue
 
     private function setGmailMailer()
     {
-        if(LaravelGmail::check())
-            LaravelGmail::logout();
 
         $sending_user = $this->nmo->settings->gmail_sending_user_id;
 
@@ -265,7 +332,7 @@ class NinjaMailerJob implements ShouldQueue
 
             $google->getClient()->setAccessToken(json_encode($user->oauth_user_token));
 
-            sleep(rand(2,6));
+            sleep(rand(2,4));
         }
         catch(\Exception $e) {
             $this->logMailError('Gmail Token Invalid', $this->company->clients()->first());
@@ -300,8 +367,8 @@ class NinjaMailerJob implements ShouldQueue
         $this->nmo
              ->mailable
              ->from($user->email, $user->name())
-             ->withSwiftMessage(function ($message) use($token) {
-                $message->getHeaders()->addTextHeader('GmailToken', $token);     
+             ->withSymfonyMessage(function ($message) use($token) {
+                $message->getHeaders()->addTextHeader('gmailtoken', $token);     
              });
 
     }
@@ -311,6 +378,10 @@ class NinjaMailerJob implements ShouldQueue
 
         /* If we are migrating data we don't want to fire any emails */
         if($this->company->is_disabled && !$this->override) 
+            return true;
+
+        /* To handle spam users we drop all emails from flagged accounts */
+        if(Ninja::isHosted() && $this->company->account && $this->company->account->is_flagged) 
             return true;
 
         /* On the hosted platform we set default contacts a @example.com email address - we shouldn't send emails to these types of addresses */
@@ -325,18 +396,29 @@ class NinjaMailerJob implements ShouldQueue
         if(Ninja::isHosted() && $this->company->account && $this->company->account->emailQuotaExceeded())
             return true;
 
-        /* To handle spam users we drop all emails from flagged accounts */
-        if(Ninja::isHosted() && $this->company->account && $this->company->account->is_flagged) 
-            return true;
-
         /* If the account is verified, we allow emails to flow */
-        if(Ninja::isHosted() && $this->company->account && $this->company->account->is_verified_account) 
+        if(Ninja::isHosted() && $this->company->account && $this->company->account->is_verified_account) {
+
+            /* Continue to analyse verified accounts in case they later start sending poor quality emails*/
+            if(class_exists(\Modules\Admin\Jobs\Account\EmailQuality::class))
+                (new \Modules\Admin\Jobs\Account\EmailQuality($this->nmo, $this->company))->run();
+
             return false;
+        }
 
         /* Ensure the user has a valid email address */
         if(!str_contains($this->nmo->to_user->email, "@"))
             return true;
      
+        /* On the hosted platform if the user has not verified their account we fail here - but still check what they are trying to send! */
+        if(Ninja::isHosted() && $this->company->account && !$this->company->account->account_sms_verified){
+            
+            if(class_exists(\Modules\Admin\Jobs\Account\EmailQuality::class))
+                return (new \Modules\Admin\Jobs\Account\EmailQuality($this->nmo, $this->company))->run();
+
+            return true;
+        }
+
         /* On the hosted platform we actively scan all outbound emails to ensure outbound email quality remains high */
         if(class_exists(\Modules\Admin\Jobs\Account\EmailQuality::class))
             return (new \Modules\Admin\Jobs\Account\EmailQuality($this->nmo, $this->company))->run();
@@ -347,7 +429,7 @@ class NinjaMailerJob implements ShouldQueue
     private function logMailError($errors, $recipient_object)
     {
 
-        SystemLogger::dispatch(
+        SystemLogger::dispatchSync(
             $errors,
             SystemLog::CATEGORY_MAIL,
             SystemLog::EVENT_MAIL_SEND,
@@ -361,7 +443,10 @@ class NinjaMailerJob implements ShouldQueue
         $job_failure->string_metric6 = substr($errors, 0, 150);
 
         LightLogs::create($job_failure)
-                 ->queue();
+                 ->send();
+
+        $job_failure = null;
+
     }
 
     public function failed($exception = null)

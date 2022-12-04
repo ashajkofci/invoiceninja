@@ -32,12 +32,12 @@ use App\Utils\Ninja;
 use App\Utils\Traits\User\LoginCache;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 use Turbo124\Beacon\Facades\LightLogs;
-use Illuminate\Support\Facades\App;
 
 class CreateAccount
 {
@@ -73,32 +73,38 @@ class CreateAccount
         $sp794f3f = new Account();
         $sp794f3f->fill($this->request);
 
-        if(array_key_exists('rc', $this->request))
+        if (array_key_exists('rc', $this->request)) {
             $sp794f3f->referral_code = $this->request['rc'];
+        }
 
         if (! $sp794f3f->key) {
             $sp794f3f->key = Str::random(32);
         }
 
-        if(Ninja::isHosted())
-        {
+        if (Ninja::isHosted()) {
             $sp794f3f->hosted_client_count = config('ninja.quotas.free.clients');
             $sp794f3f->hosted_company_count = config('ninja.quotas.free.max_companies');
+            $sp794f3f->account_sms_verified = true;
+
+            if(in_array($this->getDomain($this->request['email']), ['givmail.com','yopmail.com','gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'aol.com', 'mail.ru'])){
+                $sp794f3f->account_sms_verified = false;
+            }
+
             // $sp794f3f->trial_started = now();
             // $sp794f3f->trial_plan = 'pro';
         }
-        
+
         $sp794f3f->save();
 
-        $sp035a66 = CreateCompany::dispatchNow($this->request, $sp794f3f);
+        $sp035a66 = (new CreateCompany($this->request,$sp794f3f))->handle();
         $sp035a66->load('account');
         $sp794f3f->default_company_id = $sp035a66->id;
         $sp794f3f->save();
 
-        $spaa9f78 = CreateUser::dispatchNow($this->request, $sp794f3f, $sp035a66, true);
+        $spaa9f78 = (new CreateUser($this->request, $sp794f3f, $sp035a66, true))->handle();
 
-        CreateCompanyPaymentTerms::dispatchNow($sp035a66, $spaa9f78);
-        CreateCompanyTaskStatuses::dispatchNow($sp035a66, $spaa9f78);
+        (new CreateCompanyPaymentTerms($sp035a66, $spaa9f78))->handle();
+        (new CreateCompanyTaskStatuses($sp035a66, $spaa9f78))->handle();
 
         if ($spaa9f78) {
             auth()->login($spaa9f78, false);
@@ -108,27 +114,25 @@ class CreateAccount
         $this->setLoginCache($spaa9f78);
 
         $spafe62e = isset($this->request['token_name']) ? $this->request['token_name'] : request()->server('HTTP_USER_AGENT');
-        $sp2d97e8 = CreateCompanyToken::dispatchNow($sp035a66, $spaa9f78, $spafe62e);
-
+        $sp2d97e8 = (new CreateCompanyToken($sp035a66, $spaa9f78, $spafe62e))->handle();
         if ($spaa9f78) {
             event(new AccountCreated($spaa9f78, $sp035a66, Ninja::eventVars()));
         }
 
         $spaa9f78->fresh();
 
-        if(Ninja::isHosted()){
-
+        if (Ninja::isHosted()) {
             App::forgetInstance('translator');
             $t = app('translator');
             $t->replace(Ninja::transformTranslations($sp035a66->settings));
 
             $nmo = new NinjaMailerObject;
             $nmo->mailable = new \Modules\Admin\Mail\Welcome($sp035a66->owner());
-            $nmo->company =  $sp035a66;
+            $nmo->company = $sp035a66;
             $nmo->settings = $sp035a66->settings;
             $nmo->to_user = $sp035a66->owner();
 
-            NinjaMailerJob::dispatch($nmo);
+            NinjaMailerJob::dispatch($nmo, true);
 
             \Modules\Admin\Jobs\Account\NinjaUser::dispatch([], $sp035a66);
         }
@@ -138,26 +142,37 @@ class CreateAccount
         LightLogs::create(new AnalyticsAccountCreated())
                  ->increment()
                  ->queue();
-                 
+
         $ip = '';
-        
-        if(request()->hasHeader('Cf-Connecting-Ip'))
+
+        if (request()->hasHeader('Cf-Connecting-Ip')) {
             $ip = request()->header('Cf-Connecting-Ip');
-        elseif(request()->hasHeader('X-Forwarded-For'))
+        } elseif (request()->hasHeader('X-Forwarded-For')) {
             $ip = request()->header('Cf-Connecting-Ip');
-        else
+        } else {
             $ip = request()->ip();
+        }
 
         $platform = request()->has('platform') ? request()->input('platform') : 'www';
 
         LightLogs::create(new AccountPlatform($platform, request()->server('HTTP_USER_AGENT'), $ip))
-                 ->queue();        
+                 ->queue();
 
         return $sp794f3f;
     }
 
+    private function getDomain($email)
+    {
+        if( filter_var( $email, FILTER_VALIDATE_EMAIL ) ) {
+            // split on @ and return last value of array (the domain)
+            $domain = explode('@', $email);
+         
+            $domain_name = end($domain);
+
+            return $domain_name;
+        }
+
+        return 'gmail.com';
+    }
+
 }
-
-
-
-

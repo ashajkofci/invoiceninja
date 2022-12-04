@@ -25,14 +25,11 @@ class RecurringInvoiceToInvoiceFactory
         $invoice->discount = $recurring_invoice->discount;
         $invoice->is_amount_discount = $recurring_invoice->is_amount_discount;
         $invoice->po_number = $recurring_invoice->po_number;
-        $invoice->footer = self::tranformObject($recurring_invoice->footer, $client);
-        $invoice->terms = self::tranformObject($recurring_invoice->terms, $client);
-        $invoice->public_notes = self::tranformObject($recurring_invoice->public_notes, $client);
+        $invoice->footer = $recurring_invoice->footer ? self::tranformObject($recurring_invoice->footer, $client) : null;
+        $invoice->terms = $recurring_invoice->terms ? self::tranformObject($recurring_invoice->terms, $client) :  null;
+        $invoice->public_notes = $recurring_invoice->public_notes ? self::tranformObject($recurring_invoice->public_notes, $client) : null;
         $invoice->private_notes = $recurring_invoice->private_notes;
-        //$invoice->date = now()->format($client->date_format());
-        //$invoice->due_date = $recurring_invoice->calculateDueDate(now());
         $invoice->is_deleted = $recurring_invoice->is_deleted;
-//        $invoice->line_items = $recurring_invoice->line_items;
         $invoice->line_items = self::transformItems($recurring_invoice, $client);
         $invoice->tax_name1 = $recurring_invoice->tax_name1;
         $invoice->tax_rate1 = $recurring_invoice->tax_rate1;
@@ -67,24 +64,21 @@ class RecurringInvoiceToInvoiceFactory
         $invoice->auto_bill_enabled = $recurring_invoice->auto_bill_enabled;
         $invoice->paid_to_date = 0;
         $invoice->design_id = $recurring_invoice->design_id;
-        
+
         return $invoice;
     }
 
     private static function transformItems($recurring_invoice, $client)
     {
-        
         $line_items = $recurring_invoice->line_items;
 
-        foreach($line_items as $key => $item){
-
-            if(property_exists($line_items[$key], 'notes'))
+        foreach ($line_items as $key => $item) {
+            if (property_exists($line_items[$key], 'notes')) {
                 $line_items[$key]->notes = Helpers::processReservedKeywords($item->notes, $client);
-
+            }
         }
 
         return $line_items;
-
     }
 
     private static function tranformObject($object, $client)

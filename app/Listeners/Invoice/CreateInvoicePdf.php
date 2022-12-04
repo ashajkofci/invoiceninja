@@ -36,26 +36,26 @@ class CreateInvoicePdf implements ShouldQueue
     {
         MultiDB::setDb($event->company->db);
 
-        if(isset($event->invoice))
-        {
+        if (isset($event->invoice)) {
             $event->invoice->invitations->each(function ($invitation) {
-                CreateEntityPdf::dispatch($invitation->load("invoice", "contact.client.company"));
+                // CreateEntityPdf::dispatch($invitation->load('invoice', 'contact.client.company'));
+                (new CreateEntityPdf($invitation->load('invoice', 'contact.client.company')))->handle();
             });
         }
 
-        if(isset($event->quote))
-        {
+        if (isset($event->quote)) {
             $event->quote->invitations->each(function ($invitation) {
-                CreateEntityPdf::dispatch($invitation->load("quote", "contact.client.company"));
+                // CreateEntityPdf::dispatch($invitation->load('quote', 'contact.client.company'));
+                (new CreateEntityPdf($invitation->load('quote', 'contact.client.company')))->handle();
             });
         }
 
-        if(isset($event->credit))
-        {
+        if (isset($event->credit)) {
             $event->credit->invitations->each(function ($invitation) {
-                CreateEntityPdf::dispatch($invitation->load("credit", "contact.client.company"));
+//                CreateEntityPdf::dispatch($invitation->load('credit', 'contact.client.company'));
+                (new CreateEntityPdf($invitation->load('credit', 'contact.client.company')))->handle();
+
             });
         }
-
     }
 }

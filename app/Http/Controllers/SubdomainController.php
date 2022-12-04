@@ -36,11 +36,11 @@ class SubdomainController extends BaseController
         'lb',
         'shopify',
         'beta',
+        'prometh'
     ];
 
     public function __construct()
     {
-
     }
 
     /**
@@ -50,11 +50,10 @@ class SubdomainController extends BaseController
      */
     public function index()
     {
-
-        if(in_array(request()->input('subdomain'), $this->protected) || MultiDB::findAndSetDbByDomain(['subdomain' => request()->input('subdomain')]))
-            return response()->json(['message' => 'Domain not available'] , 401);
+        if (in_array(request()->input('subdomain'), $this->protected) || MultiDB::findAndSetDbByDomain(['subdomain' => request()->input('subdomain')])) {
+            return response()->json(['message' => 'Domain not available'], 401);
+        }
 
         return response()->json(['message' => 'Domain available'], 200);
     }
-
 }

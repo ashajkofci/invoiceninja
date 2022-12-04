@@ -33,7 +33,7 @@ class Account extends BaseModel
     use PresentableTrait;
     use MakesHash;
 
-    private $free_plan_email_quota = 50;
+    private $free_plan_email_quota = 20;
 
     private $paid_plan_email_quota = 500;
     /**
@@ -59,6 +59,8 @@ class Account extends BaseModel
         'user_agent',
         'platform',
         'set_react_as_default_ap',
+        'inapp_transaction_id',
+        'num_users',
     ];
 
     /**
@@ -136,6 +138,11 @@ class Account extends BaseModel
     public function companies()
     {
         return $this->hasMany(Company::class);
+    }
+
+    public function bank_integrations()
+    {
+        return $this->hasMany(BankIntegration::class);
     }
 
     public function company_users()
@@ -357,9 +364,9 @@ class Account extends BaseModel
                 'plan_price' => $price,
                 'trial' => false,
                 'plan' => $plan,
-                'started' => DateTime::createFromFormat('Y-m-d', $this->plan_started),
+                'started' => $this->plan_started ? DateTime::createFromFormat('Y-m-d', $this->plan_started) : false,
                 'expires' => $plan_expires,
-                'paid' => DateTime::createFromFormat('Y-m-d', $this->plan_paid),
+                'paid' => $this->plan_paid ? DateTime::createFromFormat('Y-m-d', $this->plan_paid) : false,
                 'term' => $this->plan_term,
                 'active' => $plan_active,
             ];
@@ -390,11 +397,11 @@ class Account extends BaseModel
 
         if($this->isPaid()){
             $limit = $this->paid_plan_email_quota;
-            $limit += Carbon::createFromTimestamp($this->created_at)->diffInMonths() * 100;
+            $limit += Carbon::createFromTimestamp($this->created_at)->diffInMonths() * 50;
         }
         else{
             $limit = $this->free_plan_email_quota;
-            $limit += Carbon::createFromTimestamp($this->created_at)->diffInMonths() * 50;
+            $limit += Carbon::createFromTimestamp($this->created_at)->diffInMonths() * 10;
         }
 
         return min($limit, 5000);
@@ -427,7 +434,7 @@ class Account extends BaseModel
                     $nmo->company = $this->companies()->first();
                     $nmo->settings = $this->companies()->first()->settings;
                     $nmo->to_user = $this->companies()->first()->owner();
-                    NinjaMailerJob::dispatch($nmo);
+                    NinjaMailerJob::dispatch($nmo, true);
 
                     Cache::put("throttle_notified:{$this->key}", true, 60 * 24);
 
@@ -467,7 +474,7 @@ class Account extends BaseModel
                 $nmo->company = $this->companies()->first();
                 $nmo->settings = $this->companies()->first()->settings;
                 $nmo->to_user = $this->companies()->first()->owner();
-                NinjaMailerJob::dispatch($nmo);
+                NinjaMailerJob::dispatch($nmo, true);
 
                 Cache::put("gmail_credentials_notified:{$this->key}", true, 60 * 24);
 

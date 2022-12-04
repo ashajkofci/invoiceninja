@@ -14,6 +14,7 @@ namespace App\Http\Controllers\VendorPortal;
 use App\Events\Credit\CreditWasViewed;
 use App\Events\Invoice\InvoiceWasViewed;
 use App\Events\Misc\InvitationWasViewed;
+use App\Events\PurchaseOrder\PurchaseOrderWasViewed;
 use App\Events\Quote\QuoteWasViewed;
 use App\Http\Controllers\Controller;
 use App\Jobs\Entity\CreateRawPdf;
@@ -73,7 +74,6 @@ class InvitationController extends Controller
             auth()->guard('vendor')->loginUsingId($vendor_contact->id, true);
 
         } else {
-            nlog("else - default - login contact");
             request()->session()->invalidate();
             auth()->guard('vendor')->loginUsingId($vendor_contact->id, true);
         }
@@ -84,7 +84,8 @@ class InvitationController extends Controller
 
             $invitation->markViewed();
             event(new InvitationWasViewed($invitation->purchase_order, $invitation, $invitation->company, Ninja::eventVars()));
-            
+            event(new PurchaseOrderWasViewed($invitation, $invitation->company, Ninja::eventVars()));
+
         }
         else{
 
@@ -108,8 +109,6 @@ class InvitationController extends Controller
             return response()->json(["message" => "no record found"], 400);
 
         $file_name = $invitation->purchase_order->numberFormatter().'.pdf';
-
-        // $file = CreateRawPdf::dispatchNow($invitation, $invitation->company->db);
 
         $file = (new CreatePurchaseOrderPdf($invitation))->rawPdf();
 

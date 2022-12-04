@@ -65,7 +65,7 @@ return [
             'charset'        => 'utf8',
             'prefix'         => '',
             'prefix_indexes' => true,
-            'schema'         => 'public',
+            'search_path'         => 'public',
             'sslmode'        => 'prefer',
         ],
 
@@ -95,12 +95,6 @@ return [
             'strict'         => env('DB_STRICT', false),
             'engine'         => 'InnoDB ROW_FORMAT=DYNAMIC',
             'options'        => [],
-            // 'options'        => [
-            //     PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
-            //     PDO::MYSQL_ATTR_SSL_KEY => env("DB_CLIENT_KEY", ''),
-            //     PDO::MYSQL_ATTR_SSL_CERT => env("DB_CLIENT_CERT", ''),
-            //     PDO::MYSQL_ATTR_SSL_CA => env("DB_CA_CERT", ''),
-            // ],
         ],
 
         'db-ninja-01a' => [
@@ -197,7 +191,7 @@ return [
         'sentinel-default' => array_merge(
             array_map(
                 function ($a, $b) {
-                    return ["host" => $a,"port" => $b];
+                    return ['host' => $a, 'port' => $b];
                 },
                 explode(',', env('REDIS_HOST', 'localhost')),
                 explode(',', env('REDIS_PORT', 26379))
@@ -216,7 +210,7 @@ return [
         'sentinel-cache' => array_merge(
             array_map(
                 function ($a, $b) {
-                    return ["host" => $a,"port" => $b];
+                    return ['host' => $a, 'port' => $b];
                 },
                 explode(',', env('REDIS_HOST', 'localhost')),
                 explode(',', env('REDIS_PORT', 26379))

@@ -62,6 +62,7 @@ class UserTransformer extends EntityTransformer
             'google_2fa_secret' => (bool) $user->google_2fa_secret,
             'has_password' => (bool) empty($user->password) ? false : true,
             'oauth_user_token' => empty($user->oauth_user_token) ? '' : '***',
+            'verified_phone_number' => (bool) $user->verified_phone_number
         ];
     }
 
@@ -95,7 +96,7 @@ class UserTransformer extends EntityTransformer
 
     public function includeCompanyUser(User $user)
     {
-        if (!$user->company_id && request()->header('X-API-TOKEN')) {
+        if (! $user->company_id && request()->header('X-API-TOKEN')) {
             $company_token = CompanyToken::where('token', request()->header('X-API-TOKEN'))->first();
             $user->company_id = $company_token->company_id;
         }

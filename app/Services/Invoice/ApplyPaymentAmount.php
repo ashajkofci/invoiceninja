@@ -17,6 +17,7 @@ use App\Factory\PaymentFactory;
 use App\Jobs\Invoice\InvoiceWorkflowSettings;
 use App\Jobs\Payment\EmailPayment;
 use App\Libraries\Currency\Conversion\CurrencyApi;
+use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\AbstractService;
@@ -42,7 +43,7 @@ class ApplyPaymentAmount extends AbstractService
     public function run()
     {
         if ($this->invoice->status_id == Invoice::STATUS_DRAFT) {
-            $this->invoice->service()->markSent();
+            $this->invoice = $this->invoice->service()->markSent()->save();
         }
 
         /*Don't double pay*/
@@ -50,8 +51,9 @@ class ApplyPaymentAmount extends AbstractService
             return $this->invoice;
         }
 
-        if($this->amount == 0)
+        if ($this->amount == 0) {
             return $this->invoice;
+        }
 
         /* Create Payment */
         $payment = PaymentFactory::create($this->invoice->company_id, $this->invoice->user_id);
@@ -74,7 +76,7 @@ class ApplyPaymentAmount extends AbstractService
         ]);
 
         $this->invoice->next_send_date = null;
-        
+
         $this->invoice->service()
                 ->setExchangeRate()
                 ->updateBalance($payment->amount * -1)
@@ -87,13 +89,14 @@ class ApplyPaymentAmount extends AbstractService
         $this->invoice
             ->client
             ->service()
-            ->updateBalance($payment->amount * -1)
-            ->updatePaidToDate($payment->amount)
+            ->updateBalanceAndPaidToDate($payment->amount * -1, $payment->amount)
             ->save();
 
-        if ($this->invoice->client->getSetting('client_manual_payment_notification')) 
+
+        if ($this->invoice->client->getSetting('client_manual_payment_notification')) {
             $payment->service()->sendEmail();
-        
+        }
+
         /* Update Invoice balance */
 
         $payment->ledger()
@@ -104,30 +107,27 @@ class ApplyPaymentAmount extends AbstractService
         event('eloquent.created: App\Models\Payment', $payment);
         event(new PaymentWasCreated($payment, $payment->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
         event(new InvoiceWasPaid($this->invoice, $payment, $payment->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
-        
+
         return $this->invoice;
     }
 
     private function setExchangeRate(Payment $payment)
     {
-
-        if($payment->exchange_rate != 1)
+        if ($payment->exchange_rate != 1) {
             return;
+        }
 
         $client_currency = $payment->client->getSetting('currency_id');
         $company_currency = $payment->client->company->settings->currency_id;
 
         if ($company_currency != $client_currency) {
-
             $exchange_rate = new CurrencyApi();
 
             $payment->exchange_rate = $exchange_rate->exchangeRate($client_currency, $company_currency, Carbon::parse($payment->date));
             //$payment->exchange_currency_id = $client_currency; // 23/06/2021
             $payment->exchange_currency_id = $company_currency;
-        
+
             $payment->saveQuietly();
-
         }
-
     }
 }
