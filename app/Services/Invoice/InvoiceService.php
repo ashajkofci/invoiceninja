@@ -112,10 +112,12 @@ class InvoiceService
      * @param  Payment $payment        The Payment
      * @param  float   $payment_amount The Payment amount
      * @return InvoiceService          Parent class object
+     * @deprecated 24-11-2022 - cannot find any references to this method anywhere
      */
     public function applyPayment(Payment $payment, float $payment_amount)
     {
-        $this->deletePdf();
+        // $this->deletePdf();
+        $this->invoice = $this->markSent()->save();
 
         $this->invoice = (new ApplyPayment($this->invoice, $payment, $payment_amount))->run();
 
@@ -218,7 +220,6 @@ class InvoiceService
     public function markDeleted()
     {
         $this->removeUnpaidGatewayFees();
-        $this->deletePdf();
 
         $this->invoice = (new MarkInvoiceDeleted($this->invoice))->run();
 
@@ -299,10 +300,10 @@ class InvoiceService
         } elseif ($this->invoice->balance > 0 && $this->invoice->balance < $this->invoice->amount) {
             $this->setStatus(Invoice::STATUS_PARTIAL);
         }
-        elseif($this->invoice->balance < 0) {
-            $this->setStatus(Invoice::STATUS_PARTIAL);   
+        elseif ($this->invoice->balance < 0 || $this->invoice->balance > 0) {
+            $this->invoice->status_id = Invoice::STATUS_SENT;
         }
-
+        
         return $this;
     }
 
@@ -317,7 +318,7 @@ class InvoiceService
         } elseif ($this->invoice->balance > 0 && $this->invoice->balance < $this->invoice->amount) {
             $this->invoice->status_id = Invoice::STATUS_PARTIAL;
         }
-        elseif ($this->invoice->balance < 0) {
+        elseif ($this->invoice->balance < 0 || $this->invoice->balance > 0) {
             $this->invoice->status_id = Invoice::STATUS_SENT;
         }
 
@@ -378,6 +379,7 @@ class InvoiceService
                                      })->toArray();
 
         $this->invoice = $this->invoice->calc()->getInvoice();
+        $this->invoice->service()->touchPdf();
 
         /* 24-03-2022 */
         $new_balance = $this->invoice->balance;

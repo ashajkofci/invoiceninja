@@ -254,6 +254,8 @@ $LANG = array(
     'notification_invoice_paid' => 'A payment of :amount was made by client :client towards Invoice :invoice.',
     'notification_invoice_sent' => 'The following client :client was emailed Invoice :invoice for :amount.',
     'notification_invoice_viewed' => 'The following client :client viewed Invoice :invoice for :amount.',
+    'stripe_paymenttext' => 'Invoice :invoicenumber for :amount for client :client',
+    'stripe_paymenttext_without_invoice' => 'Payment with no invoice for amount :amount for client :client',
     'reset_password' => 'You can reset your account password by clicking the following button:',
     'secure_payment' => 'Secure Payment',
     'card_number' => 'Card Number',
@@ -4061,7 +4063,7 @@ $LANG = array(
      'save_payment_method_details' => 'Save payment method details',
      'new_card' => 'New card',
      'new_bank_account' => 'New bank account',
-     'company_limit_reached' => 'Limit of 10 companies per account.',
+     'company_limit_reached' => 'Limit of :limit companies per account.',
      'credits_applied_validation' => 'Total credits applied cannot be MORE than total of invoices',
      'credit_number_taken' => 'Credit number already taken',
      'credit_not_found' => 'Credit not found',
@@ -4843,6 +4845,11 @@ $LANG = array(
     'refresh_accounts' => 'Refresh Accounts',
     'upgrade_to_connect_bank_account' => 'Upgrade to Enterprise to connect your bank account',
     'click_here_to_connect_bank_account' => 'Click here to connect your bank account',
+    'task_update_authorization_error' => 'Insufficient permissions, or task may be locked',
+    'cash_vs_accrual' => 'Accrual accounting',
+    'cash_vs_accrual_help' => 'Turn on for accrual reporting, turn off for cash basis reporting.',
+    'expense_paid_report' => 'Expensed reporting',
+    'expense_paid_report_help' => 'Turn on for reporting all expenses, turn off for reporting only paid expenses',
 );
 
 return $LANG;
