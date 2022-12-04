@@ -17,8 +17,10 @@ use App\Jobs\Mail\NinjaMailerObject;
 use App\Libraries\MultiDB;
 use App\Mail\Admin\EntityViewedObject;
 use App\Notifications\Admin\EntityViewedNotification;
+use App\Utils\Ninja;
 use App\Utils\Traits\Notifications\UserNotifies;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Notification;
 
 class InvitationViewedListener implements ShouldQueue
@@ -44,25 +46,28 @@ class InvitationViewedListener implements ShouldQueue
     {
         MultiDB::setDb($event->company->db);
 
+        App::forgetInstance('translator');
+        $t = app('translator');
+        $t->replace(Ninja::transformTranslations($event->company->settings));
+        App::setLocale($event->company->getLocale());
+        
         $entity_name = lcfirst(class_basename($event->entity));
         $invitation = $event->invitation;
 
-        if($entity_name == 'recurringInvoice')
+        if ($entity_name == 'recurringInvoice') {
             return;
-        elseif($entity_name == 'purchaseOrder')
+        } elseif ($entity_name == 'purchaseOrder') {
             $entity_name = 'purchase_order';
-        
+        }
+
         $nmo = new NinjaMailerObject;
-        $nmo->mailable = new NinjaMailer( (new EntityViewedObject($invitation, $entity_name))->build() );
+        $nmo->mailable = new NinjaMailer((new EntityViewedObject($invitation, $entity_name))->build());
         $nmo->company = $invitation->company;
         $nmo->settings = $invitation->company->settings;
-
 
         foreach ($invitation->company->company_users as $company_user) {
             $entity_viewed = "{$entity_name}_viewed";
             $entity_viewed_all = "{$entity_name}_viewed_all";
-
-
 
             $methods = $this->findUserNotificationTypes($invitation, $company_user, $entity_name, ['all_notifications', $entity_viewed, $entity_viewed_all]);
 
@@ -71,10 +76,7 @@ class InvitationViewedListener implements ShouldQueue
 
                 $nmo->to_user = $company_user->user;
                 NinjaMailerJob::dispatch($nmo);
-
             }
-
         }
-
     }
 }

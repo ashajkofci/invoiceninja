@@ -32,6 +32,7 @@ use App\Models\Client;
 use App\Models\Expense;
 use App\Models\PurchaseOrder;
 use App\Repositories\PurchaseOrderRepository;
+use App\Services\PdfMaker\PdfMerge;
 use App\Transformers\ExpenseTransformer;
 use App\Transformers\PurchaseOrderTransformer;
 use App\Utils\Ninja;
@@ -489,6 +490,9 @@ class PurchaseOrderController extends BaseController
 
         $ids = request()->input('ids');
 
+        if(Ninja::isHosted() && (stripos($action, 'email') !== false) && !auth()->user()->company()->account->account_sms_verified)
+            return response(['message' => 'Please verify your account to send emails.'], 400);
+
         $purchase_orders = PurchaseOrder::withTrashed()->whereIn('id', $this->transformKeys($ids))->company()->get();
 
         if (! $purchase_orders) {
@@ -510,6 +514,20 @@ class PurchaseOrderController extends BaseController
             ZipPurchaseOrders::dispatch($purchase_orders, $purchase_orders->first()->company, auth()->user());
 
             return response()->json(['message' => ctrans('texts.sent_message')], 200);
+        }
+
+        if($action == 'bulk_print' && auth()->user()->can('view', $purchase_orders->first())){
+
+            $paths = $purchase_orders->map(function ($purchase_order){
+                return $purchase_order->service()->getPurchaseOrderPdf();
+            });
+
+            $merge = (new PdfMerge($paths->toArray()))->run();
+
+                return response()->streamDownload(function () use ($merge) {
+                    echo ($merge);
+                }, 'print.pdf', ['Content-Type' => 'application/pdf']);
+
         }
 
         /*
@@ -620,14 +638,14 @@ class PurchaseOrderController extends BaseController
                 $this->purchase_order_repository->restore($purchase_order);
 
                 if (! $bulk) {
-                    return $this->listResponse($purchase_order);
+                    return $this->itemResponse($purchase_order);
                 }
                 break;
             case 'archive':
                 $this->purchase_order_repository->archive($purchase_order);
 
                 if (! $bulk) {
-                    return $this->listResponse($purchase_order);
+                    return $this->itemResponse($purchase_order);
                 }
                 break;
             case 'delete':
@@ -635,7 +653,7 @@ class PurchaseOrderController extends BaseController
                 $this->purchase_order_repository->delete($purchase_order);
 
                 if (! $bulk) {
-                    return $this->listResponse($purchase_order);
+                    return $this->itemResponse($purchase_order);
                 }
                 break;
             
@@ -681,7 +699,7 @@ class PurchaseOrderController extends BaseController
                 }
                 
                 if (! $bulk) {
-                    return $this->listResponse($purchase_order);
+                    return $this->itemResponse($purchase_order);
                 }
                 break;
 

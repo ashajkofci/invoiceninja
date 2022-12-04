@@ -29,7 +29,7 @@ class PurchaseOrdersTable extends Component
     public $status = [];
 
     public $company;
-    
+
     public function mount()
     {
         MultiDB::setDb($this->company->db);
@@ -45,10 +45,10 @@ class PurchaseOrdersTable extends Component
 
         $query = PurchaseOrder::query()
             ->with('vendor.contacts')
-            ->orderBy($this->sort_field, $this->sort_asc ? 'asc' : 'desc')
-            ->whereIn('status_id', [PurchaseOrder::STATUS_SENT, PurchaseOrder::STATUS_ACCEPTED])
             ->where('company_id', $this->company->id)
-            ->where('is_deleted', false);
+            ->whereIn('status_id', [PurchaseOrder::STATUS_SENT, PurchaseOrder::STATUS_ACCEPTED])
+            ->where('is_deleted', false)
+            ->orderBy($this->sort_field, $this->sort_asc ? 'asc' : 'desc');
 
         if (in_array('sent', $this->status)) {
             $local_status[] = PurchaseOrder::STATUS_SENT;
@@ -70,7 +70,7 @@ class PurchaseOrdersTable extends Component
             ->paginate($this->per_page);
 
         return render('components.livewire.purchase-orders-table', [
-            'purchase_orders' => $query
+            'purchase_orders' => $query,
         ]);
     }
 }

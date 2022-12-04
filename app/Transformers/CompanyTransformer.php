@@ -13,6 +13,8 @@ namespace App\Transformers;
 
 use App\Models\Account;
 use App\Models\Activity;
+use App\Models\BankIntegration;
+use App\Models\BankTransaction;
 use App\Models\Client;
 use App\Models\Company;
 use App\Models\CompanyGateway;
@@ -40,6 +42,8 @@ use App\Models\TaskStatus;
 use App\Models\TaxRate;
 use App\Models\User;
 use App\Models\Webhook;
+use App\Transformers\BankIntegrationTransformer;
+use App\Transformers\BankTransactionTransformer;
 use App\Transformers\PurchaseOrderTransformer;
 use App\Transformers\RecurringExpenseTransformer;
 use App\Utils\Traits\MakesHash;
@@ -98,6 +102,8 @@ class CompanyTransformer extends EntityTransformer
         'subscriptions',
         'recurring_expenses',
         'purchase_orders',
+        'bank_integrations',
+        'bank_transactions',
     ];
 
     /**
@@ -154,14 +160,14 @@ class CompanyTransformer extends EntityTransformer
             'invoice_task_documents' => (bool) $company->invoice_task_documents,
             'show_tasks_table' => (bool) $company->show_tasks_table,
             'use_credits_payment' => 'always', // @deprecate 1-2-2021
-            'default_task_is_date_based' => (bool)$company->default_task_is_date_based,
-            'enable_product_discount' => (bool)$company->enable_product_discount,
-            'calculate_expense_tax_by_amount' =>(bool)$company->calculate_expense_tax_by_amount,
+            'default_task_is_date_based' => (bool) $company->default_task_is_date_based,
+            'enable_product_discount' => (bool) $company->enable_product_discount,
+            'calculate_expense_tax_by_amount' =>(bool) $company->calculate_expense_tax_by_amount,
             'hide_empty_columns_on_pdf' => false, // @deprecate 1-2-2021
-            'expense_inclusive_taxes' => (bool)$company->expense_inclusive_taxes,
-            'expense_amount_is_pretax' =>(bool)true, //@deprecate 1-2-2021
-            'oauth_password_required' => (bool)$company->oauth_password_required,
-            'session_timeout' => (int)$company->session_timeout,
+            'expense_inclusive_taxes' => (bool) $company->expense_inclusive_taxes,
+            'expense_amount_is_pretax' =>(bool) true, //@deprecate 1-2-2021
+            'oauth_password_required' => (bool) $company->oauth_password_required,
+            'session_timeout' => (int) $company->session_timeout,
             'default_password_timeout' => (int) $company->default_password_timeout,
             'invoice_task_datelog' => (bool) $company->invoice_task_datelog,
             'show_task_end_date' => (bool) $company->show_task_end_date,
@@ -177,6 +183,9 @@ class CompanyTransformer extends EntityTransformer
             'inventory_notification_threshold' => (int) $company->inventory_notification_threshold,
             'track_inventory' => (bool) $company->track_inventory,
             'enable_applying_payments' => (bool) $company->enable_applying_payments,
+            'enabled_expense_tax_rates' => (int) $company->enabled_expense_tax_rates,
+            'invoice_task_project' => (bool) $company->invoice_task_project,
+            'report_include_deleted' => (bool) $company->report_include_deleted,
         ];
     }
 
@@ -215,6 +224,20 @@ class CompanyTransformer extends EntityTransformer
         return $this->includeCollection($company->tokens, $transformer, CompanyToken::class);
     }
 
+    public function includeBankTransactions(Company $company)
+    {
+        $transformer = new BankTransactionTransformer($this->serializer);
+
+        return $this->includeCollection($company->bank_transactions, $transformer, BankTransaction::class);
+    }
+
+    public function includeBankIntegrations(Company $company)
+    {
+        $transformer = new BankIntegrationTransformer($this->serializer);
+
+        return $this->includeCollection($company->bank_integrations, $transformer, BankIntegration::class);
+    }
+
     public function includeTokensHashed(Company $company)
     {
         $transformer = new CompanyTokenHashedTransformer($this->serializer);
@@ -242,6 +265,7 @@ class CompanyTransformer extends EntityTransformer
 
         $users = $company->users->map(function ($user) use ($company) {
             $user->company_id = $company->id;
+
             return $user;
         });
 

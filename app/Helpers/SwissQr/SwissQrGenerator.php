@@ -19,7 +19,7 @@ use Sprain\SwissQrBill as QrBill;
 /**
  * SwissQrGenerator.
  */
-class SwissQrGenerator 
+class SwissQrGenerator
 {
 
     protected Company $company;
@@ -33,7 +33,7 @@ class SwissQrGenerator
         $this->company = $company;
 
         $this->invoice = $invoice;
-    
+
         $this->client = $invoice->client;
     }
 
@@ -90,7 +90,7 @@ class SwissQrGenerator
             $this->client->address1 ? substr($this->client->address1, 0 , 70) : '',
             $this->client->address2 ? substr($this->client->address2, 0 , 16) : '',
             $this->client->postal_code ? substr($this->client->postal_code, 0, 16) : '',
-            $this->client->city ? substr($this->client->postal_code, 0, 35) : '',
+            $this->client->city ? substr($this->client->city, 0, 35) : '',
             'CH'
         ));
 
@@ -104,21 +104,72 @@ class SwissQrGenerator
 
     // Add payment reference
     // This is what you will need to identify incoming payments.
-    $referenceNumber = QrBill\Reference\QrPaymentReferenceGenerator::generate(
-        $this->company->present()->besr_id() ?: '',  // You receive this number from your bank (BESR-ID). Unless your bank is PostFinance, in that case use NULL.
-        $this->invoice->number// A number to match the payment with your internal data, e.g. an invoice number
-    );
+        
+    if(stripos($this->invoice->number, "Live") === 0)
+    {
+        // we're currently in preview status. Let's give a dummy reference for now
+        $invoice_number = "123456789";
+    }
+    else
+    {
+        $tempInvoiceNumber = $this->invoice->number;
+        $tempInvoiceNumber = preg_replace('/[^A-Za-z0-9]/', '', $tempInvoiceNumber);
+        $tempInvoiceNumber = substr($tempInvoiceNumber, 1);
+        
+        $calcInvoiceNumber = "";
+        $array = str_split($tempInvoiceNumber);
+        foreach($array as $char)
+		{
+            if (is_numeric($char))
+			{
+				//
+			}
+			else
+			{
+				if ($char)
+				{
+					$char = strtolower($char);
+					$char = ord($char) - 96;
+				}
+				else
+				{
+					return 0;
+				}
+			}
+			$calcInvoiceNumber .= $char;
+		}
+       
+        $invoice_number = $calcInvoiceNumber;
 
-    $qrBill->setPaymentReference(
-        QrBill\DataGroup\Element\PaymentReference::create(
-            QrBill\DataGroup\Element\PaymentReference::TYPE_QR,
-            $referenceNumber
-        ));
+    }       
+
+    if(strlen($this->company->present()->besr_id()) > 1)
+    {
+        $referenceNumber = QrBill\Reference\QrPaymentReferenceGenerator::generate(
+            $this->company->present()->besr_id() ?: '',  // You receive this number from your bank (BESR-ID). Unless your bank is PostFinance, in that case use NULL.
+            $invoice_number// A number to match the payment with your internal data, e.g. an invoice number
+        );
+
+        $qrBill->setPaymentReference(
+            QrBill\DataGroup\Element\PaymentReference::create(
+                QrBill\DataGroup\Element\PaymentReference::TYPE_QR,
+                $referenceNumber
+            ));
+
+    }
+    else{
+
+        $qrBill->setPaymentReference(
+            QrBill\DataGroup\Element\PaymentReference::create(
+                QrBill\DataGroup\Element\PaymentReference::TYPE_NON
+            ));
+
+    }
 
     // Optionally, add some human-readable information about what the bill is for.
     $qrBill->setAdditionalInformation(
         QrBill\DataGroup\Element\AdditionalInformation::create(
-            $this->invoice->public_notes ?: ''
+            $this->invoice->public_notes ? substr($this->invoice->public_notes, 0, 139) : ctrans('texts.invoice_number_placeholder', ['invoice' => $this->invoice->number])
         )
     );
 
@@ -126,7 +177,7 @@ class SwissQrGenerator
     // Now get the QR code image and save it as a file.
         try {
 
-            $output = new QrBill\PaymentPart\Output\HtmlOutput\HtmlOutput($qrBill, 'en');
+            $output = new QrBill\PaymentPart\Output\HtmlOutput\HtmlOutput($qrBill, $this->client->locale() ?: 'en');
 
             $html = $output
                 ->setPrintable(false)
@@ -141,6 +192,8 @@ class SwissQrGenerator
                 nlog($violation);
             }
 
+            nlog($e->getMessage());
+            
             return '';
             // return $e->getMessage();
         }

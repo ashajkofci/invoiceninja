@@ -28,10 +28,21 @@ class ClientContactRepository extends BaseRepository
 
     public function save(array $data, Client $client) : void
     {
-        if (isset($data['contacts'])) {
+        //06-09-2022 sometimes users pass a contact object instead of a nested array, this sequence handles this scenario
+        if (isset($data['contacts']) && (count($data['contacts']) !== count($data['contacts'], COUNT_RECURSIVE))) {
+
             $contacts = collect($data['contacts']);
-        } else {
+        
+        } elseif(isset($data['contacts'])){
+
+            $temp_array[] = $data['contacts'];
+            $contacts = collect($temp_array);
+
+        }
+        else {
+        
             $contacts = collect();
+        
         }
 
         $client->contacts->pluck('id')->diff($contacts->pluck('id'))->each(function ($contact) {
@@ -39,15 +50,17 @@ class ClientContactRepository extends BaseRepository
         });
 
         /* Ensure send_email always exists in at least one contact */
-        if(!$contacts->contains('send_email', true))
+        if (! $contacts->contains('send_email', true)) {
             $this->set_send_email_on_contact = true;
+        }
 
         /* Set first record to primary - always */
         $contacts = $contacts->sortByDesc('is_primary')->map(function ($contact) {
+
             $contact['is_primary'] = $this->is_primary;
             $this->is_primary = false;
 
-            if($this->set_send_email_on_contact){
+            if ($this->set_send_email_on_contact) {
                 $contact['send_email'] = true;
                 $this->set_send_email_on_contact = false;
             }
@@ -66,13 +79,14 @@ class ClientContactRepository extends BaseRepository
             if (! $update_contact) {
                 $update_contact = ClientContactFactory::create($client->company_id, $client->user_id);
             }
-            
+
             //10-09-2021 - enforce the client->id and remove client_id from fillables
             $update_contact->client_id = $client->id;
 
             /* We need to set NULL email addresses to blank strings to pass authentication*/
-            if(array_key_exists('email', $contact) && is_null($contact['email']))
+            if (array_key_exists('email', $contact) && is_null($contact['email'])) {
                 $contact['email'] = '';
+            }
 
             $update_contact->fill($contact);
 
@@ -82,8 +96,9 @@ class ClientContactRepository extends BaseRepository
                 $client->company->client_contacts()->where('email', $update_contact->email)->update(['password' => $update_contact->password]);
             }
 
-            if(array_key_exists('email', $contact))
+            if (array_key_exists('email', $contact)) {
                 $update_contact->email = trim($contact['email']);
+            }
 
             $update_contact->save();
         });

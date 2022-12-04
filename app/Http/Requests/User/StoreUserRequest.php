@@ -16,6 +16,7 @@ use App\Factory\UserFactory;
 use App\Http\Requests\Request;
 use App\Http\ValidationRules\Ninja\CanAddUserRule;
 use App\Http\ValidationRules\User\AttachableUser;
+use App\Http\ValidationRules\User\HasValidPhoneNumber;
 use App\Http\ValidationRules\ValidUserForCompany;
 use App\Libraries\MultiDB;
 use App\Models\User;
@@ -46,22 +47,27 @@ class StoreUserRequest extends Request
         } else {
             $rules['email'] = ['email', new AttachableUser()];
         }
-
+                
         if (Ninja::isHosted()) {
             $rules['id'] = new CanAddUserRule();
+
+            if($this->phone && isset($this->phone))
+                $rules['phone'] = ['bail', 'string', 'sometimes', new HasValidPhoneNumber()];
+            
         }
 
         return $rules;
     }
 
-    protected function prepareForValidation()
+    public function prepareForValidation()
     {
         $input = $this->all();
 
         //unique user rule - check company_user table for user_id / company_id  / account_id if none exist we can add the user. ELSE return false
 
-        if(array_key_exists('email', $input))
+        if (array_key_exists('email', $input)) {
             $input['email'] = trim($input['email']);
+        }
 
         if (isset($input['company_user'])) {
             if (! isset($input['company_user']['is_admin'])) {
@@ -82,6 +88,14 @@ class StoreUserRequest extends Request
                 'settings' => null,
                 'permissions' => '',
             ];
+        }
+
+        if (array_key_exists('first_name', $input)) {
+            $input['first_name'] = strip_tags($input['first_name']);
+        }
+
+        if (array_key_exists('last_name', $input)) {
+            $input['last_name'] = strip_tags($input['last_name']);
         }
 
         $this->replace($input);

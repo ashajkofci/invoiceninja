@@ -17,6 +17,7 @@ use App\Jobs\Mail\NinjaMailerObject;
 use App\Mail\ClientContact\ClientContactResetPasswordObject;
 use App\Models\Presenters\ClientContactPresenter;
 use App\Notifications\ClientContactResetPassword;
+use App\Utils\Ninja;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,8 +32,6 @@ use Laracasts\Presenter\PresentableTrait;
  * Class ClientContact
  *
  * @method scope() static
- *
- * @package App\Models
  */
 class ClientContact extends Authenticatable implements HasLocalePreference
 {
@@ -51,10 +50,6 @@ class ClientContact extends Authenticatable implements HasLocalePreference
     protected $dateFormat = 'Y-m-d H:i:s.u';
 
     protected $presenter = ClientContactPresenter::class;
-
-    protected $dates = [
-        'deleted_at',
-    ];
 
     protected $appends = [
         'hashed_id',
@@ -111,25 +106,25 @@ class ClientContact extends Authenticatable implements HasLocalePreference
         'email',
     ];
 
-	/*
-	V2 type of scope
-	 */
-	public function scopeCompany($query)
-	{
-		$query->where('company_id', auth()->user()->companyId());
+    /*
+    V2 type of scope
+     */
+    public function scopeCompany($query)
+    {
+        $query->where('company_id', auth()->user()->companyId());
 
-		return $query;
-	}
+        return $query;
+    }
 
-	/*
-	 V1 type of scope
-	 */
-	public function scopeScope($query)
-	{
-		$query->where($this->getTable().'.company_id', '=', auth()->user()->company()->id);
+    /*
+     V1 type of scope
+     */
+    public function scopeScope($query)
+    {
+        $query->where($this->getTable().'.company_id', '=', auth()->user()->company()->id);
 
-		return $query;
-	}
+        return $query;
+    }
 
     public function getEntityType()
     {
@@ -198,7 +193,6 @@ class ClientContact extends Authenticatable implements HasLocalePreference
 
     public function sendPasswordResetNotification($token)
     {
-
         $this->token = $token;
         $this->save();
 
@@ -216,9 +210,10 @@ class ClientContact extends Authenticatable implements HasLocalePreference
     {
         $languages = Cache::get('languages');
 
-        if(!$languages)
+        if (! $languages) {
             $this->buildCache(true);
-        
+        }
+
         return $languages->filter(function ($item) {
             return $item->id == $this->client->getSetting('language_id');
         })->first()->locale;
@@ -263,8 +258,33 @@ class ClientContact extends Authenticatable implements HasLocalePreference
      */
     public function getLoginLink()
     {
-        $domain = isset($this->company->portal_domain) ? $this->company->portal_domain : $this->company->domain();
+        // $domain = isset($this->company->portal_domain) ? $this->company->portal_domain : $this->company->domain();
 
-        return $domain . '/client/key_login/' . $this->contact_key;
+        // return $domain.'/client/key_login/'.$this->contact_key;
+
+        if (Ninja::isHosted()) {
+            $domain = $this->company->domain();
+        } else {
+            $domain = config('ninja.app_url');
+        }
+
+        switch ($this->company->portal_mode) {
+            case 'subdomain':
+                return $domain.'/client/key_login/'.$this->contact_key;
+                break;
+            case 'iframe':
+                return $domain.'/client/key_login/'.$this->contact_key;
+                //return $domain . $entity_type .'/'. $this->contact->client->client_hash .'/'. $this->key;
+                break;
+            case 'domain':
+                return $domain.'/client/key_login/'.$this->contact_key;
+                break;
+
+            default:
+                return '';
+                break;
+        }
+
+
     }
 }

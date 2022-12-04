@@ -56,6 +56,7 @@ class SubscriptionPlanSwitch extends Component
      */
     public $total;
 
+    public $hide_button = false;
     /**
      * @var array
      */
@@ -73,11 +74,11 @@ class SubscriptionPlanSwitch extends Component
     public $hash;
 
     public $company;
-    
+
     public function mount()
     {
         MultiDB::setDb($this->company->db);
-        
+
         $this->total = $this->amount;
 
         $this->methods = $this->contact->client->service()->getPaymentMethods($this->amount);
@@ -87,43 +88,37 @@ class SubscriptionPlanSwitch extends Component
 
     public function handleBeforePaymentEvents(): void
     {
-        
         $this->state['show_loading_bar'] = true;
 
-            $payment_required = $this->target->service()->changePlanPaymentCheck([
+        $payment_required = $this->target->service()->changePlanPaymentCheck([
+            'recurring_invoice' => $this->recurring_invoice,
+            'subscription' => $this->subscription,
+            'target' => $this->target,
+            'hash' => $this->hash,
+        ]);
+
+        if ($payment_required) {
+            $this->state['invoice'] = $this->target->service()->createChangePlanInvoice([
                 'recurring_invoice' => $this->recurring_invoice,
                 'subscription' => $this->subscription,
                 'target' => $this->target,
                 'hash' => $this->hash,
             ]);
 
-            if($payment_required)
-            {
-
-                $this->state['invoice'] = $this->target->service()->createChangePlanInvoice([
-                    'recurring_invoice' => $this->recurring_invoice,
-                    'subscription' => $this->subscription,
-                    'target' => $this->target,
-                    'hash' => $this->hash,
-                ]);
-
-                Cache::put($this->hash, [
-                    'subscription_id' => $this->target->id,
-                    'target_id' => $this->target->id,
-                    'recurring_invoice' => $this->recurring_invoice->id,
-                    'client_id' => $this->recurring_invoice->client->id,
-                    'invoice_id' => $this->state['invoice']->id,
-                    'context' => 'change_plan',
-                    now()->addMinutes(60)]
+            Cache::put($this->hash, [
+                'subscription_id' => $this->target->id,
+                'target_id' => $this->target->id,
+                'recurring_invoice' => $this->recurring_invoice->id,
+                'client_id' => $this->recurring_invoice->client->id,
+                'invoice_id' => $this->state['invoice']->id,
+                'context' => 'change_plan',
+                now()->addMinutes(60), ]
                 );
 
-                $this->state['payment_initialised'] = true;
-                
-            }
-            else
-                $this->handlePaymentNotRequired();
-
-
+            $this->state['payment_initialised'] = true;
+        } else {
+            $this->handlePaymentNotRequired();
+        }
 
         $this->emit('beforePaymentEventsCompleted');
     }
@@ -145,14 +140,20 @@ class SubscriptionPlanSwitch extends Component
 
     public function handlePaymentNotRequired()
     {
+        $this->hide_button = true;
 
-        return $this->target->service()->createChangePlanCredit([
-                'recurring_invoice' => $this->recurring_invoice,
-                'subscription' => $this->subscription,
-                'target' => $this->target,
-                'hash' => $this->hash,
-            ]);
+        $response =  $this->target->service()->createChangePlanCredit([
+            'recurring_invoice' => $this->recurring_invoice,
+            'subscription' => $this->subscription,
+            'target' => $this->target,
+            'hash' => $this->hash,
+        ]);
 
+        $this->hide_button = true;
+
+        $this->dispatchBrowserEvent('redirectRoute', ['route' => $response]);
+
+        // return redirect($response);
     }
 
     public function render()

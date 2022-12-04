@@ -36,7 +36,6 @@ class TriggeredActions extends AbstractService
 
     public function run()
     {
-
         if ($this->request->has('send_email') && $this->request->input('send_email') == 'true') {
             $this->credit = $this->credit->service()->markSent()->save();
             $this->sendEmail();
@@ -46,13 +45,27 @@ class TriggeredActions extends AbstractService
             $this->credit = $this->credit->service()->markSent()->save();
         }
 
-        
+        if($this->request->has('save_default_footer') && $this->request->input('save_default_footer') == 'true') {
+            $company = $this->credit->company;
+            $settings = $company->settings;
+            $settings->credit_footer = $this->credit->footer;
+            $company->settings = $settings;
+            $company->save();
+        }
+
+        if($this->request->has('save_default_terms') && $this->request->input('save_default_terms') == 'true') {
+            $company = $this->credit->company;
+            $settings = $company->settings;
+            $settings->credit_terms = $this->credit->terms;
+            $company->settings = $settings;
+            $company->save();
+        }
+
         return $this->credit;
     }
 
     private function sendEmail()
     {
-
         $reminder_template = $this->credit->calculateTemplate('credit');
 
         $this->credit->invitations->load('contact.client.country', 'credit.client.country', 'credit.company')->each(function ($invitation) use ($reminder_template) {

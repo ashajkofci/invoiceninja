@@ -70,19 +70,21 @@ class ApplyNumber extends AbstractService
                 $this->invoice->saveQuietly();
 
                 $this->completed = false;
-                
 
             }
             catch(QueryException $e){
 
                 $x++;
 
-                if($x>10)
+                if($x>50)
                     $this->completed = false;
             }
         
         }
         while($this->completed);
 
+
+        return $this;
     }
+
 }

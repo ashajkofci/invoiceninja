@@ -44,38 +44,6 @@ class QuoteInvitation extends BaseModel
         return self::class;
     }
 
-    // public function getSignatureDateAttribute($value)
-    // {
-    //     if (!$value) {
-    //         return (new Carbon($value))->format('Y-m-d');
-    //     }
-    //     return $value;
-    // }
-
-    // public function getSentDateAttribute($value)
-    // {
-    //     if (!$value) {
-    //         return (new Carbon($value))->format('Y-m-d');
-    //     }
-    //     return $value;
-    // }
-
-    // public function getViewedDateAttribute($value)
-    // {
-    //     if (!$value) {
-    //         return (new Carbon($value))->format('Y-m-d');
-    //     }
-    //     return $value;
-    // }
-
-    // public function getOpenedDateAttribute($value)
-    // {
-    //     if (!$value) {
-    //         return (new Carbon($value))->format('Y-m-d');
-    //     }
-    //     return $value;
-    // }
-
     public function entityType()
     {
         return Quote::class;
@@ -134,7 +102,7 @@ class QuoteInvitation extends BaseModel
 
         if (! Storage::exists($this->quote->client->quote_filepath($this).$this->quote->numberFormatter().'.pdf')) {
             event(new QuoteWasUpdated($this->quote, $this->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
-            CreateEntityPdf::dispatchNow($this);
+            (new CreateEntityPdf($this))->handle();
         }
 
         return $storage_path;

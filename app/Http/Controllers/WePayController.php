@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Cache;
 class WePayController extends BaseController
 {
     use MakesHash;
-    
+
     /**
      * Initialize WePay Signup.
      */
@@ -40,12 +40,14 @@ class WePayController extends BaseController
         $company = Company::where('company_key', $hash['company_key'])->firstOrFail();
 
         $data['user_id'] = $user->id;
-        $data['company'] = $company;
+        $data['user_company'] = $company;
+        
+        // $data['company_key'] = $company->company_key;
+        // $data['db'] = $company->db;
 
         $wepay_driver = new WePayPaymentDriver(new CompanyGateway, null, null);
 
         return $wepay_driver->setup($data);
-
     }
 
     public function finished()

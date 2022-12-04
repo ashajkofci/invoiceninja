@@ -30,7 +30,7 @@ trait Utilities
 
     public function getParent()
     {
-        return static::class == 'App\PaymentDrivers\CheckoutComPaymentDriver' ? $this : $this->checkout;
+        return static::class == \App\PaymentDrivers\CheckoutComPaymentDriver::class ? $this : $this->checkout;
     }
 
     public function convertToCheckoutAmount($amount, $currency)
@@ -56,7 +56,6 @@ trait Utilities
 
     private function processSuccessfulPayment($_payment)
     {
-
         if ($this->getParent()->payment_hash->data->store_card) {
             $this->storeLocalPaymentMethod($_payment);
         }
@@ -88,15 +87,19 @@ trait Utilities
 
         $error_message = '';
 
-        if(array_key_exists('response_summary',$_payment))
-            $error_message = $_payment['response_summary'];
-        elseif(array_key_exists('status',$_payment))
+        if (is_array($_payment) && array_key_exists('actions', $_payment) && array_key_exists('response_summary', end($_payment['actions']))) {
+            $error_message = end($_payment['actions'])['response_summary'];
+        } elseif (is_array($_payment) && array_key_exists('status', $_payment)) {
             $error_message = $_payment['status'];
+        }
+        else {
+            $error_message = 'Error processing payment.';
+        }
 
         $this->getParent()->sendFailureMail($error_message);
-                
+
         $message = [
-            'server_response' => $_payment,
+            'server_response' => $_payment ?: 'Server did not return any response. Most likely failed before payment was created.',
             'data' => $this->getParent()->payment_hash->data,
         ];
 
@@ -110,14 +113,12 @@ trait Utilities
         );
 
         if ($throw_exception) {
-
-            throw new PaymentFailed($_payment['status'] . " " . $error_message, 500);
+            throw new PaymentFailed($error_message, 500);
         }
     }
 
     private function processPendingPayment($_payment)
     {
-
         try {
             return redirect($_payment['_links']['redirect']['href']);
         } catch (Exception $e) {

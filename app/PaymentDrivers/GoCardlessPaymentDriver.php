@@ -6,7 +6,7 @@
  *
  * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
  *
- * @license https://www.elastic.co/licensing/elastic-license 
+ * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\PaymentDrivers;
@@ -16,6 +16,7 @@ use App\Http\Requests\Payments\PaymentWebhookRequest;
 use App\Jobs\Util\SystemLogger;
 use App\Models\ClientGatewayToken;
 use App\Models\GatewayType;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentHash;
 use App\Models\PaymentType;
@@ -141,7 +142,6 @@ class GoCardlessPaymentDriver extends BaseDriver
                 ],
             ]);
 
-
             if ($payment->status === 'pending_submission') {
                 $this->confirmGatewayFee();
 
@@ -232,23 +232,21 @@ class GoCardlessPaymentDriver extends BaseDriver
         // Allow app to catch up with webhook request.
         $this->init();
 
-        nlog("GoCardless Event");
+        nlog('GoCardless Event');
         nlog($request->all());
 
-        if(!$request->has("events")){
+        if (! $request->has('events')) {
+            nlog('No GoCardless events to process in response?');
 
-            nlog("No GoCardless events to process in response?");
             return response()->json([], 200);
-
         }
 
         sleep(1);
 
         foreach ($request->events as $event) {
             if ($event['action'] === 'confirmed' || $event['action'] === 'paid_out') {
+                nlog('Searching for transaction reference');
 
-                nlog("Searching for transaction reference");
-                
                 $payment = Payment::query()
                     ->where('transaction_reference', $event['links']['payment'])
                     ->where('company_id', $request->getCompany()->id)
@@ -257,16 +255,14 @@ class GoCardlessPaymentDriver extends BaseDriver
                 if ($payment) {
                     $payment->status_id = Payment::STATUS_COMPLETED;
                     $payment->save();
-                    nlog("GoCardless completed");
+                    nlog('GoCardless completed');
+                } else {
+                    nlog('I was unable to find the payment for this reference');
                 }
-                else
-                    nlog("I was unable to find the payment for this reference");
                 //finalize payments on invoices here.
-
             }
 
-            if ($event['action'] === 'failed') {
-
+            if ($event['action'] === 'failed' && array_key_exists('payment', $event['links'])) {
                 $payment = Payment::query()
                     ->where('transaction_reference', $event['links']['payment'])
                     ->where('company_id', $request->getCompany()->id)
@@ -275,13 +271,104 @@ class GoCardlessPaymentDriver extends BaseDriver
                 if ($payment) {
                     $payment->status_id = Payment::STATUS_FAILED;
                     $payment->save();
-                    nlog("GoCardless completed");
+                    nlog('GoCardless completed');
                 }
             }
+
+            //billing_request fulfilled
+            //
+
+            //i need to build more context here, i need the client , the payment hash resolved and update the class properties.
+            //after i resolve the payment hash, ensure the invoice has not been marked as paid and the payment does not already exist.
+            //if it does exist, ensure it is completed and not pending.
+
+            if($event['action'] == 'fulfilled' && array_key_exists('billing_request', $event['links'])) {
+
+                $hash = PaymentHash::whereJsonContains('data->billing_request', $event['links']['billing_request'])->first();
+
+                if(!$hash){
+                    nlog("GoCardless: couldn't find a hash, need to abort => Billing Request => " . $event['links']['billing_request']);
+                    return response()->json([], 200);
+                }
+
+                $this->setPaymentHash($hash);
+
+                $billing_request = $this->gateway->billingRequests()->get(
+                    $event['links']['billing_request']
+                );
+
+                $payment = $this->gateway->payments()->get(
+                    $billing_request->payment_request->links->payment
+                );
+
+                if ($billing_request->status === 'fulfilled') {
+
+                    $invoices = Invoice::whereIn('id', $this->transformKeys(array_column($hash->invoices(), 'invoice_id')))->withTrashed()->get();
+
+                    $this->client = $invoices->first()->client;
+
+                    $invoices->each(function ($invoice){
+
+                        //if payments exist already, they just need to be confirmed.
+                        if($invoice->payments()->exists()){
+                            
+                            $invoice->payments()->where('status_id', 1)->cursor()->each(function ($payment){
+                                $payment->status_id = 4;
+                                $payment->save();
+                            });
+
+                        }
+                    });
+
+                    // remove all paid invoices
+                    $invoices->filter(function ($invoice){
+                        return $invoice->isPayable();
+                    });
+
+                    //return early if nothing to do
+                    if($invoices->count() == 0){
+                        nlog("GoCardless: Could not harvest any invoices - probably all paid!!");
+                        return response()->json([], 200);
+                    }
+
+                    $this->processSuccessfulPayment($payment);
+                }
+
+            }
+
         }
 
         return response()->json([], 200);
     }
+
+
+    public function processSuccessfulPayment(\GoCardlessPro\Resources\Payment $payment, array $data = [])
+    {
+        $data = [
+            'payment_method' => $payment->links->mandate,
+            'payment_type' => PaymentType::INSTANT_BANK_PAY,
+            'amount' => $this->payment_hash->data->amount_with_fee,
+            'transaction_reference' => $payment->id,
+            'gateway_type_id' => GatewayType::INSTANT_BANK_PAY,
+        ];
+
+        $payment = $this->createPayment($data, Payment::STATUS_COMPLETED);
+        $payment->status_id = Payment::STATUS_COMPLETED;
+        $payment->save();
+
+        SystemLogger::dispatch(
+            ['response' => $payment, 'data' => $data],
+            SystemLog::CATEGORY_GATEWAY_RESPONSE,
+            SystemLog::EVENT_GATEWAY_SUCCESS,
+            SystemLog::TYPE_GOCARDLESS,
+            $this->client,
+            $this->client->company,
+        );
+
+    }
+
+
+
 
     public function ensureMandateIsReady($token)
     {

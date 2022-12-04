@@ -57,10 +57,9 @@ class InvoiceTransformer extends EntityTransformer
         return $this->includeItem($invoice->client, $transformer, Client::class);
     }
 
-
     public function includePayments(Invoice $invoice)
     {
-        $transformer = new PaymentTransformer( $this->serializer);
+        $transformer = new PaymentTransformer($this->serializer);
 
         return $this->includeCollection($invoice->payments, $transformer, Payment::class);
     }
@@ -87,7 +86,6 @@ class InvoiceTransformer extends EntityTransformer
         return $this->includeCollection($invoice->activities, $transformer, Activity::class);
     }
 
-
     public function transform(Invoice $invoice)
     {
         return [
@@ -99,7 +97,7 @@ class InvoiceTransformer extends EntityTransformer
             'balance' => (float) $invoice->balance,
             'client_id' => (string) $this->encodePrimaryKey($invoice->client_id),
             'vendor_id' => (string) $this->encodePrimaryKey($invoice->vendor_id),
-            'status_id' => (string) ($invoice->status_id ?: 1),
+            'status_id' => (string) ($invoice->status_id ?: '1'),
             'design_id' => (string) $this->encodePrimaryKey($invoice->design_id),
             'recurring_id' => (string) $this->encodePrimaryKey($invoice->recurring_id),
             'created_at' => (int) $invoice->created_at,

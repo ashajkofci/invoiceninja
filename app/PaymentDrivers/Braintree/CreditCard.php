@@ -12,7 +12,6 @@
 
 namespace App\PaymentDrivers\Braintree;
 
-
 use App\Exceptions\PaymentFailed;
 use App\Http\Requests\ClientPortal\Payments\PaymentResponseRequest;
 use App\Http\Requests\Request;
@@ -40,6 +39,7 @@ class CreditCard
     public function authorizeView(array $data)
     {
         $data['gateway'] = $this->braintree;
+        $data['threeds_enable'] = $this->braintree->company_gateway->getConfigField('threeds') ? "true" : "false";
 
         return render('gateways.braintree.credit_card.authorize', $data);
     }
@@ -55,16 +55,37 @@ class CreditCard
      * @param array $data
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
+
+    private function threeDParameters(array $data)
+    {
+        return [
+            'amount' => $data['amount_with_fee'],
+            'email' => $this->braintree->client->present()->email(),
+            'billingAddress' => [
+                'givenName' => $this->braintree->client->present()->first_name() ?: $this->braintree->client->present()->name(),
+                'surname' => $this->braintree->client->present()->last_name() ?: '',
+                'phoneNumber' => $this->braintree->client->present()->phone(),
+                'streetAddress' => $this->braintree->client->address1 ?: '',
+                'extendedAddress' =>$this->braintree->client->address2 ?: '',
+                'locality' => $this->braintree->client->city ?: '',
+                'postalCode' => $this->braintree->client->postal_code ?: '',
+                'countryCodeAlpha2' => $this->braintree->client->country ? $this->braintree->client->country->iso_3166_2 : 'US',
+            ]
+        ];
+    }
+
     public function paymentView(array $data)
     {
         $data['gateway'] = $this->braintree;
         $data['client_token'] = $this->braintree->gateway->clientToken()->generate();
-
+        $data['threeds'] = $this->threeDParameters($data);
+        $data['threeds_enable'] = $this->braintree->company_gateway->getConfigField('threeds') ? "true" : "false";
+        
         if ($this->braintree->company_gateway->getConfigField('merchantAccountId')) {
             /** https://developer.paypal.com/braintree/docs/reference/request/client-token/generate#merchant_account_id */
             $data['client_token'] = $this->braintree->gateway->clientToken()->generate([
-                'merchantAccountId' => $this->braintree->company_gateway->getConfigField('merchantAccountId')
-            ]); 
+                'merchantAccountId' => $this->braintree->company_gateway->getConfigField('merchantAccountId'),
+            ]);
         }
 
         return render('gateways.braintree.credit_card.pay', $data);
@@ -79,6 +100,8 @@ class CreditCard
      */
     public function paymentResponse(PaymentResponseRequest $request)
     {
+        // nlog($request->all());
+        
         $state = [
             'server_response' => json_decode($request->gateway_response),
             'payment_hash' => $request->payment_hash,
@@ -87,7 +110,7 @@ class CreditCard
         $state = array_merge($state, $request->all());
         $state['store_card'] = boolval($state['store_card']);
 
-        $this->braintree->payment_hash->data = array_merge((array)$this->braintree->payment_hash->data, $state);
+        $this->braintree->payment_hash->data = array_merge((array) $this->braintree->payment_hash->data, $state);
         $this->braintree->payment_hash->save();
 
         $customer = $this->braintree->findOrCreateCustomer();
@@ -99,9 +122,15 @@ class CreditCard
             'paymentMethodToken' => $token,
             'deviceData' => $state['client-data'],
             'options' => [
-                'submitForSettlement' => true
+                'submitForSettlement' => true,
             ],
         ];
+
+        // uses the same auth id twice when this is enabled.
+        
+        // if($state['server_response']?->threeDSecureInfo){
+        //     $data['threeDSecureAuthenticationId'] = $state['server_response']?->threeDSecureInfo?->threeDSecureAuthenticationId;
+        // }
 
         if ($this->braintree->company_gateway->getConfigField('merchantAccountId')) {
             /** https://developer.paypal.com/braintree/docs/reference/request/transaction/sale/php#full-example */
@@ -110,9 +139,8 @@ class CreditCard
 
         try {
             $result = $this->braintree->gateway->transaction()->sale($data);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             if ($e instanceof \Braintree\Exception\Authorization) {
-
                 $this->braintree->sendFailureMail(ctrans('texts.generic_gateway_error'));
 
                 throw new PaymentFailed(ctrans('texts.generic_gateway_error'), $e->getCode());
@@ -122,7 +150,6 @@ class CreditCard
 
             throw new PaymentFailed($e->getMessage(), $e->getCode());
         }
-        
 
         if ($result->success) {
             $this->braintree->logSuccessfulGatewayResponse(['response' => $request->server_response, 'data' => $this->braintree->payment_hash], SystemLog::TYPE_BRAINTREE);
@@ -137,14 +164,13 @@ class CreditCard
         }
 
         $error = $result ?: 'Undefined gateway error';
-        
-        return $this->processUnsuccessfulPayment($error);
 
+        return $this->processUnsuccessfulPayment($error);
     }
 
     private function getPaymentToken(array $data, $customerId): ?string
     {
-        if (array_key_exists('token', $data) && !is_null($data['token'])) {
+        if (array_key_exists('token', $data) && ! is_null($data['token'])) {
             return $data['token'];
         }
 
@@ -162,7 +188,7 @@ class CreditCard
             /** https://developer.paypal.com/braintree/docs/reference/request/transaction/sale/php#full-example */
             $data['options']['verificationMerchantAccountId'] = $this->braintree->company_gateway->getConfigField('merchantAccountId');
         }
-        
+
         $response = $this->braintree->gateway->paymentMethod()->create($data);
 
         if ($response->success) {
@@ -205,7 +231,7 @@ class CreditCard
     private function processUnsuccessfulPayment($response)
     {
 
-        $this->braintree->sendFailureMail($response->transaction->additionalProcessorResponse);
+        $this->braintree->sendFailureMail($response?->transaction?->additionalProcessorResponse);
 
         $message = [
             'server_response' => $response,
@@ -221,17 +247,17 @@ class CreditCard
             $this->braintree->client->company,
         );
 
-        throw new PaymentFailed($response->transaction->additionalProcessorResponse, $response->transaction->processorResponseCode);
+        throw new PaymentFailed($response?->transaction?->additionalProcessorResponse ?: 'Unhandled error, please contact merchant', $response?->transaction?->processorResponseCode ?: 500);
     }
 
     private function storePaymentMethod($method, $customer_reference)
     {
         try {
             $payment_meta = new \stdClass;
-            $payment_meta->exp_month = (string)$method->expirationMonth;
-            $payment_meta->exp_year = (string)$method->expirationYear;
-            $payment_meta->brand = (string)$method->cardType;
-            $payment_meta->last4 = (string)$method->last4;
+            $payment_meta->exp_month = (string) $method->expirationMonth;
+            $payment_meta->exp_year = (string) $method->expirationYear;
+            $payment_meta->brand = (string) $method->cardType;
+            $payment_meta->last4 = (string) $method->last4;
             $payment_meta->type = GatewayType::CREDIT_CARD;
 
             $data = [

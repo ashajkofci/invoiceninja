@@ -67,7 +67,7 @@ trait DesignHelpers
         $this->settings_object = $this->vendor ? $this->vendor->company : $this->client;
 
         $this->company = $this->vendor ? $this->vendor->company : $this->client->company;
-        
+
         return $this;
     }
 
@@ -163,7 +163,7 @@ trait DesignHelpers
         // This sprintf() will help us convert "task" or "product" into "$task" or "$product" without
         // evaluating the variable.
 
-        if (in_array(sprintf('%s%s.tax', '$', $type), (array)$this->context['pdf_variables']["{$type}_columns"])) {
+        if (in_array(sprintf('%s%s.tax', '$', $type), (array) $this->context['pdf_variables']["{$type}_columns"])) {
             $line_items = collect($this->entity->line_items)->filter(function ($item) use ($type_id) {
                 return $item->type_id = $type_id;
             });
@@ -202,9 +202,9 @@ trait DesignHelpers
      */
     public function calculateColspan(int $taken): int
     {
-        $total = (int)count($this->context['pdf_variables']['product_columns']);
+        $total = (int) count($this->context['pdf_variables']['product_columns']);
 
-        return (int)$total - $taken;
+        return (int) $total - $taken;
     }
 
     /**
@@ -269,12 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Previously we've been decoding the HTML on the backend and XML parsing isn't good options because it requires,
         // strict & valid HTML to even output/decode. Decoding is now done on the frontend with this piece of Javascript.
 
-        /**
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll(`[data-state="encoded-html"]`).forEach((element) => element.innerHTML = element.innerText)
-        }, false);
-         */
-
         $html_decode = 'document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll(`[data-state="encoded-html"]`).forEach(e=>e.innerHTML=e.innerText)},!1);';
 
 
@@ -338,11 +332,11 @@ document.addEventListener('DOMContentLoaded', function() {
     {
         $custom_columns = [];
 
-        foreach ((array)$this->client->company->custom_fields as $field => $value) {
+        foreach ((array) $this->client->company->custom_fields as $field => $value) {
             info($field);
 
             if (\Illuminate\Support\Str::startsWith($field, $type)) {
-                $custom_columns[] = '$' . $type . '.' . $field;
+                $custom_columns[] = '$'.$type.'.'.$field;
             }
         }
 
@@ -366,11 +360,11 @@ document.addEventListener('DOMContentLoaded', function() {
             'company4' => 'custom_value4',
         ];
 
-        if (!array_key_exists($field, $fields)) {
+        if (! array_key_exists($field, $fields)) {
             return '';
         }
 
-        if ($this->client->company->custom_fields && !property_exists($this->client->company->custom_fields, $field)) {
+        if ($this->client->company->custom_fields && ! property_exists($this->client->company->custom_fields, $field)) {
             return '';
         }
 
@@ -396,23 +390,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return $converter->convert($markdown);
     }
 
-    // public function processMarkdownOnLineItems(array &$items): void
-    // {
-    //     foreach ($items as $key => $item) {
-    //         foreach ($item as $variable => $value) {
-    //             $item[$variable] = DesignHelpers::parseMarkdownToHtml($value ?? '');
-    //         }
-
-    //         $items[$key] = $item;
-    //     }
-    // }
-
     public function processNewLines(array &$items): void
     {
         foreach ($items as $key => $item) {
             foreach ($item as $variable => $value) {
-               // $item[$variable] = nl2br($value, true);
-               $item[$variable] = str_replace( "\n", '<br>', $value);
+                // $item[$variable] = nl2br($value, true);
+                $item[$variable] = str_replace("\n", '<br>', $value);
             }
 
             $items[$key] = $item;

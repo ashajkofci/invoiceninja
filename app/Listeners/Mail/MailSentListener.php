@@ -12,13 +12,19 @@
 namespace App\Listeners\Mail;
 
 use App\Libraries\MultiDB;
+use App\Models\CreditInvitation;
+use App\Models\InvoiceInvitation;
+use App\Models\PurchaseOrderInvitation;
+use App\Models\QuoteInvitation;
+use App\Models\RecurringInvoiceInvitation;
+use App\Utils\Ninja;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Support\Facades\Notification;
+use Symfony\Component\Mime\MessageConverter;
 
 class MailSentListener implements ShouldQueue
 {
-
     /**
      * Create the event listener.
      *
@@ -36,23 +42,55 @@ class MailSentListener implements ShouldQueue
      */
     public function handle(MessageSent $event)
     {
-        
-        if(property_exists($event->message, 'invitation') && $event->message->invitation){
+        if(!Ninja::isHosted())
+            return;
+            
+        $message_id = $event->sent->getMessageId();
 
-            MultiDB::setDb($event->message->invitation->company->db);
+        $message = MessageConverter::toEmail($event->sent->getOriginalMessage());
 
-            if($event->message->getHeaders()->get('x-pm-message-id')){
+        if(!$message->getHeaders()->get('x-invitation'))
+            return;
 
-                $postmark_id = $event->message->getHeaders()->get('x-pm-message-id')->getValue();
+        $invitation_key = $message->getHeaders()->get('x-invitation')->getValue();
 
-                // nlog($postmark_id);
-                $invitation = $event->message->invitation;
-                $invitation->message_id = $postmark_id;
-                $invitation->save();
+        if($message_id && $invitation_key)
+        {
 
-            }
+            $invitation = $this->discoverInvitation($invitation_key);
 
+            if(!$invitation)
+                return;
+
+            $invitation->message_id = $message_id;
+            $invitation->save();   
         }
 
     }
+
+    private function discoverInvitation($key)
+    {
+        
+        $invitation = false;
+
+        foreach (MultiDB::$dbs as $db) 
+        {
+
+            if($invitation = InvoiceInvitation::on($db)->where('key', $key)->first())
+                return $invitation;
+            elseif($invitation = QuoteInvitation::on($db)->where('key', $key)->first())
+                return $invitation;
+            elseif($invitation = RecurringInvoiceInvitation::on($db)->where('key', $key)->first())
+                return $invitation;
+            elseif($invitation = CreditInvitation::on($db)->where('key', $key)->first())
+                return $invitation;
+            elseif($invitation = PurchaseOrderInvitation::on($db)->where('key', $key)->first())
+                return $invitation;
+
+        }
+
+        return $invitation;
+
+    }
+
 }

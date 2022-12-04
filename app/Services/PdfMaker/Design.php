@@ -52,10 +52,8 @@ class Design extends BaseDesign
     /** Construct options */
     public $options;
 
-    /** @var Invoice[] */
     public $invoices;
 
-    /** @var Payment[] */
     public $payments;
 
     public $settings_object;
@@ -77,7 +75,8 @@ class Design extends BaseDesign
     const PLAIN = 'plain';
     const PLAYFUL = 'playful';
     const CUSTOM = 'custom';
-
+    const CALM = 'calm';
+    
     const DELIVERY_NOTE = 'delivery_note';
     const STATEMENT = 'statement';
     const PURCHASE_ORDER = 'purchase_order';
@@ -398,7 +397,7 @@ class Design extends BaseDesign
     public function productTable(): array
     {
         $product_items = collect($this->entity->line_items)->filter(function ($item) {
-            return $item->type_id == 1 || $item->type_id == 6;
+            return $item->type_id == 1 || $item->type_id == 6 || $item->type_id == 5;
         });
 
         if (count($product_items) == 0) {
@@ -716,6 +715,8 @@ class Design extends BaseDesign
             $elements[] = $element;
         }
 
+        $document = null;
+        
         return $elements;
     }
 

@@ -13,6 +13,7 @@ namespace App\Models\Presenters;
 
 use App\Models\Country;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Class CompanyPresenter.
@@ -41,8 +42,28 @@ class CompanyPresenter extends EntityPresenter
             return $settings->company_logo;
         else if(strlen($settings->company_logo) >= 1)
             return url('') . $settings->company_logo;
-        else
-            return asset('images/new_logo.png');
+        else{
+            return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+            //return asset('images/new_logo.png');
+        }
+
+    }
+
+    public function logoDocker($settings = null)
+    {
+        
+        if (! $settings) {
+            $settings = $this->entity->settings;
+        }
+
+        $basename = basename($this->settings->company_logo);
+
+        $logo = Storage::get("{$this->company_key}/{$basename}");
+
+        if(!$logo)
+            return $this->logo($settings);
+
+        return "data:image/png;base64, ". base64_encode($logo);
 
     }
 
@@ -56,7 +77,7 @@ class CompanyPresenter extends EntityPresenter
         }
 
         if(config('ninja.is_docker') || config('ninja.local_download'))
-            return $this->logo($settings);
+            return $this->logoDocker($settings);
 
         $context_options =array(
             "ssl"=>array(
@@ -69,8 +90,10 @@ class CompanyPresenter extends EntityPresenter
             return "data:image/png;base64, ". base64_encode(@file_get_contents($settings->company_logo, false, stream_context_create($context_options)));
         else if(strlen($settings->company_logo) >= 1)
             return "data:image/png;base64, ". base64_encode(@file_get_contents(url('') . $settings->company_logo, false, stream_context_create($context_options)));
-        else
-            return "data:image/png;base64, ". base64_encode(@file_get_contents(asset('images/new_logo.png'), false, stream_context_create($context_options)));
+        else{
+            return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+            //return "data:image/png;base64, ". base64_encode(@file_get_contents(asset('images/new_logo.png'), false, stream_context_create($context_options)));
+        }
 
     }
 

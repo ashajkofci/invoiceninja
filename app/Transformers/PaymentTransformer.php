@@ -30,8 +30,8 @@ class PaymentTransformer extends EntityTransformer
     ];
 
     protected $availableIncludes = [
-         'client',
-         'invoices',
+        'client',
+        'invoices',
     ];
 
     public function __construct($serializer = null)
@@ -79,6 +79,7 @@ class PaymentTransformer extends EntityTransformer
             'refunded' => (float) $payment->refunded,
             'applied' => (float) $payment->applied,
             'transaction_reference' => $payment->transaction_reference ?: '',
+            'transaction_id' => $this->encodePrimaryKey($payment->transaction_id) ?: '',
             'date' => $payment->date ?: '',
             'is_manual' => (bool) $payment->is_manual,
             'created_at' => (int) $payment->created_at,

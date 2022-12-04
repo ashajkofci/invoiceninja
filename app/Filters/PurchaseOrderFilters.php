@@ -11,27 +11,26 @@
 
 namespace App\Filters;
 
-
-
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
 class PurchaseOrderFilters extends QueryFilters
 {
+
     /**
      * Filter based on client status.
      *
      * Statuses we need to handle
      * - all
-     * - paid
-     * - unpaid
-     * - overdue
-     * - reversed
+     * - draft
+     * - sent
+     * - accepted
+     * - cancelled
      *
      * @return Builder
      */
-    public function credit_status(string $value = '') :Builder
+    public function client_status(string $value = '') :Builder
     {
         if (strlen($value) == 0) {
             return $this->builder;
@@ -47,16 +46,17 @@ class PurchaseOrderFilters extends QueryFilters
             $this->builder->where('status_id', PurchaseOrder::STATUS_DRAFT);
         }
 
-        if (in_array('partial', $status_parameters)) {
-            $this->builder->where('status_id', PurchaseOrder::STATUS_PARTIAL);
+        if (in_array('sent', $status_parameters)) {
+            $this->builder->where('status_id', PurchaseOrder::STATUS_SENT);
         }
 
-        if (in_array('applied', $status_parameters)) {
-            $this->builder->where('status_id', PurchaseOrder::STATUS_APPLIED);
+        if (in_array('accepted', $status_parameters)) {
+            $this->builder->where('status_id', PurchaseOrder::STATUS_ACCEPTED);
         }
 
-        //->where('due_date', '>', Carbon::now())
-        //->orWhere('partial_due_date', '>', Carbon::now());
+        if (in_array('cancelled', $status_parameters)) {
+            $this->builder->where('status_id', PurchaseOrder::STATUS_CANCELLED);
+        }
 
         return $this->builder;
     }
@@ -157,7 +157,6 @@ class PurchaseOrderFilters extends QueryFilters
      *
      * We need to ensure we are using the correct company ID
      * as we could be hitting this from either the client or company auth guard
-     *
      */
     public function entityFilter()
     {

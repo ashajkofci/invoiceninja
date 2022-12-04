@@ -23,8 +23,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use stdClass;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ActivityController extends BaseController
 {
@@ -41,7 +41,7 @@ class ActivityController extends BaseController
 
     /**
      * @OA\Get(
-     *      path="/api/v1/actvities",
+     *      path="/api/v1/activities",
      *      operationId="getActivities",
      *      tags={"actvities"},
      *      summary="Gets a list of actvities",
@@ -91,28 +91,28 @@ class ActivityController extends BaseController
         $activities = Activity::orderBy('created_at', 'DESC')->company()
                                 ->take($default_activities);
 
-        if($request->has('react')){
-
+        if ($request->has('react')) {
             $system = ctrans('texts.system');
 
-            $data = $activities->cursor()->map(function ($activity) use($system){
-
-                $arr=
+            $data = $activities->cursor()->map(function ($activity) use ($system) {
+                $arr =
                 [
-                      'client' => $activity->client ? $activity->client : '',
-                      'contact' => $activity->contact ? $activity->contact : '',
-                      'quote' => $activity->quote ? $activity->quote : '',
-                      'user' => $activity->user ? $activity->user : '',
-                      'expense' => $activity->expense ? $activity->expense : '',
-                      'invoice' => $activity->invoice ? $activity->invoice : '',
-                      'recurring_invoice' => $activity->recurring_invoice ? $activity->recurring_invoice : '',
-                      'payment' => $activity->payment ? $activity->payment : '',
-                      'credit' => $activity->credit ? $activity->credit : '',
-                      'task' => $activity->task ? $activity->task : '',
+                    'client' => $activity->client ? $activity->client : '',
+                    'contact' => $activity->contact ? $activity->contact : '',
+                    'quote' => $activity->quote ? $activity->quote : '',
+                    'user' => $activity->user ? $activity->user : '',
+                    'expense' => $activity->expense ? $activity->expense : '',
+                    'invoice' => $activity->invoice ? $activity->invoice : '',
+                    'recurring_invoice' => $activity->recurring_invoice ? $activity->recurring_invoice : '',
+                    'payment' => $activity->payment ? $activity->payment : '',
+                    'credit' => $activity->credit ? $activity->credit : '',
+                    'task' => $activity->task ? $activity->task : '',
+                    'vendor' => $activity->vendor ? $activity->vendor : '',
+                    'vendor_contact' => $activity->vendor_contact ? $activity->vendor_contact : '',
+                    'purchase_order' => $activity->purchase_order ? $activity->purchase_order : '',
                 ];
 
                 return array_merge($arr, $activity->toArray());
-
             });
 
             return response()->json(['data' => $data->toArray()], 200);
@@ -168,25 +168,21 @@ class ActivityController extends BaseController
         $backup = $activity->backup;
         $html_backup = '';
 
-        /* Refactor 20-10-2021 
+        /* Refactor 20-10-2021
          *
          * We have moved the backups out of the database and into object storage.
-         * In order to handle edge cases, we still check for the database backup 
+         * In order to handle edge cases, we still check for the database backup
          * in case the file no longer exists
         */
 
-        if($backup && $backup->filename && Storage::disk(config('filesystems.default'))->exists($backup->filename)){ //disk
+        if ($backup && $backup->filename && Storage::disk(config('filesystems.default'))->exists($backup->filename)) { //disk
 
-            if(Ninja::isHosted())
+            if (Ninja::isHosted()) {
                 $html_backup = file_get_contents(Storage::disk(config('filesystems.default'))->url($backup->filename));
-            else
+            } else {
                 $html_backup = file_get_contents(Storage::disk(config('filesystems.default'))->path($backup->filename));
-
-        }
-        elseif($backup && $backup->html_backup){ //db
-            $html_backup = $backup->html_backup;
-        }
-        elseif (! $backup || ! $backup->html_backup) { //failed
+            }
+        } else { //failed
             return response()->json(['message'=> ctrans('texts.no_backup_exists'), 'errors' => new stdClass], 404);
         }
 
@@ -195,32 +191,25 @@ class ActivityController extends BaseController
 
             $numbered_pdf = $this->pageNumbering($pdf, $activity->company);
 
-                if($numbered_pdf)
-                    $pdf = $numbered_pdf;
-                
-
-        }
-        elseif(config('ninja.invoiceninja_hosted_pdf_generation') || config('ninja.pdf_generator') == 'hosted_ninja'){
+            if ($numbered_pdf) {
+                $pdf = $numbered_pdf;
+            }
+        } elseif (config('ninja.invoiceninja_hosted_pdf_generation') || config('ninja.pdf_generator') == 'hosted_ninja') {
             $pdf = (new NinjaPdf())->build($html_backup);
 
-                $numbered_pdf = $this->pageNumbering($pdf, $activity->company);
+            $numbered_pdf = $this->pageNumbering($pdf, $activity->company);
 
-                if($numbered_pdf)
-                    $pdf = $numbered_pdf;
-                
-
-
-        }
-        else {
+            if ($numbered_pdf) {
+                $pdf = $numbered_pdf;
+            }
+        } else {
             $pdf = $this->makePdf(null, null, $html_backup);
 
-                $numbered_pdf = $this->pageNumbering($pdf, $activity->company);
+            $numbered_pdf = $this->pageNumbering($pdf, $activity->company);
 
-                if($numbered_pdf)
-                    $pdf = $numbered_pdf;
-                
-
-
+            if ($numbered_pdf) {
+                $pdf = $numbered_pdf;
+            }
         }
 
         if (isset($activity->invoice_id)) {

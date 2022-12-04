@@ -99,14 +99,12 @@ class CreateEntityPdf implements ShouldQueue
 
         $this->client = $invitation->contact->client;
         $this->client->load('company');
-        
-        $this->disk = $disk ?? config('filesystems.default');
 
+        $this->disk = $disk ?? config('filesystems.default');
     }
 
     public function handle()
     {
-
         MultiDB::setDb($this->company->db);
 
         /* Forget the singleton*/
@@ -147,15 +145,16 @@ class CreateEntityPdf implements ShouldQueue
         $design = Design::find($entity_design_id);
 
         /* Catch all in case migration doesn't pass back a valid design */
-        if(!$design)
+        if (! $design) {
             $design = Design::find(2);
+        }
 
         $html = new HtmlEngine($this->invitation);
 
         if ($design->is_custom) {
             $options = [
-            'custom_partials' => json_decode(json_encode($design->design), true)
-          ];
+                'custom_partials' => json_decode(json_encode($design->design), true),
+            ];
             $template = new PdfMakerDesign(PdfDesignModel::CUSTOM, $options);
         } else {
             $template = new PdfMakerDesign(strtolower($design->name));
@@ -189,28 +188,23 @@ class CreateEntityPdf implements ShouldQueue
         $pdf = null;
 
         try {
-
-            if(config('ninja.invoiceninja_hosted_pdf_generation') || config('ninja.pdf_generator') == 'hosted_ninja'){
+            if (config('ninja.invoiceninja_hosted_pdf_generation') || config('ninja.pdf_generator') == 'hosted_ninja') {
                 $pdf = (new NinjaPdf())->build($maker->getCompiledHTML(true));
 
                 $numbered_pdf = $this->pageNumbering($pdf, $this->company);
 
-                if($numbered_pdf)
+                if ($numbered_pdf) {
                     $pdf = $numbered_pdf;
-
-            }
-            else {
-
+                }
+            } else {
                 $pdf = $this->makePdf(null, null, $maker->getCompiledHTML(true));
-                
+
                 $numbered_pdf = $this->pageNumbering($pdf, $this->company);
 
-                if($numbered_pdf)
+                if ($numbered_pdf) {
                     $pdf = $numbered_pdf;
-                
-
+                }
             }
-
         } catch (\Exception $e) {
             nlog(print_r($e->getMessage(), 1));
         }
@@ -233,16 +227,22 @@ class CreateEntityPdf implements ShouldQueue
             {
 
                 throw new FilePermissionsFailure($e->getMessage());
-
             }
         }
+        
+        $this->invitation = null;
+        $this->entity = null;
+        $this->company = null;
+        $this->client = null;
+        $this->contact = null;
+        $maker = null;
+        $state = null;
         
         return $file_path;
     }
 
     public function failed($e)
     {
-
     }
 
 }

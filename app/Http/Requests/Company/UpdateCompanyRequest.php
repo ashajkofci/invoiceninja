@@ -22,6 +22,14 @@ class UpdateCompanyRequest extends Request
 {
     use MakesHash;
 
+    private array $protected_input = [
+        'client_portal_privacy_policy',
+        'client_portal_terms',
+        'portal_custom_footer',
+        'portal_custom_css',
+        'portal_custom_head'
+    ];
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -32,10 +40,12 @@ class UpdateCompanyRequest extends Request
         return auth()->user()->can('edit', $this->company);
     }
 
+
+
     public function rules()
     {
         $input = $this->all();
-        
+
         $rules = [];
 
         $rules['company_logo'] = 'mimes:jpeg,jpg,png,gif|max:10000'; // max 10000kb
@@ -49,32 +59,28 @@ class UpdateCompanyRequest extends Request
         if (isset($input['portal_mode']) && ($input['portal_mode'] == 'domain' || $input['portal_mode'] == 'iframe')) {
             $rules['portal_domain'] = 'sometimes|url';
         } else {
-
-            if(Ninja::isHosted()){
+            if (Ninja::isHosted()) {
                 $rules['subdomain'] = ['nullable', 'regex:/^[a-zA-Z0-9.-]+[a-zA-Z0-9]$/', new ValidSubdomain($this->all())];
-            }
-            else
+            } else {
                 $rules['subdomain'] = 'nullable|alpha_num';
+            }
         }
-
-        // if($this->company->account->isPaidHostedClient()) {
-        //     return $settings;
-        // }
 
         return $rules;
     }
 
-    protected function prepareForValidation()
+    public function prepareForValidation()
     {
+    
         $input = $this->all();
 
-        if(Ninja::isHosted() && array_key_exists('portal_domain', $input) && strlen($input['portal_domain']) > 1){
+        if (Ninja::isHosted() && array_key_exists('portal_domain', $input) && strlen($input['portal_domain']) > 1) {
             $input['portal_domain'] = $this->addScheme($input['portal_domain']);
             $input['portal_domain'] = strtolower($input['portal_domain']);
         }
 
         if (array_key_exists('settings', $input)) {
-            $input['settings'] = $this->filterSaveableSettings($input['settings']);
+            $input['settings'] = (array)$this->filterSaveableSettings($input['settings']);
         }
 
         $this->replace($input);
@@ -94,6 +100,14 @@ class UpdateCompanyRequest extends Request
     {
         $account = $this->company->account;
 
+        if(Ninja::isHosted())
+        {
+            foreach($this->protected_input as $protected_var)
+            {
+                $settings[$protected_var] = str_replace("script", "", $settings[$protected_var]);
+            }
+        }
+
         if (! $account->isFreeHostedClient()) {
             return $settings;
         }
@@ -111,12 +125,10 @@ class UpdateCompanyRequest extends Request
 
     private function addScheme($url, $scheme = 'https://')
     {
+        $url = str_replace('http://', '', $url);
 
-      $url = str_replace("http://", "", $url);
+        $url = parse_url($url, PHP_URL_SCHEME) === null ? $scheme.$url : $url;
 
-      $url =  parse_url($url, PHP_URL_SCHEME) === null ? $scheme . $url : $url;
-
-      return rtrim($url, '/');
-
+        return rtrim($url, '/');
     }
 }

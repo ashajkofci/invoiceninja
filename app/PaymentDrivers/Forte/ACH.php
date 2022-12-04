@@ -20,6 +20,8 @@ use App\Http\Requests\Request;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Support\Facades\Validator;
 use App\PaymentDrivers\FortePaymentDriver;
+use App\Jobs\Util\SystemLogger;
+use App\Models\SystemLog;
 
 class ACH
 {
@@ -51,6 +53,8 @@ class ACH
 
     public function authorizeView(array $data)
     {
+        $data['gateway'] = $this->forte;
+
         return render('gateways.forte.ach.authorize', $data);
     }
 
@@ -79,13 +83,13 @@ class ACH
         $this->forte->payment_hash->data = array_merge((array) $this->forte->payment_hash->data, $data);
         $this->forte->payment_hash->save();
 
-        $data['gateway'] = $this;
+        $data['gateway'] = $this->forte;
         return render('gateways.forte.ach.pay', $data);
     }
 
     public function paymentResponse($request)
     {
-        $payment_hash = PaymentHash::whereRaw('BINARY `hash`= ?', [$request->input('payment_hash')])->firstOrFail();
+        $payment_hash = PaymentHash::where('hash', $request->input('payment_hash'))->firstOrFail();
 
         try {
             $curl = curl_init();
@@ -129,12 +133,35 @@ class ACH
         } catch (\Throwable $th) {
             throw $th;
         }
+
+        $message = [
+            'server_message' => $response->response->response_desc,
+            'server_response' => $response,
+            'data' => $payment_hash->data,
+        ];
         
         if ($httpcode>299) {
+            SystemLogger::dispatch(
+                $message,
+                SystemLog::CATEGORY_GATEWAY_RESPONSE,
+                SystemLog::EVENT_GATEWAY_FAILURE,
+                SystemLog::TYPE_FORTE,
+                $this->forte->client,
+                $this->forte->client->company,
+            );
             $error = Validator::make([], []);
             $error->getMessageBag()->add('gateway_error', $response->response->response_desc);
             return redirect('client/invoices')->withErrors($error);
         }
+
+        SystemLogger::dispatch(
+            $message,
+            SystemLog::CATEGORY_GATEWAY_RESPONSE,
+            SystemLog::EVENT_GATEWAY_SUCCESS,
+            SystemLog::TYPE_FORTE,
+            $this->forte->client,
+            $this->forte->client->company,
+        );
 
         $data = [
             'payment_method' => $request->payment_method_id,

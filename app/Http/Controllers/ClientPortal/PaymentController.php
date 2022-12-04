@@ -101,7 +101,8 @@ class PaymentController extends Controller
 
             $data = [
                 'invoice' => $invoice,
-                'key' => false
+                'key' => false,
+                'invitation' => $invoice->invitations->first()
             ];
 
             if ($request->query('mode') === 'fullscreen') {
@@ -127,8 +128,7 @@ class PaymentController extends Controller
      * @return Response         The response view
      */
     public function credit_response(Request $request)
-    {   
-        
+    {
         $payment_hash = PaymentHash::where('hash', $request->input('payment_hash'))->first();
 
         /* Hydrate the $payment */

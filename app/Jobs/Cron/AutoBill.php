@@ -14,15 +14,18 @@ namespace App\Jobs\Cron;
 use App\Libraries\MultiDB;
 use App\Models\Invoice;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
-
-class AutoBill
+class AutoBill implements ShouldQueue
 {
-    use Dispatchable;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 1;
-    
-    public Invoice $invoice;
+
+    public int $invoice_id;
 
     public string $db;
 
@@ -31,9 +34,9 @@ class AutoBill
      *
      * @return void
      */
-    public function __construct(Invoice $invoice, ?string $db)
+    public function __construct(int $invoice_id, ?string $db)
     {
-        $this->invoice = $invoice;
+        $this->invoice_id = $invoice_id;
         $this->db = $db;
     }
 
@@ -46,20 +49,18 @@ class AutoBill
     {
         set_time_limit(0);
 
-        if($this->db)
+        if ($this->db) {
             MultiDB::setDb($this->db);
+        }
 
-        try{
+        try {
+            nlog("autobill {$this->invoice_id}");
             
-            nlog("autobill {$this->invoice->id}");
+            $invoice = Invoice::withTrashed()->find($this->invoice_id);
 
-            $this->invoice->service()->autoBill();
-
+            $invoice->service()->autoBill();
+        } catch (\Exception $e) {
+            nlog("Failed to capture payment for {$this->invoice_id} ->".$e->getMessage());
         }
-        catch(\Exception $e) {
-            nlog("Failed to capture payment for {$this->invoice->company_id} - {$this->invoice->number} ->" . $e->getMessage());
-        }
-
-
     }
 }
