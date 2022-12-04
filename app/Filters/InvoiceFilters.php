@@ -167,7 +167,7 @@ class InvoiceFilters extends QueryFilters
                 ->orderBy('due_date', 'ASC');
     }
 
-    public function payable(string $client_id)
+    public function payable(string $client_id = '')
     {
         if (strlen($client_id) == 0) {
             return $this->builder;
@@ -185,7 +185,7 @@ class InvoiceFilters extends QueryFilters
      * @param string sort formatted as column|asc
      * @return Builder
      */
-    public function sort(string $sort) : Builder
+    public function sort(string $sort = '') : Builder
     {
         $sort_col = explode('|', $sort);
 

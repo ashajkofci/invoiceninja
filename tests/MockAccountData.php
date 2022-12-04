@@ -26,6 +26,7 @@ use App\Jobs\Company\CreateCompanyTaskStatuses;
 use App\Models\Account;
 use App\Models\BankIntegration;
 use App\Models\BankTransaction;
+use App\Models\BankTransactionRule;
 use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\Company;
@@ -36,6 +37,7 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\GroupSetting;
 use App\Models\InvoiceInvitation;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\PurchaseOrder;
@@ -153,6 +155,17 @@ trait MockAccountData
      */
     public $bank_transaction;
     
+    /**
+     * @var
+     */
+    public $bank_transaction_rule;
+
+
+    /**
+     * @var
+     */
+    public $payment;
+
     /**
      * @var
      */
@@ -290,6 +303,13 @@ trait MockAccountData
             'company_id' => $this->company->id,
             'is_primary' => 1,
             'send_email' => true,
+        ]);
+
+        $this->payment = Payment::factory()->create([
+            'user_id' => $user_id,
+            'client_id' => $this->client->id,
+            'company_id' => $this->company->id,
+            'amount' => 10,
         ]);
 
         $contact2 = ClientContact::factory()->create([
@@ -570,6 +590,11 @@ trait MockAccountData
             'user_id' => $user_id,
             'company_id' => $this->company->id,
             'bank_integration_id' => $this->bank_integration->id,
+        ]);
+
+        $this->bank_transaction_rule = BankTransactionRule::factory()->create([
+            'user_id' => $user_id,
+            'company_id' => $this->company->id,
         ]);
 
         $invitations = CreditInvitation::whereCompanyId($this->credit->company_id)
