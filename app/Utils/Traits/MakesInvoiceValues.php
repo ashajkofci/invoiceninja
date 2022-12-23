@@ -264,7 +264,7 @@ trait MakesInvoiceValues
     public function transformLineItems($items, $table_type = '$product') :array
     {   //$start = microtime(true);
 
-        $entity = $this->client ? $this->client : $this->company;
+        $entity = $this->client ? $this->client : $this->vendor;
 
         $data = [];
 
@@ -295,8 +295,13 @@ trait MakesInvoiceValues
             $data[$key][$table_type.'.item'] = is_null(optional($item)->item) ? $item->product_key : $item->item;
             $data[$key][$table_type.'.service'] = is_null(optional($item)->service) ? $item->product_key : $item->service;
 
-            $data[$key][$table_type.'.notes'] = Helpers::processReservedKeywords($item->notes, $entity);
-            $data[$key][$table_type.'.description'] = Helpers::processReservedKeywords($item->notes, $entity);
+            $currentDateTime = null;
+            if (isset($this->entity->next_send_date)) {
+                $currentDateTime = Carbon::parse($this->entity->next_send_date);
+            }
+
+            $data[$key][$table_type.'.notes'] = Helpers::processReservedKeywords($item->notes, $entity, $currentDateTime);
+            $data[$key][$table_type.'.description'] = Helpers::processReservedKeywords($item->notes, $entity, $currentDateTime);
 
             $data[$key][$table_type.".{$_table_type}1"] = strlen($item->custom_value1) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}1", $item->custom_value1, $entity) : '';
             $data[$key][$table_type.".{$_table_type}2"] = strlen($item->custom_value2) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}2", $item->custom_value2, $entity) : '';
@@ -381,7 +386,7 @@ trait MakesInvoiceValues
     private function makeLineTaxes() :string
     {
         $tax_map = $this->calc()->getTaxMap();
-        $entity = $this->client ? $this->client : $this->company;
+        $entity = $this->client ? $this->client : $this->vendor;
 
         $data = '';
 
@@ -401,7 +406,7 @@ trait MakesInvoiceValues
     private function makeTotalTaxes() :string
     {
         $data = '';
-        $entity = $this->client ? $this->client : $this->company;
+        $entity = $this->client ? $this->client : $this->vendor;
 
         if (! $this->calc()->getTotalTaxMap()) {
             return $data;
@@ -434,7 +439,7 @@ trait MakesInvoiceValues
     private function totalTaxValues() :string
     {
         $data = '';
-        $entity = $this->client ? $this->client : $this->company;
+        $entity = $this->client ? $this->client : $this->vendor;
 
         if (! $this->calc()->getTotalTaxMap()) {
             return $data;
@@ -463,7 +468,7 @@ trait MakesInvoiceValues
     private function lineTaxValues() :string
     {
         $tax_map = $this->calc()->getTaxMap();
-        $entity = $this->client ? $this->client : $this->company;
+        $entity = $this->client ? $this->client : $this->vendor;
 
         $data = '';
 
