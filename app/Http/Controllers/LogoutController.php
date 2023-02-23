@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -14,8 +14,6 @@ namespace App\Http\Controllers;
 use App\Models\CompanyToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use stdClass;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LogoutController extends BaseController
 {
@@ -31,8 +29,7 @@ class LogoutController extends BaseController
      *      tags={"logout"},
      *      summary="Gets a list of logout",
      *      description="Lists all logout",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(ref="#/components/parameters/index"),

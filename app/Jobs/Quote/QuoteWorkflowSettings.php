@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -56,9 +56,5 @@ class QuoteWorkflowSettings implements ShouldQueue
                 $this->quote->service()->sendEmail($invitation->contact);
             });
         }
-
-        // if ($this->client->getSetting('auto_archive_quote')) {
-        //     $this->base_repository->archive($this->quote);
-        // }
     }
 }

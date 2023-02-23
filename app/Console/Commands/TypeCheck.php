@@ -4,24 +4,18 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Console\Commands;
 
-use App\Http\ValidationRules\ValidClientGroupSettingsRule;
 use App\Libraries\MultiDB;
-use App\Models\Backup;
 use App\Models\Client;
 use App\Models\Company;
-use App\Models\Design;
 use App\Utils\Traits\ClientGroupSettingsSaver;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use stdClass;
 
 class TypeCheck extends Command
 {

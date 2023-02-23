@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,16 +13,16 @@ namespace App\Http\Controllers;
 
 use App\Events\Credit\CreditWasEmailed;
 use App\Events\Quote\QuoteWasEmailed;
-use App\Http\Middleware\UserVerified;
 use App\Http\Requests\Email\SendEmailRequest;
 use App\Jobs\Entity\EmailEntity;
-use App\Jobs\Mail\EntitySentMailer;
 use App\Jobs\PurchaseOrder\PurchaseOrderEmail;
 use App\Models\Credit;
 use App\Models\Invoice;
 use App\Models\PurchaseOrder;
 use App\Models\Quote;
 use App\Models\RecurringInvoice;
+use App\Services\Email\MailEntity;
+use App\Services\Email\MailObject;
 use App\Transformers\CreditTransformer;
 use App\Transformers\InvoiceTransformer;
 use App\Transformers\PurchaseOrderTransformer;
@@ -57,7 +57,6 @@ class EmailController extends BaseController
      *      tags={"emails"},
      *      summary="Sends an email for an entity",
      *      description="Sends an email for an entity",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\RequestBody(
      *         description="The template subject and body",
@@ -128,21 +127,28 @@ class EmailController extends BaseController
             'body' => $body,
         ];
 
-        if(Ninja::isHosted() && !$entity_obj->company->account->account_sms_verified)
-              return response(['message' => 'Please verify your account to send emails.'], 400);
+        $mo = new MailObject;
+        $mo->subject = empty($subject) ?  null : $subject;
+        $mo->body = empty($body) ? null : $body;
+        $mo->entity_string = $entity;
+        $mo->email_template = $template;
+
+        if (Ninja::isHosted() && !$entity_obj->company->account->account_sms_verified) {
+            return response(['message' => 'Please verify your account to send emails.'], 400);
+        }
         
-        if($entity == 'purchaseOrder' || $entity == 'purchase_order' || $template == 'purchase_order' || $entity == 'App\Models\PurchaseOrder'){
+        if ($entity == 'purchaseOrder' || $entity == 'purchase_order' || $template == 'purchase_order' || $entity == 'App\Models\PurchaseOrder') {
             return $this->sendPurchaseOrder($entity_obj, $data, $template);
         }
 
-        $entity_obj->invitations->each(function ($invitation) use ($data, $entity_string, $entity_obj, $template) {
-
+        $entity_obj->invitations->each(function ($invitation) use ($data, $entity_string, $entity_obj, $template, $mo) {
             if (! $invitation->contact->trashed() && $invitation->contact->email) {
                 $entity_obj->service()->markSent()->save();
 
-                EmailEntity::dispatch($invitation->fresh(), $invitation->company, $template, $data)->delay(now()->addSeconds(2));
+                EmailEntity::dispatch($invitation->fresh(), $invitation->company, $template, $data);
+
+                // MailEntity::dispatch($invitation, $invitation->company->db, $mo);
             }
-            
         });
 
         $entity_obj = $entity_obj->fresh();
@@ -187,16 +193,14 @@ class EmailController extends BaseController
 
     private function sendPurchaseOrder($entity_obj, $data, $template)
     {
-
         $this->entity_type = PurchaseOrder::class;
 
         $this->entity_transformer = PurchaseOrderTransformer::class;
 
         $data['template'] = $template;
         
-        PurchaseOrderEmail::dispatch($entity_obj, $entity_obj->company, $data)->delay(now()->addSeconds(2));
+        PurchaseOrderEmail::dispatch($entity_obj, $entity_obj->company, $data);
         
         return $this->itemResponse($entity_obj);
-
     }
 }

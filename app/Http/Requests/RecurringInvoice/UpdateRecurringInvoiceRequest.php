@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -16,7 +16,6 @@ use App\Http\ValidationRules\Project\ValidProjectForClient;
 use App\Utils\Traits\ChecksEntityStatus;
 use App\Utils\Traits\CleanLineItems;
 use App\Utils\Traits\MakesHash;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
 class UpdateRecurringInvoiceRequest extends Request
@@ -68,7 +67,7 @@ class UpdateRecurringInvoiceRequest extends Request
     {
         $input = $this->all();
 
-        if (array_key_exists('due_date_days', $input) && is_null($input['due_date_days'])){
+        if (array_key_exists('due_date_days', $input) && is_null($input['due_date_days'])) {
             $input['due_date_days'] = 'terms';
         }
 
@@ -112,8 +111,8 @@ class UpdateRecurringInvoiceRequest extends Request
             $input['line_items'] = isset($input['line_items']) ? $this->cleanItems($input['line_items']) : [];
         }
 
-        if (array_key_exists('auto_bill', $input) && isset($input['auto_bill']) && $this->setAutoBillFlag($input['auto_bill'])) {
-            $input['auto_bill_enabled'] = true;
+        if (array_key_exists('auto_bill', $input) && isset($input['auto_bill'])) {
+            $input['auto_bill_enabled'] = $this->setAutoBillFlag($input['auto_bill']);
         }
 
         if (array_key_exists('documents', $input)) {
@@ -132,9 +131,9 @@ class UpdateRecurringInvoiceRequest extends Request
      *
      * @return bool
      */
-    private function setAutoBillFlag($auto_bill) :bool
+    private function setAutoBillFlag($auto_bill)
     {
-        if ($auto_bill == 'always') {
+        if ($auto_bill == 'always' || $auto_bill == 'optout') {
             return true;
         }
 

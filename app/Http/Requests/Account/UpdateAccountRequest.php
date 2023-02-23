@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,10 +12,6 @@
 namespace App\Http\Requests\Account;
 
 use App\Http\Requests\Request;
-use App\Http\ValidationRules\Account\BlackListRule;
-use App\Http\ValidationRules\Account\EmailBlackListRule;
-use App\Http\ValidationRules\NewUniqueUserRule;
-use App\Utils\Ninja;
 
 class UpdateAccountRequest extends Request
 {

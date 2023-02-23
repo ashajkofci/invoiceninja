@@ -15,22 +15,16 @@ use App\DataMapper\ClientSettings;
 use App\DataMapper\CompanySettings;
 use App\Factory\ExpenseCategoryFactory;
 use App\Factory\ExpenseFactory;
-use App\Factory\InvoiceFactory;
 use App\Models\Account;
 use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\Company;
 use App\Models\Expense;
-use App\Models\ExpenseCategory;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Services\Report\ProfitLoss;
 use App\Utils\Traits\MakesHash;
-use Database\Factories\ClientContactFactory;
 use Illuminate\Routing\Middleware\ThrottleRequests;
-use Illuminate\Support\Facades\Storage;
-use League\Csv\Writer;
-use Tests\MockAccountData;
 use Tests\TestCase;
 
 /**
@@ -144,7 +138,7 @@ class ProfitAndLossReportTest extends TestCase
             'balance' => 11,
             'status_id' => 2,
             'total_taxes' => 1,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'terms' => 'nada',
             'discount' => 0,
             'tax_rate1' => 0,
@@ -183,7 +177,7 @@ class ProfitAndLossReportTest extends TestCase
             'balance' => 10,
             'status_id' => 2,
             'total_taxes' => 1,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'terms' => 'nada',
             'discount' => 0,
             'tax_rate1' => 10,
@@ -226,7 +220,7 @@ class ProfitAndLossReportTest extends TestCase
             'balance' => 10,
             'status_id' => 2,
             'total_taxes' => 1,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'terms' => 'nada',
             'discount' => 0,
             'tax_rate1' => 10,
@@ -282,7 +276,7 @@ class ProfitAndLossReportTest extends TestCase
             'balance' => 10,
             'status_id' => 2,
             'total_taxes' => 0,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'terms' => 'nada',
             'discount' => 0,
             'tax_rate1' => 0,
@@ -313,7 +307,7 @@ class ProfitAndLossReportTest extends TestCase
             'amount' => 10,
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
         ]);
 
         $pl = new ProfitLoss($this->company, $this->payload);
@@ -334,7 +328,7 @@ class ProfitAndLossReportTest extends TestCase
 
         $e = ExpenseFactory::create($this->company->id, $this->user->id);
         $e->amount = 10;
-        $e->date = '2022-01-01';
+        $e->date = now()->format('Y-m-d');
         $e->calculate_tax_by_amount = true;
         $e->tax_amount1 = 10;
         $e->save();
@@ -358,7 +352,7 @@ class ProfitAndLossReportTest extends TestCase
 
         $e = ExpenseFactory::create($this->company->id, $this->user->id);
         $e->amount = 10;
-        $e->date = '2022-01-01';
+        $e->date = now()->format('Y-m-d');
         $e->tax_rate1 = 10;
         $e->tax_name1 = 'GST';
         $e->uses_inclusive_taxes = false;
@@ -383,7 +377,7 @@ class ProfitAndLossReportTest extends TestCase
 
         $e = ExpenseFactory::create($this->company->id, $this->user->id);
         $e->amount = 10;
-        $e->date = '2022-01-01';
+        $e->date = now()->format('Y-m-d');
         $e->tax_rate1 = 10;
         $e->tax_name1 = 'GST';
         $e->uses_inclusive_taxes = false;
@@ -410,7 +404,7 @@ class ProfitAndLossReportTest extends TestCase
             'amount' => 10,
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'exchange_rate' => 1,
             'currency_id' => $this->company->settings->currency_id,
         ]);
@@ -440,7 +434,7 @@ class ProfitAndLossReportTest extends TestCase
             'amount' => 10,
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'exchange_rate' => 1,
             'currency_id' => $this->company->settings->currency_id,
         ]);
@@ -454,7 +448,7 @@ class ProfitAndLossReportTest extends TestCase
             'amount' => 10,
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'exchange_rate' => 1,
             'currency_id' => $this->company->settings->currency_id,
         ]);
@@ -489,7 +483,7 @@ class ProfitAndLossReportTest extends TestCase
             'balance' => 10,
             'status_id' => 2,
             'total_taxes' => 1,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'terms' => 'nada',
             'discount' => 0,
             'tax_rate1' => 10,
@@ -510,7 +504,7 @@ class ProfitAndLossReportTest extends TestCase
             'amount' => 10,
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'exchange_rate' => 1,
             'currency_id' => $this->company->settings->currency_id,
         ]);
@@ -524,7 +518,7 @@ class ProfitAndLossReportTest extends TestCase
             'amount' => 10,
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
-            'date' => '2022-01-01',
+            'date' => now()->format('Y-m-d'),
             'exchange_rate' => 1,
             'currency_id' => $this->company->settings->currency_id,
         ]);

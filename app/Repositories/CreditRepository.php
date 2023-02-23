@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -53,7 +53,6 @@ class CreditRepository extends BaseRepository
         $credit = $credit->service()->deleteCredit()->save();
 
         return parent::delete($credit);
-
     }
 
     public function restore($credit)
@@ -69,5 +68,4 @@ class CreditRepository extends BaseRepository
 
         return $credit;
     }
-
 }

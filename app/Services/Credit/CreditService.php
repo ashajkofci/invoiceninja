@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -19,8 +19,6 @@ use App\Models\Payment;
 use App\Models\PaymentType;
 use App\Repositories\CreditRepository;
 use App\Repositories\PaymentRepository;
-use App\Services\Credit\CreateInvitations;
-use App\Services\Credit\TriggeredActions;
 use App\Utils\Traits\MakesHash;
 
 class CreditService

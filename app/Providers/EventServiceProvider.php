@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -65,7 +65,6 @@ use App\Events\PurchaseOrder\PurchaseOrderWasArchived;
 use App\Events\PurchaseOrder\PurchaseOrderWasCreated;
 use App\Events\PurchaseOrder\PurchaseOrderWasDeleted;
 use App\Events\PurchaseOrder\PurchaseOrderWasEmailed;
-use App\Events\PurchaseOrder\PurchaseOrderWasMarkedSent;
 use App\Events\PurchaseOrder\PurchaseOrderWasRestored;
 use App\Events\PurchaseOrder\PurchaseOrderWasUpdated;
 use App\Events\PurchaseOrder\PurchaseOrderWasViewed;
@@ -157,7 +156,6 @@ use App\Listeners\Credit\CreditRestoredActivity;
 use App\Listeners\Credit\CreditViewedActivity;
 use App\Listeners\Document\DeleteCompanyDocuments;
 use App\Listeners\Invoice\CreateInvoiceActivity;
-use App\Listeners\Invoice\CreateInvoiceHtmlBackup;
 use App\Listeners\Invoice\CreateInvoicePdf;
 use App\Listeners\Invoice\InvoiceArchivedActivity;
 use App\Listeners\Invoice\InvoiceCancelledActivity;
@@ -181,10 +179,12 @@ use App\Listeners\Payment\PaymentNotification;
 use App\Listeners\Payment\PaymentRestoredActivity;
 use App\Listeners\PurchaseOrder\CreatePurchaseOrderActivity;
 use App\Listeners\PurchaseOrder\PurchaseOrderAcceptedActivity;
-use App\Listeners\PurchaseOrder\PurchaseOrderAcceptedNotification;
+use App\Listeners\PurchaseOrder\PurchaseOrderAcceptedListener;
 use App\Listeners\PurchaseOrder\PurchaseOrderArchivedActivity;
+use App\Listeners\PurchaseOrder\PurchaseOrderCreatedListener;
 use App\Listeners\PurchaseOrder\PurchaseOrderDeletedActivity;
 use App\Listeners\PurchaseOrder\PurchaseOrderEmailActivity;
+use App\Listeners\PurchaseOrder\PurchaseOrderEmailedNotification;
 use App\Listeners\PurchaseOrder\PurchaseOrderRestoredActivity;
 use App\Listeners\PurchaseOrder\PurchaseOrderViewedActivity;
 use App\Listeners\PurchaseOrder\UpdatePurchaseOrderActivity;
@@ -223,6 +223,7 @@ use App\Listeners\User\UpdatedUserActivity;
 use App\Listeners\User\UpdateUserLastLogin;
 use App\Models\Account;
 use App\Models\Client;
+use App\Models\ClientContact;
 use App\Models\Company;
 use App\Models\CompanyGateway;
 use App\Models\CompanyToken;
@@ -238,7 +239,10 @@ use App\Models\Quote;
 use App\Models\Subscription;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Vendor;
+use App\Models\VendorContact;
 use App\Observers\AccountObserver;
+use App\Observers\ClientContactObserver;
 use App\Observers\ClientObserver;
 use App\Observers\CompanyGatewayObserver;
 use App\Observers\CompanyObserver;
@@ -255,6 +259,8 @@ use App\Observers\QuoteObserver;
 use App\Observers\SubscriptionObserver;
 use App\Observers\TaskObserver;
 use App\Observers\UserObserver;
+use App\Observers\VendorContactObserver;
+use App\Observers\VendorObserver;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Mail\Events\MessageSent;
@@ -398,20 +404,16 @@ class EventServiceProvider extends ServiceProvider
         ],
         //Invoices
         InvoiceWasMarkedSent::class => [
-            CreateInvoiceHtmlBackup::class,
         ],
         InvoiceWasUpdated::class => [
             UpdateInvoiceActivity::class,
-            CreateInvoicePdf::class,
         ],
         InvoiceWasCreated::class => [
             CreateInvoiceActivity::class,
             InvoiceCreatedNotification::class,
-            //    CreateInvoicePdf::class,
         ],
         InvoiceWasPaid::class => [
             InvoicePaidActivity::class,
-            CreateInvoicePdf::class,
         ],
         InvoiceWasViewed::class => [
             InvoiceViewedActivity::class,
@@ -429,7 +431,6 @@ class EventServiceProvider extends ServiceProvider
         ],
         InvoiceWasDeleted::class => [
             InvoiceDeletedActivity::class,
-            CreateInvoicePdf::class,
         ],
         InvoiceWasArchived::class => [
             InvoiceArchivedActivity::class,
@@ -448,7 +449,7 @@ class EventServiceProvider extends ServiceProvider
             InvitationViewedListener::class,
         ],
         PaymentWasEmailed::class => [
-            PaymentEmailedActivity::class,
+            // PaymentEmailedActivity::class,
         ],
         PaymentWasEmailedAndFailed::class => [
             // PaymentEmailFailureActivity::class,
@@ -458,12 +459,14 @@ class EventServiceProvider extends ServiceProvider
         ],
         PurchaseOrderWasCreated::class => [
             CreatePurchaseOrderActivity::class,
+            PurchaseOrderCreatedListener::class,
         ],
         PurchaseOrderWasDeleted::class => [
             PurchaseOrderDeletedActivity::class,
         ],
         PurchaseOrderWasEmailed::class => [
             PurchaseOrderEmailActivity::class,
+            PurchaseOrderEmailedNotification::class,
         ],
         PurchaseOrderWasRestored::class => [
             PurchaseOrderRestoredActivity::class,
@@ -475,8 +478,8 @@ class EventServiceProvider extends ServiceProvider
             PurchaseOrderViewedActivity::class,
         ],
         PurchaseOrderWasAccepted::class => [
+            PurchaseOrderAcceptedListener::class,
             PurchaseOrderAcceptedActivity::class,
-            PurchaseOrderAcceptedNotification::class,
         ],
         CompanyDocumentsDeleted::class => [
             DeleteCompanyDocuments::class,
@@ -630,6 +633,7 @@ class EventServiceProvider extends ServiceProvider
         Account::observe(AccountObserver::class);
         Subscription::observe(SubscriptionObserver::class);
         Client::observe(ClientObserver::class);
+        ClientContact::observe(ClientContactObserver::class);
         Company::observe(CompanyObserver::class);
         CompanyGateway::observe(CompanyGatewayObserver::class);
         CompanyToken::observe(CompanyTokenObserver::class);
@@ -643,6 +647,8 @@ class EventServiceProvider extends ServiceProvider
         Quote::observe(QuoteObserver::class);
         Task::observe(TaskObserver::class);
         User::observe(UserObserver::class);
+        Vendor::observe(VendorObserver::class);
+        VendorContact::observe(VendorContactObserver::class);
         PurchaseOrder::observe(PurchaseOrderObserver::class);
     }
 

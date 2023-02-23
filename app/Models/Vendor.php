@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -15,7 +15,6 @@ use App\DataMapper\CompanySettings;
 use App\Models\Presenters\VendorPresenter;
 use App\Utils\Traits\AppSetup;
 use App\Utils\Traits\GeneratesCounter;
-use App\Utils\Traits\NumberFormatter;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 use Laracasts\Presenter\PresentableTrait;
@@ -114,7 +113,11 @@ class Vendor extends BaseModel
         return $currencies->filter(function ($item) {
             return $item->id == $this->currency_id;
         })->first();
+    }
 
+    public function timezone()
+    {
+        return $this->company->timezone();
     }
 
     public function company()
@@ -187,5 +190,4 @@ class Vendor extends BaseModel
     {
         return $this->company->date_format();
     }
-
 }

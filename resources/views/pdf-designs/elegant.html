@@ -16,8 +16,12 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         font-family: $font_name, Helvetica, sans-serif;
-        font-size: "$font_size";
+        font-size: $font_size !important;
         zoom: 80%;
+    }
+
+    table tr td, table tr, th {
+        font-size: $font_size !important;
     }
 
     @page {
@@ -32,6 +36,7 @@
 
     .company-logo {
         max-width: 55%;
+        /*        max-width: $company_logo_size;*/
         margin-left: auto;
         margin-right: auto;
         display: block;

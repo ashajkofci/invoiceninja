@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -14,7 +14,6 @@ namespace App\Transformers;
 use App\Models\Document;
 use App\Models\Task;
 use App\Models\TaskStatus;
-use App\Transformers\TaskStatusTransformer;
 use App\Utils\Traits\MakesHash;
 use League\Fractal\Resource\Item;
 
@@ -48,8 +47,9 @@ class TaskTransformer extends EntityTransformer
     {
         $transformer = new ClientTransformer($this->serializer);
 
-        if(!$task->client)
+        if (!$task->client) {
             return null;
+        }
 
         return $this->includeItem($task->client, $transformer, Client::class);
     }
@@ -58,8 +58,9 @@ class TaskTransformer extends EntityTransformer
     {
         $transformer = new TaskStatusTransformer($this->serializer);
 
-        if(!$task->status)
+        if (!$task->status) {
             return null;
+        }
 
         return $this->includeItem($task->status, $transformer, TaskStatus::class);
     }

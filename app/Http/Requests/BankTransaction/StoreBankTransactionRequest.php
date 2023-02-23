@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -31,7 +31,6 @@ class StoreBankTransactionRequest extends Request
 
     public function rules()
     {
-        
         $rules = [];
 
         $rules['bank_integration_id'] = 'bail|required|exists:bank_integrations,id,company_id,'.auth()->user()->company()->id.',is_deleted,0';
@@ -43,13 +42,12 @@ class StoreBankTransactionRequest extends Request
     {
         $input = $this->all();
 
-            if(array_key_exists('bank_integration_id', $input) && $input['bank_integration_id'] == "")
-                unset($input['bank_integration_id']);
-            elseif(array_key_exists('bank_integration_id', $input) && strlen($input['bank_integration_id']) > 1 && !is_numeric($input['bank_integration_id']))
-                $input['bank_integration_id'] = $this->decodePrimaryKey($input['bank_integration_id']);
+        if (array_key_exists('bank_integration_id', $input) && $input['bank_integration_id'] == "") {
+            unset($input['bank_integration_id']);
+        } elseif (array_key_exists('bank_integration_id', $input) && strlen($input['bank_integration_id']) > 1 && !is_numeric($input['bank_integration_id'])) {
+            $input['bank_integration_id'] = $this->decodePrimaryKey($input['bank_integration_id']);
+        }
 
         $this->replace($input);
     }
-
-
 }

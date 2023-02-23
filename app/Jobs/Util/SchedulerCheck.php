@@ -4,14 +4,13 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Jobs\Util;
 
-use App\Models\Account;
 use App\Utils\Ninja;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -40,8 +39,9 @@ class SchedulerCheck implements ShouldQueue
         set_time_limit(0);
 
 
-        if(Ninja::isHosted())
+        if (Ninja::isHosted()) {
             return;
+        }
         
         if (config('ninja.app_version') != base_path('VERSION.txt')) {
             try {

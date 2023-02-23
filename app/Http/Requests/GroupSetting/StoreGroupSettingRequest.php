@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -14,6 +14,7 @@ namespace App\Http\Requests\GroupSetting;
 use App\DataMapper\ClientSettings;
 use App\Http\Requests\Request;
 use App\Http\ValidationRules\ValidClientGroupSettingsRule;
+use App\Models\Account;
 use App\Models\GroupSetting;
 
 class StoreGroupSettingRequest extends Request
@@ -25,7 +26,7 @@ class StoreGroupSettingRequest extends Request
      */
     public function authorize() : bool
     {
-        return auth()->user()->can('create', GroupSetting::class);
+        return auth()->user()->can('create', GroupSetting::class) && auth()->user()->account->hasFeature(Account::FEATURE_API);
     }
 
     public function rules()

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -24,7 +24,6 @@ use App\Models\Design;
 use App\Repositories\DesignRepository;
 use App\Transformers\DesignTransformer;
 use App\Utils\Traits\MakesHash;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
@@ -59,8 +58,7 @@ class DesignController extends BaseController
      *      tags={"designs"},
      *      summary="Gets a list of designs",
      *      description="Lists designs",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(ref="#/components/parameters/index"),
@@ -107,8 +105,7 @@ class DesignController extends BaseController
      *      tags={"designs"},
      *      summary="Shows a design",
      *      description="Displays a design by id",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(
@@ -162,8 +159,7 @@ class DesignController extends BaseController
      *      tags={"designs"},
      *      summary="Shows a design for editting",
      *      description="Displays a design by id",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(
@@ -218,8 +214,7 @@ class DesignController extends BaseController
      *      tags={"designs"},
      *      summary="Updates a design",
      *      description="Handles the updating of a design by id",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(
@@ -280,8 +275,7 @@ class DesignController extends BaseController
      *      tags={"designs"},
      *      summary="Gets a new blank design object",
      *      description="Returns a blank object with default values",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Response(
@@ -326,8 +320,7 @@ class DesignController extends BaseController
      *      tags={"designs"},
      *      summary="Adds a design",
      *      description="Adds an design to a company",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Response(
@@ -425,8 +418,7 @@ class DesignController extends BaseController
      *      tags={"designs"},
      *      summary="Deletes a design",
      *      description="Handles the deletion of a design by id",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(
@@ -483,8 +475,7 @@ class DesignController extends BaseController
      *      tags={"designs"},
      *      summary="Performs bulk actions on an array of designs",
      *      description="",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/index"),
      *      @OA\RequestBody(
@@ -528,7 +519,7 @@ class DesignController extends BaseController
 
         $ids = request()->input('ids');
 
-        $designs = Design::withTrashed()->find($this->transformKeys($ids));
+        $designs = Design::withTrashed()->company()->whereIn('id', $this->transformKeys($ids));
 
         $designs->each(function ($design, $key) use ($action) {
             if (auth()->user()->can('edit', $design)) {
@@ -536,7 +527,7 @@ class DesignController extends BaseController
             }
         });
 
-        return $this->listResponse(Design::withTrashed()->whereIn('id', $this->transformKeys($ids)));
+        return $this->listResponse(Design::withTrashed()->company()->whereIn('id', $this->transformKeys($ids)));
     }
 
     public function default(DefaultDesignRequest $request)

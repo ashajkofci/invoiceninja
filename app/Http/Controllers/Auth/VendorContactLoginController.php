@@ -4,27 +4,16 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Http\Controllers\Auth;
 
-use App\Events\Contact\ContactLoggedIn;
 use App\Http\Controllers\Controller;
-use App\Http\ViewComposers\PortalComposer;
-use App\Libraries\MultiDB;
-use App\Models\Account;
-use App\Models\ClientContact;
-use App\Models\Company;
-use App\Utils\Ninja;
 use Auth;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Route;
 
 class VendorContactLoginController extends Controller
 {

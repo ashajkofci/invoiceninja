@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -14,6 +14,7 @@ namespace App\Http\Controllers;
 use App\DataMapper\FeesAndLimits;
 use App\Factory\CompanyGatewayFactory;
 use App\Filters\CompanyGatewayFilters;
+use App\Http\Requests\CompanyGateway\BulkCompanyGatewayRequest;
 use App\Http\Requests\CompanyGateway\CreateCompanyGatewayRequest;
 use App\Http\Requests\CompanyGateway\DestroyCompanyGatewayRequest;
 use App\Http\Requests\CompanyGateway\EditCompanyGatewayRequest;
@@ -28,7 +29,6 @@ use App\Repositories\CompanyRepository;
 use App\Transformers\CompanyGatewayTransformer;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Foundation\Bus\DispatchesJobs;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 /**
@@ -75,8 +75,7 @@ class CompanyGatewayController extends BaseController
      *      description="Lists company_gateways, search and filters allow fine grained lists to be generated.
 
         Query parameters can be added to performed more fine grained filtering of the company_gateways, these are handled by the CompanyGatewayFilters class which defines the methods available",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Response(
@@ -121,8 +120,7 @@ class CompanyGatewayController extends BaseController
      *      tags={"company_gateways"},
      *      summary="Gets a new blank CompanyGateway object",
      *      description="Returns a blank object with default values",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Response(
@@ -167,8 +165,7 @@ class CompanyGatewayController extends BaseController
      *      tags={"company_gateways"},
      *      summary="Adds a CompanyGateway",
      *      description="Adds an CompanyGateway to the system",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Response(
@@ -232,8 +229,7 @@ class CompanyGatewayController extends BaseController
      *      tags={"company_gateways"},
      *      summary="Shows an CompanyGateway",
      *      description="Displays an CompanyGateway by id",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(
@@ -287,8 +283,7 @@ class CompanyGatewayController extends BaseController
      *      tags={"company_gateways"},
      *      summary="Shows an CompanyGateway for editting",
      *      description="Displays an CompanyGateway by id",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(
@@ -342,8 +337,7 @@ class CompanyGatewayController extends BaseController
      *      tags={"company_gateways"},
      *      summary="Updates an CompanyGateway",
      *      description="Handles the updating of an CompanyGateway by id",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(
@@ -408,8 +402,7 @@ class CompanyGatewayController extends BaseController
      *      tags={"company_gateways"},
      *      summary="Deletes a CompanyGateway",
      *      description="Handles the deletion of an CompanyGateway by id",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Parameter(
@@ -465,8 +458,7 @@ class CompanyGatewayController extends BaseController
      *      tags={"company_gateways"},
      *      summary="Performs bulk actions on an array of company_gateways",
      *      description="",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/index"),
      *      @OA\RequestBody(
@@ -504,20 +496,18 @@ class CompanyGatewayController extends BaseController
      *       ),
      *     )
      */
-    public function bulk()
+    public function bulk(BulkCompanyGatewayRequest $request)
     {
-        $action = request()->input('action');
+        $action = $request->input('action');
 
-        $ids = request()->input('ids');
+        $company_gateways = CompanyGateway::withTrashed()
+                                          ->whereIn('id', $request->ids)
+                                          ->company()
+                                          ->cursor()
+                                          ->each(function ($company_gateway, $key) use ($action) {
+                                              $this->company_repo->{$action}($company_gateway);
+                                          });
 
-        $company_gateways = CompanyGateway::withTrashed()->find($this->transformKeys($ids));
-
-        $company_gateways->each(function ($company_gateway, $key) use ($action) {
-            if (auth()->user()->can('edit', $company_gateway)) {
-                $this->company_repo->{$action}($company_gateway);
-            }
-        });
-
-        return $this->listResponse(CompanyGateway::withTrashed()->whereIn('id', $this->transformKeys($ids)));
+        return $this->listResponse(CompanyGateway::withTrashed()->company()->whereIn('id', $request->ids));
     }
 }

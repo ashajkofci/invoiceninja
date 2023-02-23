@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -63,28 +63,23 @@ class UpdateExchangeRates implements ShouldQueue
                 $currencies = Currency::orderBy('name')->get();
 
                 Cache::forever('currencies', $currencies);
-
-
             }
         } else {
-            
-                $client = new Client();
-                $response = $client->get($cc_endpoint);
+            $client = new Client();
+            $response = $client->get($cc_endpoint);
 
-                $currency_api = json_decode($response->getBody());
+            $currency_api = json_decode($response->getBody());
 
-                /* Update all currencies */
-                Currency::all()->each(function ($currency) use ($currency_api) {
-                    $currency->exchange_rate = $currency_api->rates->{$currency->code};
-                    $currency->save();
-                });
+            /* Update all currencies */
+            Currency::all()->each(function ($currency) use ($currency_api) {
+                $currency->exchange_rate = $currency_api->rates->{$currency->code};
+                $currency->save();
+            });
 
-                /* Rebuild the cache */
-                $currencies = Currency::orderBy('name')->get();
+            /* Rebuild the cache */
+            $currencies = Currency::orderBy('name')->get();
 
-                Cache::forever('currencies', $currencies);
-
+            Cache::forever('currencies', $currencies);
         }
     }
-
 }

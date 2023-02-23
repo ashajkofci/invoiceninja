@@ -23,11 +23,8 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
-use Tests\MockAccountData;
 use Tests\TestCase;
 
 /** @test*/
@@ -54,29 +51,8 @@ class CompanyLedgerTest extends TestCase
 
         $this->artisan('db:seed --force');
 
-        /* Warm up the cache !*/
-        $cached_tables = config('ninja.cached_tables');
-
-        foreach ($cached_tables as $name => $class) {
-
-            // check that the table exists in case the migration is pending
-            if (! Schema::hasTable((new $class())->getTable())) {
-                continue;
-            }
-            if ($name == 'payment_terms') {
-                $orderBy = 'num_days';
-            } elseif ($name == 'fonts') {
-                $orderBy = 'sort_order';
-            } elseif (in_array($name, ['currencies', 'industries', 'languages', 'countries', 'banks'])) {
-                $orderBy = 'name';
-            } else {
-                $orderBy = 'id';
-            }
-            $tableData = $class::orderBy($orderBy)->get();
-            if ($tableData->count()) {
-                Cache::forever($name, $tableData);
-            }
-        }
+        $this->faker = \Faker\Factory::create();
+        $fake_email = $this->faker->email();
 
         $this->account = Account::factory()->create();
         $this->company = Company::factory()->create([
@@ -93,7 +69,7 @@ class CompanyLedgerTest extends TestCase
         $settings->state = 'State';
         $settings->postal_code = 'Postal Code';
         $settings->phone = '555-343-2323';
-        $settings->email = 'user@example.com';
+        $settings->email = $fake_email;
         $settings->country_id = '840';
         $settings->vat_number = 'vat number';
         $settings->id_number = 'id number';
@@ -106,10 +82,12 @@ class CompanyLedgerTest extends TestCase
         $this->account->default_company_id = $this->company->id;
         $this->account->save();
 
-        $user = User::whereEmail('user@example.com')->first();
+
+        $user = User::whereEmail($fake_email)->first();
 
         if (! $user) {
             $user = User::factory()->create([
+                'email' => $fake_email,
                 'account_id' => $this->account->id,
                 'password' => Hash::make('ALongAndBriliantPassword'),
                 'confirmation_code' => $this->createDbHash(config('database.default')),

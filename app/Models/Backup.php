@@ -4,14 +4,13 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Models;
 
-use App\Models\Client;
 use Illuminate\Support\Facades\Storage;
 
 class Backup extends BaseModel
@@ -38,17 +37,17 @@ class Backup extends BaseModel
 
         Storage::disk(config('filesystems.default'))->put($file_path, $html);
 
-            $this->filename = $file_path;
-            $this->save();
-        
+        $this->filename = $file_path;
+        $this->save();
     }
 
     public function deleteFile()
     {
         nlog('deleting => '.$this->filename);
 
-        if(!$this->filename)
+        if (!$this->filename) {
             return;
+        }
 
         try {
             Storage::disk(config('filesystems.default'))->delete($this->filename);

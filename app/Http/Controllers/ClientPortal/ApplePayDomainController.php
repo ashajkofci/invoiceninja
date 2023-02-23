@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,11 +13,9 @@ namespace App\Http\Controllers\ClientPortal;
 
 use App\Http\Controllers\Controller;
 use App\Libraries\MultiDB;
-use App\Models\Company;
 use App\Models\CompanyGateway;
 use App\Utils\Ninja;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ApplePayDomainController extends Controller
 {
@@ -25,7 +23,6 @@ class ApplePayDomainController extends Controller
 
     public function showAppleMerchantId(Request $request)
     {
-
         /* Self Host */
 
         if (Ninja::isSelfHost()) {

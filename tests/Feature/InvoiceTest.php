@@ -47,13 +47,21 @@ class InvoiceTest extends TestCase
     }
 
 
-    public function testInvoiceArchiveAction()
+    public function testInvoiceGetPaidInvoices()
     {
-
         $response = $this->withHeaders([
             'X-API-SECRET' => config('ninja.api_secret'),
             'X-API-TOKEN' => $this->token,
-        ])->get('/api/v1/invoices/'.$this->invoice->hashed_id.'/archive',)
+        ])->get('/api/v1/invoices?client_status=paid', )
+        ->assertStatus(200);
+    }
+
+    public function testInvoiceArchiveAction()
+    {
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->get('/api/v1/invoices/'.$this->invoice->hashed_id.'/archive', )
         ->assertStatus(200);
     }
 
@@ -302,6 +310,4 @@ class InvoiceTest extends TestCase
         ])->post('/api/v1/invoices/', $data)
         ->assertStatus(200);
     }
-
-
 }

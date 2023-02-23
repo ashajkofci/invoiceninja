@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -14,18 +14,12 @@ namespace App\Services\Invoice;
 use App\Events\Invoice\InvoiceWasArchived;
 use App\Jobs\Entity\CreateEntityPdf;
 use App\Jobs\Inventory\AdjustProductInventory;
-use App\Jobs\Invoice\InvoiceWorkflowSettings;
-use App\Jobs\Util\UnlinkFile;
 use App\Libraries\Currency\Conversion\CurrencyApi;
 use App\Models\CompanyGateway;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Task;
-use App\Repositories\BaseRepository;
-use App\Services\Client\ClientService;
-use App\Services\Invoice\ApplyPaymentAmount;
-use App\Services\Invoice\UpdateReminder;
 use App\Utils\Ninja;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Support\Carbon;
@@ -35,11 +29,8 @@ class InvoiceService
 {
     use MakesHash;
 
-    public $invoice;
-
-    public function __construct($invoice)
+    public function __construct(public Invoice $invoice)
     {
-        $this->invoice = $invoice;
     }
 
     /**
@@ -47,18 +38,18 @@ class InvoiceService
      * and executes child sub functions.
      * @return $this InvoiceService object
      */
-    public function markPaid()
+    public function markPaid(?string $reference = null)
     {
         $this->removeUnpaidGatewayFees();
 
-        $this->invoice = (new MarkPaid($this->invoice))->run();
+        $this->invoice = (new MarkPaid($this->invoice, $reference))->run();
 
         return $this;
     }
 
-    public function applyPaymentAmount($amount)
+    public function applyPaymentAmount($amount, ?string $reference = null)
     {
-        $this->invoice = (new ApplyPaymentAmount($this->invoice, $amount))->run();
+        $this->invoice = (new ApplyPaymentAmount($this->invoice, $amount, $reference))->run();
 
         return $this;
     }
@@ -112,7 +103,6 @@ class InvoiceService
      * @param  Payment $payment        The Payment
      * @param  float   $payment_amount The Payment amount
      * @return InvoiceService          Parent class object
-     * @deprecated 24-11-2022 - cannot find any references to this method anywhere
      */
     public function applyPayment(Payment $payment, float $payment_amount)
     {
@@ -271,10 +261,11 @@ class InvoiceService
         }
 
         //12-10-2022
-        if($this->invoice->partial > 0 && !$this->invoice->partial_due_date)
+        if ($this->invoice->partial > 0 && !$this->invoice->partial_due_date) {
             $this->invoice->partial_due_date = Carbon::parse($this->invoice->date)->addDays($this->invoice->client->getSetting('payment_terms'));
-        else
+        } else {
             $this->invoice->due_date = Carbon::parse($this->invoice->date)->addDays($this->invoice->client->getSetting('payment_terms'));
+        }
 
         return $this;
     }
@@ -299,8 +290,7 @@ class InvoiceService
             $this->setStatus(Invoice::STATUS_PAID);
         } elseif ($this->invoice->balance > 0 && $this->invoice->balance < $this->invoice->amount) {
             $this->setStatus(Invoice::STATUS_PARTIAL);
-        }
-        elseif ($this->invoice->balance < 0 || $this->invoice->balance > 0) {
+        } elseif ($this->invoice->balance < 0 || $this->invoice->balance > 0) {
             $this->invoice->status_id = Invoice::STATUS_SENT;
         }
         
@@ -317,8 +307,7 @@ class InvoiceService
             $this->invoice->status_id = Invoice::STATUS_PAID;
         } elseif ($this->invoice->balance > 0 && $this->invoice->balance < $this->invoice->amount) {
             $this->invoice->status_id = Invoice::STATUS_PARTIAL;
-        }
-        elseif ($this->invoice->balance < 0 || $this->invoice->balance > 0) {
+        } elseif ($this->invoice->balance < 0 || $this->invoice->balance > 0) {
             $this->invoice->status_id = Invoice::STATUS_SENT;
         }
 
@@ -529,6 +518,10 @@ class InvoiceService
         /* If client currency differs from the company default currency, then insert the client exchange rate on the model.*/
         if (! isset($this->invoice->exchange_rate) && $this->invoice->client->currency()->id != (int) $this->invoice->company->settings->currency_id) {
             $this->invoice->exchange_rate = $this->invoice->client->currency()->exchange_rate;
+        }
+
+        if ($this->invoice->client->getSetting('auto_bill_standard_invoices')) {
+            $this->invoice->auto_bill_enabled = true;
         }
 
         if ($settings->counter_number_applied == 'when_saved') {

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -47,7 +47,7 @@ class RegisterRequest extends FormRequest
 
         foreach ($rules as $field => $properties) {
             if ($field === 'email') {
-                $rules[$field] = array_merge($rules[$field], ['email:rfc,dns', 'max:255', Rule::unique('client_contacts')->where('company_id', $this->company()->id)]);
+                $rules[$field] = array_merge($rules[$field], ['email:rfc,dns', 'max:191', Rule::unique('client_contacts')->where('company_id', $this->company()->id)]);
             }
 
             if ($field === 'current_password') {
@@ -64,7 +64,6 @@ class RegisterRequest extends FormRequest
 
     public function company()
     {
-
         //this should be all we need, the rest SHOULD be redundant because of our Middleware
         if ($this->key) {
             return Company::where('company_key', $this->key)->first();

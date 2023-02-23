@@ -12,7 +12,6 @@
 namespace Tests\Feature;
 
 use App\Factory\CompanyUserFactory;
-use App\Factory\UserFactory;
 use App\Http\Middleware\PasswordProtection;
 use App\Models\Company;
 use App\Models\CompanyToken;
@@ -55,7 +54,17 @@ class UserTest extends TestCase
             ThrottleRequests::class,
             PasswordProtection::class
         );
+    }
 
+    public function testUserFiltersWith()
+    {
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+            'X-API-PASSWORD' => 'ALongAndBriliantPassword',
+        ])->get('/api/v1/users?with='.$this->user->hashed_id);
+
+        $response->assertStatus(200);
     }
 
     public function testUserList()
@@ -92,7 +101,6 @@ class UserTest extends TestCase
         ])->post('/api/v1/users?include=company_user', $data);
 
         $response->assertStatus(200);
-
     }
 
     public function testValidationRulesPhoneIsBlankString()
@@ -142,7 +150,6 @@ class UserTest extends TestCase
             'X-API-TOKEN' => $this->token,
             'X-API-PASSWORD' => 'ALongAndBriliantPassword',
         ])->putJson('/api/v1/users/'.$user->hashed_id.'?include=company_user', $data);
-
     }
 
     public function testUserStore()

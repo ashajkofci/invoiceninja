@@ -11,26 +11,18 @@
 
 namespace Tests\Unit;
 
-use App\DataMapper\ClientSettings;
-use App\Factory\ClientFactory;
-use App\Factory\QuoteFactory;
-use App\Factory\VendorFactory;
 use App\Models\Account;
 use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\Company;
-use App\Models\Credit;
 use App\Models\Invoice;
 use App\Models\Quote;
-use App\Models\RecurringInvoice;
-use App\Models\Timezone;
 use App\Models\User;
 use App\Utils\Traits\GeneratesConvertedQuoteCounter;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Session;
-use Tests\MockAccountData;
 use Tests\TestCase;
 
 /**
@@ -62,13 +54,15 @@ class GeneratesConvertedQuoteCounterTest extends TestCase
         $this->account->num_users = 3;
         $this->account->save();
 
-        $user = User::whereEmail('user@example.com')->first();
+        $fake_email = $this->faker->email();
+
+        $user = User::whereEmail($fake_email)->first();
 
         if (! $user) {
             $user = User::factory()->create([
                 'account_id' => $this->account->id,
                 'confirmation_code' => $this->createDbHash(config('database.default')),
-                'email' => 'user@example.com',
+                'email' => $fake_email,
             ]);
         }
 
@@ -115,8 +109,8 @@ class GeneratesConvertedQuoteCounterTest extends TestCase
 
         $this->assertNotNull($invoice);
 
-        $this->assertEquals('2022-Q0001', $quote->number);
-        $this->assertEquals('2022-I0001', $invoice->number);
+        $this->assertEquals(now()->format('Y'). '-Q0001', $quote->number);
+        $this->assertEquals(now()->format('Y'). '-I0001', $invoice->number);
 
         $settings = $this->client->getMergedSettings();
         $settings->invoice_number_counter = 100;

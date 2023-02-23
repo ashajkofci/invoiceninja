@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,20 +13,6 @@ namespace App\Jobs\Invoice;
 
 use App\Jobs\Entity\EmailEntity;
 use App\Models\Invoice;
-use CleverIt\UBL\Invoice\Address;
-use CleverIt\UBL\Invoice\Contact;
-use CleverIt\UBL\Invoice\Country;
-use CleverIt\UBL\Invoice\Generator;
-use CleverIt\UBL\Invoice\Invoice as UBLInvoice;
-use CleverIt\UBL\Invoice\InvoiceLine;
-use CleverIt\UBL\Invoice\Item;
-use CleverIt\UBL\Invoice\LegalMonetaryTotal;
-use CleverIt\UBL\Invoice\Party;
-use CleverIt\UBL\Invoice\TaxCategory;
-use CleverIt\UBL\Invoice\TaxScheme;
-use CleverIt\UBL\Invoice\TaxSubTotal;
-use CleverIt\UBL\Invoice\TaxTotal;
-use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -54,8 +40,9 @@ class BulkInvoiceJob implements ShouldQueue
      * @return void
      */
     public function handle()
-    {
-        $this->invoice->service()->touchReminder($this->reminder_template)->markSent()->save();
+    {   //only the reminder should mark the reminder sent field
+        // $this->invoice->service()->touchReminder($this->reminder_template)->markSent()->save();
+        $this->invoice->service()->markSent()->save();
 
         $this->invoice->invitations->load('contact.client.country', 'invoice.client.country', 'invoice.company')->each(function ($invitation) {
             EmailEntity::dispatch($invitation, $this->invoice->company, $this->reminder_template)->delay(now()->addSeconds(5));

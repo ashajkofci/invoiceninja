@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -53,8 +53,7 @@ class ValidCreditsRules implements Rule
         
         $total_credit_amount = array_sum(array_column($this->input['credits'], 'amount'));
 
-        if($total_credit_amount <= 0){
-
+        if ($total_credit_amount <= 0) {
             $this->error_msg = "Total of credits must be more than zero.";
 
             return false;

@@ -4,48 +4,28 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Console\Commands;
 
+use App\DataMapper\ClientRegistrationFields;
 use App\DataMapper\CompanySettings;
-use App\DataMapper\FeesAndLimits;
-use App\Events\Invoice\InvoiceWasCreated;
-use App\Factory\InvoiceFactory;
-use App\Factory\InvoiceItemFactory;
-use App\Helpers\Invoice\InvoiceSum;
 use App\Jobs\Company\CreateCompanyPaymentTerms;
 use App\Jobs\Company\CreateCompanyTaskStatuses;
 use App\Jobs\Util\VersionCheck;
 use App\Models\Account;
-use App\Models\Client;
-use App\Models\ClientContact;
 use App\Models\Company;
-use App\Models\CompanyGateway;
 use App\Models\CompanyToken;
-use App\Models\Country;
-use App\Models\Credit;
-use App\Models\Expense;
-use App\Models\Product;
-use App\Models\Project;
-use App\Models\Quote;
-use App\Models\Task;
 use App\Models\User;
-use App\Models\Vendor;
-use App\Models\VendorContact;
 use App\Repositories\InvoiceRepository;
-use App\Utils\Ninja;
 use App\Utils\Traits\GeneratesCounter;
 use App\Utils\Traits\MakesHash;
-use Carbon\Carbon;
-use Faker\Factory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class CreateAccount extends Command
@@ -94,7 +74,10 @@ class CreateAccount extends Command
             'portal_domain' => config('ninja.app_url'),
             'portal_mode' => 'domain',
         ]);
-
+        
+        $company->client_registration_fields = ClientRegistrationFields::generate();
+        $company->save();
+        
         $account->default_company_id = $company->id;
         $account->save();
 
@@ -134,6 +117,8 @@ class CreateAccount extends Command
         (new CreateCompanyPaymentTerms($company, $user))->handle();
         (new CreateCompanyTaskStatuses($company, $user))->handle();
         (new VersionCheck())->handle();
+
+        $this->warmCache();
     }
 
     private function warmCache()
@@ -142,24 +127,18 @@ class CreateAccount extends Command
         $cached_tables = config('ninja.cached_tables');
 
         foreach ($cached_tables as $name => $class) {
-            if (! Cache::has($name)) {
-                // check that the table exists in case the migration is pending
-                if (! Schema::hasTable((new $class())->getTable())) {
-                    continue;
-                }
-                if ($name == 'payment_terms') {
-                    $orderBy = 'num_days';
-                } elseif ($name == 'fonts') {
-                    $orderBy = 'sort_order';
-                } elseif (in_array($name, ['currencies', 'industries', 'languages', 'countries', 'banks'])) {
-                    $orderBy = 'name';
-                } else {
-                    $orderBy = 'id';
-                }
-                $tableData = $class::orderBy($orderBy)->get();
-                if ($tableData->count()) {
-                    Cache::forever($name, $tableData);
-                }
+            if ($name == 'payment_terms') {
+                $orderBy = 'num_days';
+            } elseif ($name == 'fonts') {
+                $orderBy = 'sort_order';
+            } elseif (in_array($name, ['currencies', 'industries', 'languages', 'countries', 'banks'])) {
+                $orderBy = 'name';
+            } else {
+                $orderBy = 'id';
+            }
+            $tableData = $class::orderBy($orderBy)->get();
+            if ($tableData->count()) {
+                Cache::forever($name, $tableData);
             }
         }
     }

@@ -4,27 +4,15 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Http\Controllers;
 
-use App\DataMapper\Analytics\Mail\EmailBounce;
-use App\DataMapper\Analytics\Mail\EmailSpam;
 use App\Jobs\PostMark\ProcessPostmarkWebhook;
-use App\Jobs\Util\SystemLogger;
-use App\Libraries\MultiDB;
-use App\Models\CreditInvitation;
-use App\Models\InvoiceInvitation;
-use App\Models\QuoteInvitation;
-use App\Models\RecurringInvoiceInvitation;
-use App\Models\SystemLog;
-use App\Notifications\Ninja\EmailBounceNotification;
-use App\Notifications\Ninja\EmailSpamNotification;
 use Illuminate\Http\Request;
-use Turbo124\Beacon\Facades\LightLogs;
 
 /**
  * Class PostMarkController.
@@ -47,8 +35,7 @@ class PostMarkController extends BaseController
      *      tags={"postmark"},
      *      summary="Processing webhooks from PostMark",
      *      description="Adds an credit to the system",
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Secret"),
-     *      @OA\Parameter(ref="#/components/parameters/X-Api-Token"),
+     *      @OA\Parameter(ref="#/components/parameters/X-API-TOKEN"),
      *      @OA\Parameter(ref="#/components/parameters/X-Requested-With"),
      *      @OA\Parameter(ref="#/components/parameters/include"),
      *      @OA\Response(
@@ -74,7 +61,7 @@ class PostMarkController extends BaseController
      */
     public function webhook(Request $request)
     {
-        if ($request->header('X-API-SECURITY') && $request->header('X-API-SECURITY') == config('postmark.secret')) {
+        if ($request->header('X-API-SECURITY') && $request->header('X-API-SECURITY') == config('services.postmark.token')) {
             ProcessPostmarkWebhook::dispatch($request->all());
 
             return response()->json(['message' => 'Success'], 200);

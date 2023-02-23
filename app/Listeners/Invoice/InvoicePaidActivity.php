@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -39,7 +39,6 @@ class InvoicePaidActivity implements ShouldQueue
      */
     public function handle($event)
     {
-
         MultiDB::setDb($event->company->db);
 
         $fields = new stdClass;
@@ -54,15 +53,8 @@ class InvoicePaidActivity implements ShouldQueue
         
         $this->activity_repo->save($fields, $event->invoice, $event->event_vars);
 
-        if($event->invoice->subscription()->exists())
-        {
+        if ($event->invoice->subscription()->exists()) {
             $event->invoice->subscription->service()->planPaid($event->invoice);
-        }
-
-        try {
-            $event->invoice->service()->touchPdf();
-        } catch (\Exception $e) {
-            nlog(print_r($e->getMessage(), 1));
         }
     }
 }

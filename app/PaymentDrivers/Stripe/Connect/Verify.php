@@ -5,32 +5,17 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\PaymentDrivers\Stripe\Connect;
 
-use App\Exceptions\PaymentFailed;
 use App\Exceptions\StripeConnectFailure;
-use App\Http\Requests\ClientPortal\PaymentMethod\VerifyPaymentMethodRequest;
-use App\Http\Requests\Request;
-use App\Jobs\Mail\NinjaMailerJob;
-use App\Jobs\Mail\NinjaMailerObject;
-use App\Jobs\Util\SystemLogger;
-use App\Mail\Gateways\ACHVerificationNotification;
-use App\Models\ClientGatewayToken;
-use App\Models\GatewayType;
-use App\Models\Payment;
-use App\Models\PaymentType;
-use App\Models\SystemLog;
 use App\PaymentDrivers\StripePaymentDriver;
 use App\Utils\Traits\MakesHash;
-use Exception;
 use Stripe\Customer;
-use Stripe\Exception\CardException;
-use Stripe\Exception\InvalidRequestException;
 
 class Verify
 {

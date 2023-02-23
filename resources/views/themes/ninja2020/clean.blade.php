@@ -31,7 +31,7 @@
         @endif
 
         <!-- Title -->
-        @auth()
+        @auth('contact')
             <title>@yield('meta_title', '') — {{ auth()->guard('contact')->user()->user->account->isPaid() ? auth()->guard('contact')->user()->company->present()->name() : 'Invoice Ninja' }}</title>
         @endauth
 
@@ -81,6 +81,13 @@
     </head>
 
     <body class="antialiased">
+    @if(\App\Utils\Ninja::isHosted())
+        <!-- Google Tag Manager (noscript) -->
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WMJ5W23"
+        height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+        <!-- End Google Tag Manager (noscript) -->
+    @endif
+
         @if(session()->has('message'))
             <div class="py-1 text-sm text-center text-white bg-primary disposable-alert">
                 {{ session('message') }}

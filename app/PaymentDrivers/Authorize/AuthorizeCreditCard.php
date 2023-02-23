@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -102,18 +102,18 @@ class AuthorizeCreditCard
         }
 
         // Delete a customer profile
-      // $request = new DeleteCustomerProfileRequest();
-      // $request->setMerchantAuthentication($this->authorize->merchant_authentication);
-      // $request->setCustomerProfileId( $customer_profile_id );
+        // $request = new DeleteCustomerProfileRequest();
+        // $request->setMerchantAuthentication($this->authorize->merchant_authentication);
+        // $request->setCustomerProfileId( $customer_profile_id );
 
-      // $controller = new DeleteCustomerProfileController($request);
-      // $response = $controller->executeWithApiResponse($this->authorize->mode());
-      // if (($response != null) && ($response->getMessages()->getResultCode() == "Ok") )
-      // {
+        // $controller = new DeleteCustomerProfileController($request);
+        // $response = $controller->executeWithApiResponse($this->authorize->mode());
+        // if (($response != null) && ($response->getMessages()->getResultCode() == "Ok") )
+        // {
       //     nlog("SUCCESS: Delete Customer Payment Profile  SUCCESS");
-      // }
-      // else
-      //   nlog("unable to delete profile {$customer_profile_id}");
+        // }
+        // else
+        //   nlog("unable to delete profile {$customer_profile_id}");
     }
 
     private function processTokenPayment($request)

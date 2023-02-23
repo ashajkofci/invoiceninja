@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -64,15 +64,14 @@ class CreateRecurringInvitations extends AbstractService
         }
 
         if ($this->entity->invitations()->count() == 0) {
-
             $invitation = $this->invitation_class::where('company_id', $this->entity->company_id)
                                     ->where($this->entity_id_name, $this->entity->id)
                                     ->withTrashed()
                                     ->first();
 
-            if ($invitation) 
+            if ($invitation) {
                 $invitation->restore();
-                
+            }
         }
 
 

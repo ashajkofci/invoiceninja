@@ -4,13 +4,12 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Http\Requests\PurchaseOrder;
-
 
 use App\Http\Requests\Request;
 use App\Models\PurchaseOrder;
@@ -57,13 +56,13 @@ class StorePurchaseOrderRequest extends Request
 
         $input = $this->decodePrimaryKeys($input);
 
-        if (isset($input['line_items']) && is_array($input['line_items'])) 
+        if (isset($input['line_items']) && is_array($input['line_items'])) {
             $input['line_items'] = isset($input['line_items']) ? $this->cleanItems($input['line_items']) : [];
+        }
 
         $input['amount'] = 0;
         $input['balance'] = 0;
 
         $this->replace($input);
     }
-
 }

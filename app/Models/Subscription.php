@@ -4,22 +4,20 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Models;
 
-use App\Models\RecurringInvoice;
 use App\Services\Subscription\SubscriptionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subscription extends BaseModel
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Filterable;
 
     protected $hidden = [
         'id',
@@ -95,7 +93,6 @@ class Subscription extends BaseModel
     public function nextDateByInterval($date, $frequency_id)
     {
         switch ($frequency_id) {
-
             case RecurringInvoice::FREQUENCY_DAILY:
                 return $date->addDay();
             case RecurringInvoice::FREQUENCY_WEEKLY:

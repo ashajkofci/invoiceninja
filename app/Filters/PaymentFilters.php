@@ -4,14 +4,14 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Filters;
 
-use App\Models\User;
+use App\Models\Payment;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -26,78 +26,111 @@ class PaymentFilters extends QueryFilters
      * @return Builder
      * @deprecated
      */
-    public function filter(string $filter = '') : Builder
+    public function filter(string $filter = ''): Builder
     {
         if (strlen($filter) == 0) {
             return $this->builder;
         }
 
         return  $this->builder->where(function ($query) use ($filter) {
-            $query->where('payments.amount', 'like', '%'.$filter.'%')
-                          ->orWhere('payments.date', 'like', '%'.$filter.'%')
-                          ->orWhere('payments.custom_value1', 'like', '%'.$filter.'%')
-                          ->orWhere('payments.custom_value2', 'like', '%'.$filter.'%')
-                          ->orWhere('payments.custom_value3', 'like', '%'.$filter.'%')
-                          ->orWhere('payments.custom_value4', 'like', '%'.$filter.'%');
+            $query->where('amount', 'like', '%'.$filter.'%')
+                          ->orWhere('date', 'like', '%'.$filter.'%')
+                          ->orWhere('custom_value1', 'like', '%'.$filter.'%')
+                          ->orWhere('custom_value2', 'like', '%'.$filter.'%')
+                          ->orWhere('custom_value3', 'like', '%'.$filter.'%')
+                          ->orWhere('custom_value4', 'like', '%'.$filter.'%');
         });
     }
 
-    /**
-     * Filters the list based on the status
-     * archived, active, deleted.
+
+ /**
+     * Filter based on client status.
      *
-     * @param string filter
+     * Statuses we need to handle
+     * - all
+     * - pending
+     * - cancelled
+     * - failed
+     * - completed
+     * - partially refunded
+     * - refunded
+     *
+     * @param string client_status The payment status as seen by the client
      * @return Builder
      */
-    public function status(string $filter = '') : Builder
+    public function client_status(string $value = ''): Builder
     {
-        if (strlen($filter) == 0) {
+        if (strlen($value) == 0) {
             return $this->builder;
         }
 
-        $table = 'payments';
-        $filters = explode(',', $filter);
+        $status_parameters = explode(',', $value);
 
-        return $this->builder->where(function ($query) use ($filters, $table) {
-            $query->whereNull($table.'.id');
+        if (in_array('all', $status_parameters)) {
+            return $this->builder;
+        }
 
-            if (in_array(parent::STATUS_ACTIVE, $filters)) {
-                $query->orWhereNull($table.'.deleted_at');
+        $this->builder->where(function ($query) use ($status_parameters) {
+            $payment_filters = [];
+
+            if (in_array('pending', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_PENDING;
             }
 
-            if (in_array(parent::STATUS_ARCHIVED, $filters)) {
-                $query->orWhere(function ($query) use ($table) {
-                    $query->whereNotNull($table.'.deleted_at');
-
-                    if (! in_array($table, ['users'])) {
-                        $query->where($table.'.is_deleted', '=', 0);
-                    }
-                });
+            if (in_array('cancelled', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_CANCELLED;
             }
 
-            if (in_array(parent::STATUS_DELETED, $filters)) {
-                $query->orWhere($table.'.is_deleted', '=', 1);
+            if (in_array('failed', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_FAILED;
             }
+
+            if (in_array('completed', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_COMPLETED;
+            }
+
+            if (in_array('partially_refunded', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_PARTIALLY_REFUNDED;
+            }
+
+            if (in_array('refunded', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_REFUNDED;
+            }
+
+            if (count($payment_filters) >0) {
+                $query->whereIn('status_id', $payment_filters);
+            }
+            
         });
+
+        return $this->builder;
     }
 
     /**
      * Returns a list of payments that can be matched to bank transactions
      */
-    public function match_transactions($value = 'true') :Builder
+    public function match_transactions($value = 'true'): Builder
     {
-
-        if($value == 'true'){
+        if ($value == 'true') {
             return $this->builder
-                        ->where('is_deleted',0)
-                        ->where(function ($query){
+                        ->where('is_deleted', 0)
+                        ->where(function ($query) {
                             $query->whereNull('transaction_id')
-                            ->orWhere("transaction_id","");
+                            ->orWhere("transaction_id", "")
+                            ->company();
                         });
-                        
         }
 
         return $this->builder;
+    }
+
+    public function number(string $number = ''): Builder
+    {
+        if (strlen($number) == 0) {
+            return $this->builder;
+        }
+
+        return $this->builder->where('number', $number);
     }
 
     /**
@@ -106,28 +139,15 @@ class PaymentFilters extends QueryFilters
      * @param string sort formatted as column|asc
      * @return Builder
      */
-    public function sort(string $sort) : Builder
+    public function sort(string $sort = ''): Builder
     {
         $sort_col = explode('|', $sort);
 
+        if (!is_array($sort_col) || count($sort_col) != 2) {
+            return $this->builder;
+        }
+
         return $this->builder->orderBy($sort_col[0], $sort_col[1]);
-    }
-
-    public function number(string $number) : Builder
-    {
-        return $this->builder->where('number', $number);
-    }
-
-    /**
-     * Returns the base query.
-     *
-     * @param int company_id
-     * @param User $user
-     * @return Builder
-     * @deprecated
-     */
-    public function baseQuery(int $company_id, User $user) : Builder
-    {
     }
 
     /**
@@ -135,7 +155,7 @@ class PaymentFilters extends QueryFilters
      *
      * @return Illuminate\Database\Query\Builder
      */
-    public function entityFilter()
+    public function entityFilter(): Builder
     {
         if (auth()->guard('contact')->user()) {
             return $this->contactViewFilter();
@@ -150,7 +170,7 @@ class PaymentFilters extends QueryFilters
      *
      * @return Builder
      */
-    private function contactViewFilter() : Builder
+    private function contactViewFilter(): Builder
     {
         return $this->builder
                     ->whereCompanyId(auth()->guard('contact')->user()->company->id)

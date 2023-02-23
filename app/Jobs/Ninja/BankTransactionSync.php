@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -20,7 +20,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Cache;
 
 class BankTransactionSync implements ShouldQueue
 {
@@ -45,29 +44,20 @@ class BankTransactionSync implements ShouldQueue
     public function handle()
     {
         //multiDB environment, need to
-        foreach (MultiDB::$dbs as $db) 
-        {
+        foreach (MultiDB::$dbs as $db) {
             MultiDB::setDB($db);
 
             nlog("syncing transactions");
 
-                $a = Account::with('bank_integrations')->whereNotNull('bank_integration_account_id')->cursor()->each(function ($account){
+            $a = Account::with('bank_integrations')->whereNotNull('bank_integration_account_id')->cursor()->each(function ($account) {
+                // $queue = Ninja::isHosted() ? 'bank' : 'default';
 
-                    // $queue = Ninja::isHosted() ? 'bank' : 'default';
-
-                    if($account->isPaid() && $account->plan == 'enterprise')
-                    {
-
-                        $account->bank_integrations()->where('auto_sync', true)->cursor()->each(function ($bank_integration) use ($account){
-                            
-                            (new ProcessBankTransactions($account->bank_integration_account_id, $bank_integration))->handle();
-
-                        });
-
-                    }
-
-                });
+                if ($account->isPaid() && $account->plan == 'enterprise') {
+                    $account->bank_integrations()->where('auto_sync', true)->cursor()->each(function ($bank_integration) use ($account) {
+                        (new ProcessBankTransactions($account->bank_integration_account_id, $bank_integration))->handle();
+                    });
+                }
+            });
         }
     }
-
 }

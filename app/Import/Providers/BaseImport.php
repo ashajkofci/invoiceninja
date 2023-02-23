@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -15,12 +15,11 @@ use App\Factory\ClientFactory;
 use App\Factory\InvoiceFactory;
 use App\Factory\PaymentFactory;
 use App\Factory\QuoteFactory;
-use App\Http\Requests\Invoice\StoreInvoiceRequest;
 use App\Http\Requests\Quote\StoreQuoteRequest;
 use App\Import\ImportException;
 use App\Jobs\Mail\NinjaMailerJob;
 use App\Jobs\Mail\NinjaMailerObject;
-use App\Mail\Import\ImportCompleted;
+use App\Mail\Import\CsvImportCompleted;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Quote;
@@ -31,12 +30,9 @@ use App\Repositories\PaymentRepository;
 use App\Repositories\QuoteRepository;
 use App\Utils\Traits\CleanLineItems;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use League\Csv\Reader;
 use League\Csv\Statement;
-use Symfony\Component\HttpFoundation\ParameterBag;
 
 class BaseImport
 {
@@ -152,7 +148,7 @@ class BaseImport
 
 
     private function runValidation($data)
-    {        
+    {
         $_syn_request_class = new $this->request_name;
         $_syn_request_class->setContainer(app());
         $_syn_request_class->initialize($data);
@@ -163,7 +159,6 @@ class BaseImport
         $_syn_request_class->setValidator($validator);
 
         return $validator;
-
     }
 
     public function ingest($data, $entity_type)
@@ -173,8 +168,7 @@ class BaseImport
         $is_free_hosted_client = $this->company->account->isFreeHostedClient();
         $hosted_client_count = $this->company->account->hosted_client_count;
 
-        if($this->factory_name == 'App\Factory\ClientFactory' && $is_free_hosted_client && (count($data) > $hosted_client_count))
-        {
+        if ($this->factory_name == 'App\Factory\ClientFactory' && $is_free_hosted_client && (count($data) > $hosted_client_count)) {
             $this->error_array[$entity_type][] = [
                 $entity_type => 'client',
                 'error' => 'Error, you are attempting to import more clients than your plan allows',
@@ -184,9 +178,13 @@ class BaseImport
         }
 
         foreach ($data as $key => $record) {
-
             try {
                 $entity = $this->transformer->transform($record);
+
+                if (!$entity) {
+                    continue;
+                }
+
                 $validator = $this->runValidation($entity);
 
                 if ($validator->fails()) {
@@ -222,7 +220,8 @@ class BaseImport
                     'error' => $message,
                 ];
              
-             nlog("Ingest {$ex->getMessage()}");   
+                nlog("Ingest {$ex->getMessage()}");
+                nlog($record);
             }
         }
 
@@ -282,6 +281,8 @@ class BaseImport
 
     public function ingestInvoices($invoices, $invoice_number_key)
     {
+        $count = 0;
+
         $invoice_transformer = $this->transformer;
 
         /** @var PaymentRepository $payment_repository */
@@ -343,6 +344,7 @@ class BaseImport
                     }
                     $invoice_repository->save($invoice_data, $invoice);
 
+                    $count++;
                     // If we're doing a generic CSV import, only import payment data if we're not importing a payment CSV.
                     // If we're doing a platform-specific import, trust the platform to only return payment info if there's not a separate payment CSV.
                     if (
@@ -361,7 +363,7 @@ class BaseImport
                                 $payment_data['invoices'] = [
                                     [
                                         'invoice_id' => $invoice->id,
-                                        'amount' => $payment_data['amount'] ?? null,
+                                        'amount' => min($invoice->amount, $payment_data['amount']) ?? null,
                                     ],
                                 ];
 
@@ -404,6 +406,8 @@ class BaseImport
                 ];
             }
         }
+
+        return $count;
     }
 
     private function actionInvoiceStatus(
@@ -475,6 +479,8 @@ class BaseImport
 
     public function ingestQuotes($quotes, $quote_number_key)
     {
+        $count = 0;
+
         $quote_transformer = $this->transformer;
 
         /** @var ClientRepository $client_repository */
@@ -532,6 +538,8 @@ class BaseImport
                         $quote->status_id = $quote_data['status_id'];
                     }
                     $quote_repository->save($quote_data, $quote);
+                    
+                    $count++;
 
                     $this->actionQuoteStatus(
                         $quote,
@@ -553,6 +561,8 @@ class BaseImport
                 ];
             }
         }
+
+        return $count;
     }
 
     protected function getUserIDForRecord($record)
@@ -586,10 +596,11 @@ class BaseImport
         $data = [
             'errors'  => $this->error_array,
             'company' => $this->company,
+            'entity_count' => $this->entity_count
         ];
 
         $nmo = new NinjaMailerObject;
-        $nmo->mailable = new ImportCompleted($this->company, $data);
+        $nmo->mailable = new CsvImportCompleted($this->company, $data);
         $nmo->company = $this->company;
         $nmo->settings = $this->company->settings;
         $nmo->to_user = $this->company->owner();

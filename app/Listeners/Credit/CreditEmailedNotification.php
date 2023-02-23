@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -44,32 +44,27 @@ class CreditEmailedNotification implements ShouldQueue
         $credit->last_sent_date = now();
         $credit->saveQuietly();
 
-        $nmo = new NinjaMailerObject;
-        $nmo->mailable = new NinjaMailer((new EntitySentObject($event->invitation, 'credit', $event->template))->build());
-        $nmo->company = $credit->company;
-        $nmo->settings = $credit->company->settings;
-
         foreach ($event->invitation->company->company_users as $company_user) {
             $user = $company_user->user;
 
             // $notification = new EntitySentNotification($event->invitation, 'credit');
 
-            $methods = $this->findUserNotificationTypes($event->invitation, $company_user, 'credit', ['all_notifications', 'credit_sent', 'credit_sent_all']);
+            $methods = $this->findUserNotificationTypes($event->invitation, $company_user, 'credit', ['all_notifications', 'credit_sent', 'credit_sent_all', 'credit_sent_user']);
 
             if (($key = array_search('mail', $methods)) !== false) {
                 // if (($key = array_search('mail', $methods))) {
                 unset($methods[$key]);
 
+                $nmo = new NinjaMailerObject;
+                $nmo->mailable = new NinjaMailer((new EntitySentObject($event->invitation, 'credit', $event->template))->build());
+                $nmo->company = $credit->company;
+                $nmo->settings = $credit->company->settings;
                 $nmo->to_user = $user;
 
-                NinjaMailerJob::dispatch($nmo);
+                (new NinjaMailerJob($nmo))->handle();
 
-                // $first_notification_sent = false;
+                $nmo = null;
             }
-
-            // $notification->method = $methods;
-
-            // $user->notify($notification);
         }
     }
 }

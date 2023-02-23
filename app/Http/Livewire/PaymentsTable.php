@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,6 +13,7 @@
 namespace App\Http\Livewire;
 
 use App\Libraries\MultiDB;
+use App\Models\Company;
 use App\Models\Payment;
 use App\Utils\Traits\WithSorting;
 use Livewire\Component;
@@ -23,23 +24,25 @@ class PaymentsTable extends Component
     use WithSorting;
     use WithPagination;
 
-    public $per_page = 10;
+    public int $per_page = 10;
 
-    public $user;
+    public Company $company;
 
-    public $company;
+    public int $company_id;
+
+    public string $db;
 
     public function mount()
     {
-        MultiDB::setDb($this->company->db);
+        MultiDB::setDb($this->db);
 
-        $this->user = auth()->user();
+        $this->company = Company::find($this->company_id);
     }
 
     public function render()
     {
         $query = Payment::query()
-            ->with('type', 'client')
+            ->with('type', 'client', 'invoices')
             ->where('company_id', $this->company->id)
             ->where('client_id', auth()->guard('contact')->user()->client_id)
             ->whereIn('status_id', [Payment::STATUS_FAILED, Payment::STATUS_COMPLETED, Payment::STATUS_PENDING, Payment::STATUS_REFUNDED, Payment::STATUS_PARTIALLY_REFUNDED])

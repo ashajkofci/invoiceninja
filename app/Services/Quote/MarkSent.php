@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,6 +13,7 @@ namespace App\Services\Quote;
 
 use App\Events\Quote\QuoteWasMarkedSent;
 use App\Models\Quote;
+use App\Models\Webhook;
 use App\Utils\Ninja;
 use Carbon\Carbon;
 
@@ -30,7 +31,6 @@ class MarkSent
 
     public function run()
     {
-
         /* Return immediately if status is not draft */
         if ($this->quote->status_id != Quote::STATUS_DRAFT) {
             return $this->quote;
@@ -51,6 +51,8 @@ class MarkSent
              ->save();
 
         event(new QuoteWasMarkedSent($this->quote, $this->quote->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
+
+        $this->quote->sendEvent(Webhook::EVENT_SENT_QUOTE, "client");
 
         return $this->quote;
     }

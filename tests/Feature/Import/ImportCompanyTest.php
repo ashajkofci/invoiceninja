@@ -11,7 +11,6 @@
 
 namespace Tests\Feature\Import;
 
-use App\Jobs\Import\CSVImport;
 use App\Models\Account;
 use App\Models\Activity;
 use App\Models\Backup;
@@ -47,16 +46,10 @@ use App\Models\TaskStatus;
 use App\Models\TaxRate;
 use App\Models\User;
 use App\Models\Vendor;
-use App\Models\VendorContact;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
-use League\Csv\Reader;
-use League\Csv\Statement;
-use Tests\MockAccountData;
 use Tests\TestCase;
 
 /**
@@ -200,9 +193,9 @@ class ImportCompanyTest extends TestCase
             unset($cu_array['id']);
 
             $new_cu = CompanyUser::firstOrNew(
-                        ['user_id' => $user_id, 'company_id' => $this->company->id],
-                        $cu_array,
-                    );
+                ['user_id' => $user_id, 'company_id' => $this->company->id],
+                $cu_array,
+            );
 
             $new_cu->account_id = $this->account->id;
             $new_cu->save(['timestamps' => false]);
@@ -230,9 +223,9 @@ class ImportCompanyTest extends TestCase
             unset($ct_array['id']);
 
             $new_ct = CompanyToken::firstOrNew(
-                        ['user_id' => $user_id, 'company_id' => $this->company->id],
-                        $ct_array,
-                    );
+                ['user_id' => $user_id, 'company_id' => $this->company->id],
+                $ct_array,
+            );
 
             $new_ct->account_id = $this->account->id;
             $new_ct->save(['timestamps' => false]);
@@ -259,9 +252,9 @@ class ImportCompanyTest extends TestCase
             unset($obj_array['id']);
 
             $new_obj = PaymentTerm::firstOrNew(
-                        ['num_days' => $obj->num_days, 'company_id' => $this->company->id],
-                        $obj_array,
-                    );
+                ['num_days' => $obj->num_days, 'company_id' => $this->company->id],
+                $obj_array,
+            );
 
             $new_obj->save(['timestamps' => false]);
         }
@@ -287,9 +280,9 @@ class ImportCompanyTest extends TestCase
             unset($obj_array['tax_rate_id']);
 
             $new_obj = TaxRate::firstOrNew(
-                        ['name' => $obj->name, 'company_id' => $this->company->id, 'rate' => $obj->rate],
-                        $obj_array,
-                    );
+                ['name' => $obj->name, 'company_id' => $this->company->id, 'rate' => $obj->rate],
+                $obj_array,
+            );
 
             $new_obj->save(['timestamps' => false]);
         }
@@ -314,9 +307,9 @@ class ImportCompanyTest extends TestCase
             unset($obj_array['id']);
 
             $new_obj = ExpenseCategory::firstOrNew(
-                        ['name' => $obj->name, 'company_id' => $this->company->id],
-                        $obj_array,
-                    );
+                ['name' => $obj->name, 'company_id' => $this->company->id],
+                $obj_array,
+            );
 
             $new_obj->save(['timestamps' => false]);
         }
@@ -341,9 +334,9 @@ class ImportCompanyTest extends TestCase
             unset($obj_array['id']);
 
             $new_obj = TaskStatus::firstOrNew(
-                        ['name' => $obj->name, 'company_id' => $this->company->id],
-                        $obj_array,
-                    );
+                ['name' => $obj->name, 'company_id' => $this->company->id],
+                $obj_array,
+            );
 
             $new_obj->save(['timestamps' => false]);
         }
@@ -373,9 +366,9 @@ class ImportCompanyTest extends TestCase
             unset($obj_array['documents']);
 
             $new_obj = Client::firstOrNew(
-                        ['number' => $obj->number, 'company_id' => $this->company->id],
-                        $obj_array,
-                    );
+                ['number' => $obj->number, 'company_id' => $this->company->id],
+                $obj_array,
+            );
 
             $new_obj->save(['timestamps' => false]);
 
@@ -409,9 +402,9 @@ class ImportCompanyTest extends TestCase
             $obj_array['client_id'] = $client_id;
 
             $new_obj = ClientContact::firstOrNew(
-                        ['email' => $obj->email, 'company_id' => $this->company->id],
-                        $obj_array,
-                    );
+                ['email' => $obj->email, 'company_id' => $this->company->id],
+                $obj_array,
+            );
 
             $new_obj->save(['timestamps' => false]);
 
@@ -427,11 +420,13 @@ class ImportCompanyTest extends TestCase
         /* Generic */
         $this->assertEquals(1, count($this->backup_json_object->vendors));
 
-        $this->genericImport(Vendor::class,
+        $this->genericImport(
+            Vendor::class,
             ['user_id', 'assigned_user_id', 'company_id', 'id', 'hashed_id'],
             [['users' => 'user_id'], ['users' =>'assigned_user_id']],
             'vendors',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(1, Vendor::count());
 
@@ -439,11 +434,13 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(1, count($this->backup_json_object->projects));
         //$class, $unset, $transforms, $object_property, $match_key
-        $this->genericImport(Project::class,
+        $this->genericImport(
+            Project::class,
             ['user_id', 'assigned_user_id', 'company_id', 'id', 'hashed_id', 'client_id'],
             [['users' => 'user_id'], ['users' =>'assigned_user_id'], ['clients' => 'client_id']],
             'projects',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(1, Project::count());
 
@@ -453,7 +450,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(1, count($this->backup_json_object->products));
 
-        $this->genericNewClassImport(Product::class,
+        $this->genericNewClassImport(
+            Product::class,
             ['user_id', 'company_id', 'hashed_id', 'id'],
             [['users' => 'user_id'], ['users' =>'assigned_user_id'], ['vendors' => 'vendor_id'], ['projects' => 'project_id']],
             'products'
@@ -464,7 +462,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(1, count($this->backup_json_object->company_gateways));
 
-        $this->genericNewClassImport(CompanyGateway::class,
+        $this->genericNewClassImport(
+            CompanyGateway::class,
             ['user_id', 'company_id', 'hashed_id', 'id'],
             [['users' => 'user_id']],
             'company_gateways'
@@ -476,29 +475,35 @@ class ImportCompanyTest extends TestCase
 
         //client gateway tokens
 
-        $this->genericNewClassImport(ClientGatewayToken::class,
+        $this->genericNewClassImport(
+            ClientGatewayToken::class,
             ['company_id', 'id', 'hashed_id', 'client_id'],
             [['clients' => 'client_id']],
-            'client_gateway_tokens');
+            'client_gateway_tokens'
+        );
 
         //client gateway tokens
 
         //Group Settings
-        $this->genericImport(GroupSetting::class,
+        $this->genericImport(
+            GroupSetting::class,
             ['user_id', 'company_id', 'id', 'hashed_id'],
             [['users' => 'user_id']],
             'group_settings',
-            'name');
+            'name'
+        );
         //Group Settings
 
         //Subscriptions
         $this->assertEquals(1, count($this->backup_json_object->subscriptions));
 
-        $this->genericImport(Subscription::class,
+        $this->genericImport(
+            Subscription::class,
             ['user_id', 'assigned_user_id', 'company_id', 'id', 'hashed_id'],
             [['group_settings' => 'group_id'], ['users' => 'user_id'], ['users' => 'assigned_user_id']],
             'subscriptions',
-            'name');
+            'name'
+        );
 
         $this->assertEquals(1, Subscription::count());
 
@@ -508,7 +513,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(2, count($this->backup_json_object->recurring_invoices));
 
-        $this->genericImport(RecurringInvoice::class,
+        $this->genericImport(
+            RecurringInvoice::class,
             ['user_id', 'assigned_user_id', 'company_id', 'id', 'hashed_id', 'client_id', 'subscription_id', 'project_id', 'vendor_id', 'status'],
             [
                 ['subscriptions' => 'subscription_id'],
@@ -520,7 +526,8 @@ class ImportCompanyTest extends TestCase
                 ['clients' => 'client_id'],
             ],
             'recurring_invoices',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(2, RecurringInvoice::count());
 
@@ -530,7 +537,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(2, count($this->backup_json_object->recurring_invoice_invitations));
 
-        $this->genericImport(RecurringInvoiceInvitation::class,
+        $this->genericImport(
+            RecurringInvoiceInvitation::class,
             ['user_id', 'client_contact_id', 'company_id', 'id', 'hashed_id', 'recurring_invoice_id'],
             [
                 ['users' => 'user_id'],
@@ -538,7 +546,8 @@ class ImportCompanyTest extends TestCase
                 ['client_contacts' => 'client_contact_id'],
             ],
             'recurring_invoice_invitations',
-            'key');
+            'key'
+        );
 
         $this->assertEquals(2, RecurringInvoiceInvitation::count());
 
@@ -548,7 +557,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(2, count($this->backup_json_object->invoices));
 
-        $this->genericImport(Invoice::class,
+        $this->genericImport(
+            Invoice::class,
             ['user_id', 'client_id', 'company_id', 'id', 'hashed_id', 'recurring_id', 'status'],
             [
                 ['users' => 'user_id'],
@@ -560,7 +570,8 @@ class ImportCompanyTest extends TestCase
                 ['vendors' => 'vendor_id'],
             ],
             'invoices',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(2, Invoice::count());
 
@@ -570,7 +581,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(2, count($this->backup_json_object->invoice_invitations));
 
-        $this->genericImport(InvoiceInvitation::class,
+        $this->genericImport(
+            InvoiceInvitation::class,
             ['user_id', 'client_contact_id', 'company_id', 'id', 'hashed_id', 'invoice_id'],
             [
                 ['users' => 'user_id'],
@@ -578,7 +590,8 @@ class ImportCompanyTest extends TestCase
                 ['client_contacts' => 'client_contact_id'],
             ],
             'invoice_invitations',
-            'key');
+            'key'
+        );
 
         $this->assertEquals(2, InvoiceInvitation::count());
 
@@ -587,7 +600,8 @@ class ImportCompanyTest extends TestCase
         // Quotes
         $this->assertEquals(2, count($this->backup_json_object->quotes));
 
-        $this->genericImport(Quote::class,
+        $this->genericImport(
+            Quote::class,
             ['user_id', 'client_id', 'company_id', 'id', 'hashed_id', 'recurring_id', 'status'],
             [
                 ['users' => 'user_id'],
@@ -599,7 +613,8 @@ class ImportCompanyTest extends TestCase
                 ['vendors' => 'vendor_id'],
             ],
             'quotes',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(2, Quote::count());
 
@@ -609,7 +624,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(2, count($this->backup_json_object->quote_invitations));
 
-        $this->genericImport(QuoteInvitation::class,
+        $this->genericImport(
+            QuoteInvitation::class,
             ['user_id', 'client_contact_id', 'company_id', 'id', 'hashed_id', 'quote_id'],
             [
                 ['users' => 'user_id'],
@@ -617,7 +633,8 @@ class ImportCompanyTest extends TestCase
                 ['client_contacts' => 'client_contact_id'],
             ],
             'quote_invitations',
-            'key');
+            'key'
+        );
 
         $this->assertEquals(2, QuoteInvitation::count());
 
@@ -626,7 +643,8 @@ class ImportCompanyTest extends TestCase
         // Credits
         $this->assertEquals(2, count($this->backup_json_object->credits));
 
-        $this->genericImport(Credit::class,
+        $this->genericImport(
+            Credit::class,
             ['user_id', 'client_id', 'company_id', 'id', 'hashed_id', 'recurring_id', 'status'],
             [
                 ['users' => 'user_id'],
@@ -638,7 +656,8 @@ class ImportCompanyTest extends TestCase
                 ['vendors' => 'vendor_id'],
             ],
             'credits',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(2, Credit::count());
 
@@ -648,7 +667,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(2, count($this->backup_json_object->credit_invitations));
 
-        $this->genericImport(CreditInvitation::class,
+        $this->genericImport(
+            CreditInvitation::class,
             ['user_id', 'client_contact_id', 'company_id', 'id', 'hashed_id', 'credit_id'],
             [
                 ['users' => 'user_id'],
@@ -656,7 +676,8 @@ class ImportCompanyTest extends TestCase
                 ['client_contacts' => 'client_contact_id'],
             ],
             'credit_invitations',
-            'key');
+            'key'
+        );
 
         $this->assertEquals(2, CreditInvitation::count());
 
@@ -666,7 +687,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(2, count($this->backup_json_object->expenses));
 
-        $this->genericImport(Expense::class,
+        $this->genericImport(
+            Expense::class,
             ['assigned_user_id', 'user_id', 'client_id', 'company_id', 'id', 'hashed_id', 'project_id', 'vendor_id'],
             [
                 ['users' => 'user_id'],
@@ -676,7 +698,8 @@ class ImportCompanyTest extends TestCase
                 ['vendors' => 'vendor_id'],
             ],
             'expenses',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(2, Expense::count());
 
@@ -686,7 +709,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(3, count($this->backup_json_object->tasks));
 
-        $this->genericImport(Task::class,
+        $this->genericImport(
+            Task::class,
             ['assigned_user_id', 'user_id', 'client_id', 'company_id', 'id', 'hashed_id', 'invoice_id', 'project_id'],
             [
                 ['users' => 'user_id'],
@@ -696,7 +720,8 @@ class ImportCompanyTest extends TestCase
                 ['invoices' => 'invoice_id'],
             ],
             'tasks',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(3, Task::count());
 
@@ -706,7 +731,8 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(2, count($this->backup_json_object->payments));
 
-        $this->genericImport(Payment::class,
+        $this->genericImport(
+            Payment::class,
             ['assigned_user_id', 'user_id', 'client_id', 'company_id', 'id', 'hashed_id', 'client_contact_id', 'invitation_id', 'vendor_id', 'paymentables'],
             [
                 ['users' => 'user_id'],
@@ -718,7 +744,8 @@ class ImportCompanyTest extends TestCase
                 ['company_gateways' => 'company_gateway_id'],
             ],
             'payments',
-            'number');
+            'number'
+        );
 
         $this->assertEquals(2, Payment::count());
 
@@ -744,7 +771,8 @@ class ImportCompanyTest extends TestCase
 
         $this->backup_json_object->activities = $activities;
 
-        $this->genericNewClassImport(Activity::class,
+        $this->genericNewClassImport(
+            Activity::class,
             [
                 'user_id',
                 'company_id',
@@ -781,7 +809,8 @@ class ImportCompanyTest extends TestCase
                 ['recurring_invoices' => 'recurring_invoice_id'],
                 ['invitations' => 'invitation_id'],
             ],
-            'activities');
+            'activities'
+        );
 
         $this->assertEquals(25, Activity::count());
 
@@ -791,13 +820,15 @@ class ImportCompanyTest extends TestCase
 
         $this->assertEquals(25, count($this->backup_json_object->backups));
 
-        $this->genericImportWithoutCompany(Backup::class,
+        $this->genericImportWithoutCompany(
+            Backup::class,
             ['activity_id', 'hashed_id', 'html_backup'],
             [
                 ['activities' => 'activity_id'],
             ],
             'backups',
-            'created_at');
+            'created_at'
+        );
 
         $this->assertEquals(25, Backup::count());
 
@@ -806,7 +837,8 @@ class ImportCompanyTest extends TestCase
         // Company Ledger
         $this->assertEquals(3, count($this->backup_json_object->company_ledger));
 
-        $this->genericImport(CompanyLedger::class,
+        $this->genericImport(
+            CompanyLedger::class,
             ['company_id', 'user_id', 'client_id', 'activity_id', 'id', 'account_id'],
             [
                 ['users' => 'user_id'],
@@ -814,7 +846,8 @@ class ImportCompanyTest extends TestCase
                 ['activities' => 'activity_id'],
             ],
             'company_ledger',
-            'created_at');
+            'created_at'
+        );
 
         $this->assertEquals(3, CompanyLedger::count());
 
@@ -822,13 +855,15 @@ class ImportCompanyTest extends TestCase
 
         // Designs
 
-        $this->genericImport(Design::class,
+        $this->genericImport(
+            Design::class,
             ['company_id', 'user_id'],
             [
                 ['users' => 'user_id'],
             ],
             'designs',
-            'name');
+            'name'
+        );
 
         //  Designs
 
@@ -1029,9 +1064,9 @@ class ImportCompanyTest extends TestCase
             }
 
             $new_obj = $class::firstOrNew(
-                    [$match_key => $obj->{$match_key}],
-                    $obj_array,
-                );
+                [$match_key => $obj->{$match_key}],
+                $obj_array,
+            );
 
             $new_obj->save(['timestamps' => false]);
 
@@ -1069,9 +1104,9 @@ class ImportCompanyTest extends TestCase
             }
 
             $new_obj = $class::firstOrNew(
-                    [$match_key => $obj->{$match_key}, 'company_id' => $this->company->id],
-                    $obj_array,
-                );
+                [$match_key => $obj->{$match_key}, 'company_id' => $this->company->id],
+                $obj_array,
+            );
 
             $new_obj->save(['timestamps' => false]);
 

@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -66,7 +66,6 @@ class Wave extends BaseImport implements ImportInterface
 
         if (empty($data)) {
             $this->entity_count['clients'] = 0;
-
             return;
         }
 
@@ -86,13 +85,11 @@ class Wave extends BaseImport implements ImportInterface
 
     public function product()
     {
-
         //done automatically inside the invoice() method as we need to harvest the products from the line items
     }
 
     public function invoice()
     {
-
         //make sure we update and create products with wave
         $initial_update_products_value = $this->company->update_products;
         $this->company->update_products = true;
@@ -170,11 +167,16 @@ class Wave extends BaseImport implements ImportInterface
         $entity_type = 'expense';
 
         $data = $this->getCsvData($entity_type);
+
+        if (!$data) {
+            $this->entity_count['expense'] = 0;
+            return;
+        }
+
         $data = $this->preTransform($data, $entity_type);
 
         if (empty($data)) {
             $this->entity_count['expense'] = 0;
-
             return;
         }
 
@@ -212,6 +214,8 @@ class Wave extends BaseImport implements ImportInterface
 
     public function ingestExpenses($data)
     {
+        $count = 0;
+
         $key = 'Transaction ID';
 
         $expense_transformer = $this->transformer;
@@ -255,6 +259,7 @@ class Wave extends BaseImport implements ImportInterface
                     );
 
                     $expense_repository->save($expense_data, $expense);
+                    $count++;
                 }
             } catch (\Exception $ex) {
                 if ($ex instanceof ImportException) {
@@ -270,5 +275,7 @@ class Wave extends BaseImport implements ImportInterface
                 ];
             }
         }
+
+        return $count;
     }
 }

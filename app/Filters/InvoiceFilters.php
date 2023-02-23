@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,7 +12,6 @@
 namespace App\Filters;
 
 use App\Models\Invoice;
-use App\Models\User;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -39,7 +38,7 @@ class InvoiceFilters extends QueryFilters
      * @param string client_status The invoice status as seen by the client
      * @return Builder
      */
-    public function client_status(string $value = '') :Builder
+    public function client_status(string $value = ''): Builder
     {
         if (strlen($value) == 0) {
             return $this->builder;
@@ -51,25 +50,38 @@ class InvoiceFilters extends QueryFilters
             return $this->builder;
         }
 
-        if (in_array('paid', $status_parameters)) {
-            $this->builder->where('status_id', Invoice::STATUS_PAID);
-        }
+        $this->builder->where(function ($query) use ($status_parameters) {
+            $invoice_filters = [];
 
-        if (in_array('unpaid', $status_parameters)) {
-            $this->builder->whereIn('status_id', [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL]);
-        }
+            if (in_array('paid', $status_parameters)) {
+                $invoice_filters[] = Invoice::STATUS_PAID;
+            }
 
-        if (in_array('overdue', $status_parameters)) {
-            $this->builder->whereIn('status_id', [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL])
-                            ->where('due_date', '<', Carbon::now())
-                            ->orWhere('partial_due_date', '<', Carbon::now());
-        }
+            if (in_array('unpaid', $status_parameters)) {
+                $invoice_filters[] = Invoice::STATUS_SENT;
+                $invoice_filters[] = Invoice::STATUS_PARTIAL;
+            }
+
+            if (count($invoice_filters) >0) {
+                $query->whereIn('status_id', $invoice_filters);
+            }
+            
+            if (in_array('overdue', $status_parameters)) {
+                $query->orWhereIn('status_id', [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL])
+                                ->where('due_date', '<', Carbon::now())
+                                ->orWhere('partial_due_date', '<', Carbon::now());
+            }
+        });
 
         return $this->builder;
     }
 
-    public function number(string $number = '') :Builder
+    public function number(string $number = ''): Builder
     {
+        if (strlen($number) == 0) {
+            return $this->builder;
+        }
+        
         return $this->builder->where('number', $number);
     }
 
@@ -80,81 +92,41 @@ class InvoiceFilters extends QueryFilters
      * @return Builder
      * @deprecated
      */
-    public function filter(string $filter = '') : Builder
+    public function filter(string $filter = ''): Builder
     {
         if (strlen($filter) == 0) {
             return $this->builder;
         }
 
-        return  $this->builder->where(function ($query) use ($filter) {
-            $query->where('invoices.number', 'like', '%'.$filter.'%')
-                          ->orWhere('invoices.po_number', 'like', '%'.$filter.'%')
-                          ->orWhere('invoices.date', 'like', '%'.$filter.'%')
-                          ->orWhere('invoices.amount', 'like', '%'.$filter.'%')
-                          ->orWhere('invoices.balance', 'like', '%'.$filter.'%')
-                          ->orWhere('invoices.custom_value1', 'like', '%'.$filter.'%')
-                          ->orWhere('invoices.custom_value2', 'like', '%'.$filter.'%')
-                          ->orWhere('invoices.custom_value3', 'like', '%'.$filter.'%')
-                          ->orWhere('invoices.custom_value4', 'like', '%'.$filter.'%');
+        return $this->builder->where(function ($query) use ($filter) {
+            $query->where('number', 'like', '%'.$filter.'%')
+                          ->orWhere('po_number', 'like', '%'.$filter.'%')
+                          ->orWhere('date', 'like', '%'.$filter.'%')
+                          ->orWhere('amount', 'like', '%'.$filter.'%')
+                          ->orWhere('balance', 'like', '%'.$filter.'%')
+                          ->orWhere('custom_value1', 'like', '%'.$filter.'%')
+                          ->orWhere('custom_value2', 'like', '%'.$filter.'%')
+                          ->orWhere('custom_value3', 'like', '%'.$filter.'%')
+                          ->orWhere('custom_value4', 'like', '%'.$filter.'%');
         });
     }
 
     /**
-     * Filters the list based on the status
-     * archived, active, deleted - legacy from V1.
-     *
-     * @param string filter
      * @return Builder
+     * @throws RuntimeException
      */
-    public function status(string $filter = '') : Builder
+    public function without_deleted_clients(): Builder
     {
-        if (strlen($filter) == 0) {
-            return $this->builder;
-        }
-
-        $table = 'invoices';
-        $filters = explode(',', $filter);
-
-        return $this->builder->where(function ($query) use ($filters, $table) {
-            $query->whereNull($table.'.id');
-
-            if (in_array(parent::STATUS_ACTIVE, $filters)) {
-                $query->orWhereNull($table.'.deleted_at');
-            }
-
-            if (in_array(parent::STATUS_ARCHIVED, $filters)) {
-                $query->orWhere(function ($query) use ($table) {
-                    $query->whereNotNull($table.'.deleted_at');
-
-                    if (! in_array($table, ['users'])) {
-                        $query->where($table.'.is_deleted', '=', 0);
-                    }
-                });
-            }
-
-            if (in_array(parent::STATUS_DELETED, $filters)) {
-                $query->orWhere($table.'.is_deleted', '=', 1);
-            }
+        return $this->builder->whereHas('client', function ($query) {
+            $query->where('is_deleted', 0);
         });
     }
 
     /**
-     * @return Builder 
-     * @throws RuntimeException 
+     * @return Builder
+     * @throws InvalidArgumentException
      */
-    public function without_deleted_clients()
-    {
-
-        return $this->builder->whereHas('client', function ($query) {
-                        $query->where('is_deleted',0);
-                       });
-    }
-
-    /**
-     * @return Builder 
-     * @throws InvalidArgumentException 
-     */
-    public function upcoming()
+    public function upcoming(): Builder
     {
         return $this->builder
                     ->where(function ($query) {
@@ -165,26 +137,26 @@ class InvoiceFilters extends QueryFilters
     }
 
     /**
-     * @return void 
-     * @throws InvalidArgumentException 
+     * @return void
+     * @throws InvalidArgumentException
      */
-    public function overdue()
+    public function overdue(): Builder
     {
-        $this->builder->whereIn('status_id', [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL])
-                ->where('is_deleted', 0)
-                ->where(function ($query) {
-                    $query->where('due_date', '<', now())
-                        ->orWhere('partial_due_date', '<', now());
-                })
-                ->orderBy('due_date', 'ASC');
+        return $this->builder->whereIn('status_id', [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL])
+                    ->where('is_deleted', 0)
+                    ->where(function ($query) {
+                        $query->where('due_date', '<', now())
+                            ->orWhere('partial_due_date', '<', now());
+                    })
+                    ->orderBy('due_date', 'ASC');
     }
 
     /**
-     * @param string $client_id 
-     * @return Builder 
-     * @throws InvalidArgumentException 
+     * @param string $client_id
+     * @return Builder
+     * @throws InvalidArgumentException
      */
-    public function payable(string $client_id = '')
+    public function payable(string $client_id = ''): Builder
     {
         if (strlen($client_id) == 0) {
             return $this->builder;
@@ -202,28 +174,15 @@ class InvoiceFilters extends QueryFilters
      * @param string sort formatted as column|asc
      * @return Builder
      */
-    public function sort(string $sort = '') : Builder
+    public function sort(string $sort = ''): Builder
     {
         $sort_col = explode('|', $sort);
 
-        //catch invalid explode array count
-        if (count($sort_col) == 1) {
+        if (!is_array($sort_col) || count($sort_col) != 2) {
             return $this->builder;
         }
 
         return $this->builder->orderBy($sort_col[0], $sort_col[1]);
-    }
-
-    /**
-     * Returns the base query.
-     *
-     * @param int company_id
-     * @param User $user
-     * @return Builder
-     * @deprecated
-     */
-    public function baseQuery(int $company_id, User $user) : Builder
-    {
     }
 
     /**
@@ -238,15 +197,15 @@ class InvoiceFilters extends QueryFilters
     {
         if (auth()->guard('contact')->user()) {
             return $this->contactViewFilter();
-        } else {            
+        } else {
             return $this->builder->company()->with(['invitations.company'], ['documents.company']);
         }
     }
 
     /**
-     * @param string $filter 
-     * @return Builder 
-     * @throws InvalidArgumentException 
+     * @param string $filter
+     * @return Builder
+     * @throws InvalidArgumentException
      */
     public function private_notes($filter = '') :Builder
     {
@@ -263,7 +222,7 @@ class InvoiceFilters extends QueryFilters
      *
      * @return Builder
      */
-    private function contactViewFilter() : Builder
+    private function contactViewFilter(): Builder
     {
         return $this->builder
                     ->whereCompanyId(auth()->guard('contact')->user()->company->id)

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -23,7 +23,6 @@ use App\Libraries\MultiDB;
 use App\Models\Client;
 use App\Models\Company;
 use App\Models\Vendor;
-use App\Utils\Ninja;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -82,7 +81,6 @@ class CSVIngest implements ShouldQueue
         $engine->finalizeImport();
 
         $this->checkContacts();
-
     }
 
     private function checkContacts()
@@ -106,6 +104,18 @@ class CSVIngest implements ShouldQueue
             $new_contact->is_primary = true;
             $new_contact->save();
         }
+
+        Client::with('contacts')->where('company_id', $this->company->id)->cursor()->each(function ($client) {
+            $contact = $client->contacts()->first();
+            $contact->is_primary = true;
+            $contact->save();
+        });
+
+        Vendor::with('contacts')->where('company_id', $this->company->id)->cursor()->each(function ($vendor) {
+            $contact = $vendor->contacts()->first();
+            $contact->is_primary = true;
+            $contact->save();
+        });
     }
 
     private function bootEngine()

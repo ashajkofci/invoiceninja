@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,12 +12,7 @@
 namespace App\Models;
 
 use App\DataMapper\CompanySettings;
-use App\Models\BankTransaction;
-use App\Models\BankTransactionRule;
-use App\Models\Language;
 use App\Models\Presenters\CompanyPresenter;
-use App\Models\PurchaseOrder;
-use App\Models\User;
 use App\Services\Notification\NotificationService;
 use App\Utils\Ninja;
 use App\Utils\Traits\AppSetup;
@@ -66,6 +61,7 @@ class Company extends BaseModel
     protected $presenter = CompanyPresenter::class;
 
     protected $fillable = [
+        'invoice_task_hours',
         'markdown_enabled',
         'calculate_expense_tax_by_amount',
         'invoice_expense_documents',
@@ -129,6 +125,7 @@ class Company extends BaseModel
         'invoice_task_lock',
         'convert_payment_currency',
         'convert_expense_currency',
+        'notify_vendor_when_paid',
     ];
 
     protected $hidden = [
@@ -138,6 +135,7 @@ class Company extends BaseModel
     ];
 
     protected $casts = [
+        'is_proforma' => 'bool',
         'country_id' => 'string',
         'custom_fields' => 'object',
         'settings' => 'object',
@@ -167,6 +165,16 @@ class Company extends BaseModel
     public function documents()
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    public function schedulers()
+    {
+        return $this->hasMany(Scheduler::class);
+    }
+
+    public function task_schedulers() //alias for schedulers
+    {
+        return $this->hasMany(Scheduler::class);
     }
 
     public function all_documents()
@@ -371,7 +379,6 @@ class Company extends BaseModel
             $this->buildCache(true);
 
             $companies = Cache::get('countries');
-
         }
 
         return $companies->filter(function ($item) {
@@ -436,14 +443,13 @@ class Company extends BaseModel
         }
 
         //if the cache is still dead, get from DB
-        if(!$languages && property_exists($this->settings, 'language_id'))
+        if (!$languages && property_exists($this->settings, 'language_id')) {
             return Language::find($this->settings->language_id);
+        }
 
         return $languages->filter(function ($item) {
             return $item->id == $this->settings->language_id;
         })->first();
-
-
     }
 
     public function getLocale()
@@ -571,7 +577,9 @@ class Company extends BaseModel
 
     public function resolveRouteBinding($value, $field = null)
     {
-        return $this->where('id', $this->decodePrimaryKey($value))->firstOrFail();
+        return $this->where('id', $this->decodePrimaryKey($value))
+                    ->where('account_id', auth()->user()->account_id)
+                    ->firstOrFail();
     }
 
     public function domain()
@@ -634,6 +642,24 @@ class Company extends BaseModel
         }
 
         return $data;
+    }
+
+    public function timezone_offset()
+    {
+        $offset = 0;
+
+        $entity_send_time = $this->getSetting('entity_send_time');
+
+        if ($entity_send_time == 0) {
+            return 0;
+        }
+
+        $timezone = $this->timezone();
+
+        $offset -= $timezone->utc_offset;
+        $offset += ($entity_send_time * 3600);
+
+        return $offset;
     }
 
     public function translate_entity()

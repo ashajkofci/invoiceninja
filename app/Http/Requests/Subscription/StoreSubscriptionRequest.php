@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,6 +12,7 @@
 namespace App\Http\Requests\Subscription;
 
 use App\Http\Requests\Request;
+use App\Models\Account;
 use App\Models\Subscription;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +25,7 @@ class StoreSubscriptionRequest extends Request
      */
     public function authorize()
     {
-        return auth()->user()->can('create', Subscription::class);
+        return auth()->user()->can('create', Subscription::class) && auth()->user()->account->hasFeature(Account::FEATURE_API);
     }
 
     /**
@@ -36,8 +37,8 @@ class StoreSubscriptionRequest extends Request
     {
         $rules = [
             'name' => ['required', Rule::unique('subscriptions')->where('company_id', auth()->user()->company()->id)],
-            'group_id' => ['bail','sometimes', 'nullable', Rule::exists('group_settings','id')->where('company_id', auth()->user()->company()->id)],
-            'assigned_user_id' => ['bail','sometimes', 'nullable', Rule::exists('users','id')->where('account_id', auth()->user()->account_id)],
+            'group_id' => ['bail','sometimes', 'nullable', Rule::exists('group_settings', 'id')->where('company_id', auth()->user()->company()->id)],
+            'assigned_user_id' => ['bail','sometimes', 'nullable', Rule::exists('users', 'id')->where('account_id', auth()->user()->account_id)],
             'product_ids' => 'bail|sometimes|nullable|string',
             'recurring_product_ids' => 'bail|sometimes|nullable|string',
             'is_recurring' => 'bail|sometimes|bool',

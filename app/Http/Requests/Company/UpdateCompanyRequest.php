@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -40,8 +40,6 @@ class UpdateCompanyRequest extends Request
         return auth()->user()->can('edit', $this->company);
     }
 
-
-
     public function rules()
     {
         $input = $this->all();
@@ -73,7 +71,6 @@ class UpdateCompanyRequest extends Request
 
     public function prepareForValidation()
     {
-    
         $input = $this->all();
 
         if (array_key_exists('portal_domain', $input) && strlen($input['portal_domain']) > 1) {
@@ -102,15 +99,15 @@ class UpdateCompanyRequest extends Request
     {
         $account = $this->company->account;
 
-        if(Ninja::isHosted())
-        {
-            foreach($this->protected_input as $protected_var)
-            {
+        if (Ninja::isHosted()) {
+            foreach ($this->protected_input as $protected_var) {
                 $settings[$protected_var] = str_replace("script", "", $settings[$protected_var]);
             }
         }
 
-        $settings['email_style_custom'] = str_replace(['{{','}}'], ['',''], $settings['email_style_custom']);
+        if (isset($settings['email_style_custom'])) {
+            $settings['email_style_custom'] = str_replace(['{{','}}'], ['',''], $settings['email_style_custom']);
+        }
 
         if (! $account->isFreeHostedClient()) {
             return $settings;
@@ -129,8 +126,7 @@ class UpdateCompanyRequest extends Request
 
     private function addScheme($url, $scheme = 'https://')
     {
-        if(Ninja::isHosted())
-        {
+        if (Ninja::isHosted()) {
             $url = str_replace('http://', '', $url);
             $url = parse_url($url, PHP_URL_SCHEME) === null ? $scheme.$url : $url;
         }

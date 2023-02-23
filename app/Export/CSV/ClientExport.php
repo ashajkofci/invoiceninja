@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -17,7 +17,6 @@ use App\Models\Company;
 use App\Transformers\ClientContactTransformer;
 use App\Transformers\ClientTransformer;
 use App\Utils\Ninja;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
 use League\Csv\Writer;
 
@@ -181,11 +180,13 @@ class ClientExport extends BaseExport
 
     private function calculateStatus($client)
     {
-        if($client->is_deleted)
+        if ($client->is_deleted) {
             return ctrans('texts.deleted');
+        }
 
-        if($client->deleted_at)
+        if ($client->deleted_at) {
             return ctrans('texts.arcvived');
+        }
 
         return ctrans('texts.active');
     }

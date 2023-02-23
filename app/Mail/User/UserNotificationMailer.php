@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -41,9 +41,6 @@ class UserNotificationMailer extends Mailable
                 'title' => $this->mail_obj->data['title'],
                 'body' => $this->mail_obj->data['message'],
             ])
-            ->view($this->mail_obj->markdown, $this->mail_obj->data)
-            ->withSymfonyMessage(function ($message) {
-                $message->getHeaders()->addTextHeader('Tag', $this->mail_obj->tag);
-            });
+            ->view($this->mail_obj->markdown, $this->mail_obj->data);
     }
 }

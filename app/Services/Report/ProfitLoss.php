@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -94,15 +94,18 @@ class ProfitLoss
         $this->setBillingReportType();
     }
 
+    public function run()
+    {
+        return $this->build()->getCsv();
+    }
+
     public function build()
     {
         MultiDB::setDb($this->company->db);
 
         if ($this->is_income_billed) { //get invoiced amounts
-
             $this->filterIncome();
         } else {
-
             //$this->filterPaymentIncome();
             $this->filterInvoicePaymentIncome();
         }
@@ -587,48 +590,55 @@ class ProfitLoss
         }
 
         switch ($date_range) {
-
             case 'all':
                 $this->start_date = now()->subYears(50);
                 $this->end_date = now();
                 // return $query;
+                // no break
             case 'last7':
                 $this->start_date = now()->subDays(7);
                 $this->end_date = now();
                 // return $query->whereBetween($this->date_key, [now()->subDays(7), now()])->orderBy($this->date_key, 'ASC');
+                // no break
             case 'last30':
                 $this->start_date = now()->subDays(30);
                 $this->end_date = now();
                 // return $query->whereBetween($this->date_key, [now()->subDays(30), now()])->orderBy($this->date_key, 'ASC');
+                // no break
             case 'this_month':
                 $this->start_date = now()->startOfMonth();
                 $this->end_date = now();
                 //return $query->whereBetween($this->date_key, [now()->startOfMonth(), now()])->orderBy($this->date_key, 'ASC');
+                // no break
             case 'last_month':
                 $this->start_date = now()->startOfMonth()->subMonth();
                 $this->end_date = now()->startOfMonth()->subMonth()->endOfMonth();
                 //return $query->whereBetween($this->date_key, [now()->startOfMonth()->subMonth(), now()->startOfMonth()->subMonth()->endOfMonth()])->orderBy($this->date_key, 'ASC');
+                // no break
             case 'this_quarter':
                 $this->start_date = (new \Carbon\Carbon('-3 months'))->firstOfQuarter();
                 $this->end_date = (new \Carbon\Carbon('-3 months'))->lastOfQuarter();
                 //return $query->whereBetween($this->date_key, [(new \Carbon\Carbon('-3 months'))->firstOfQuarter(), (new \Carbon\Carbon('-3 months'))->lastOfQuarter()])->orderBy($this->date_key, 'ASC');
+                // no break
             case 'last_quarter':
                 $this->start_date = (new \Carbon\Carbon('-6 months'))->firstOfQuarter();
                 $this->end_date = (new \Carbon\Carbon('-6 months'))->lastOfQuarter();
                 //return $query->whereBetween($this->date_key, [(new \Carbon\Carbon('-6 months'))->firstOfQuarter(), (new \Carbon\Carbon('-6 months'))->lastOfQuarter()])->orderBy($this->date_key, 'ASC');
+                // no break
             case 'this_year':
                 $this->start_date = now()->startOfYear();
                 $this->end_date = now();
                 //return $query->whereBetween($this->date_key, [now()->startOfYear(), now()])->orderBy($this->date_key, 'ASC');
+                // no break
             case 'custom':
                 $this->start_date = $custom_start_date;
                 $this->end_date = $custom_end_date;
                 //return $query->whereBetween($this->date_key, [$custom_start_date, $custom_end_date])->orderBy($this->date_key, 'ASC');
+                // no break
             default:
                 $this->start_date = now()->startOfYear();
                 $this->end_date = now();
                 // return $query->whereBetween($this->date_key, [now()->startOfYear(), now()])->orderBy($this->date_key, 'ASC');
-
         }
 
         return $this;

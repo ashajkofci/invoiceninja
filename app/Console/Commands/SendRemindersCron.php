@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -14,7 +14,6 @@ namespace App\Console\Commands;
 use App\DataMapper\InvoiceItem;
 use App\Events\Invoice\InvoiceWasEmailed;
 use App\Jobs\Entity\EmailEntity;
-use App\Jobs\Ninja\SendReminders;
 use App\Jobs\Util\WebhookHandler;
 use App\Libraries\MultiDB;
 use App\Models\Invoice;
@@ -97,7 +96,6 @@ class SendRemindersCron extends Command
                          $invoice->save();
                      }
                  });
-
     }
 
     private function calcLateFee($invoice, $template) :Invoice

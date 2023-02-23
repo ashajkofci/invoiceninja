@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -42,7 +42,6 @@ class ApplyPayment
 
     public function run() :Credit
     {
-
         //$available_credit_balance = $this->credit->balance;
         $applicable_amount = min($this->amount, $this->credit->balance);
         $invoice_balance = $this->invoice->balance;
@@ -105,8 +104,8 @@ class ApplyPayment
 
     private function addPaymentToLedger()
     {
-        $this->payment->amount += $this->amount_applied;
-        $this->payment->applied += $this->amount_applied;
+        // $this->payment->amount += $this->amount_applied;
+        // $this->payment->applied += $this->amount_applied;
         $this->payment->status_id = Payment::STATUS_COMPLETED;
         $this->payment->currency_id = $this->credit->client->getSetting('currency_id');
         $this->payment->save();
@@ -138,6 +137,7 @@ class ApplyPayment
                  ->updateBalance($this->amount_applied * -1)
                  ->updatePaidToDate($this->amount_applied)
                  ->updateStatus()
+                 ->touchPdf()
                  ->save();
 
         $this->credit

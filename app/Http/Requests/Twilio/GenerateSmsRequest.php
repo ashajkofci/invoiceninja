@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,10 +13,8 @@ namespace App\Http\Requests\Twilio;
 
 use App\Http\Requests\Request;
 
-
 class GenerateSmsRequest extends Request
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -30,10 +28,8 @@ class GenerateSmsRequest extends Request
 
     public function rules()
     {
-
         return [
             'phone' => 'required|regex:^\+[1-9]\d{1,14}$^',
         ];
-        
     }
 }

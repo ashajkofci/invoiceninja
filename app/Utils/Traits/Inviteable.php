@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,12 +12,11 @@
 namespace App\Utils\Traits;
 
 use App\Utils\Ninja;
-use Illuminate\Support\Str;
-use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
-
+use Illuminate\Support\Str;
 
 /**
  * Class Inviteable.
@@ -61,7 +60,6 @@ trait Inviteable
 
     public function getPaymentQrCode()
     {
-
         $renderer = new ImageRenderer(
             new RendererStyle(200),
             new SvgImageBackEnd()
@@ -72,7 +70,6 @@ trait Inviteable
 
         return "<svg class='pqrcode' viewBox='0 0 200 200' width='200' height='200' x='0' y='0' xmlns='http://www.w3.org/2000/svg'>
           <rect x='0' y='0' width='100%'' height='100%' />{$qr}</svg>";
-
     }
 
     public function getUnsubscribeLink()

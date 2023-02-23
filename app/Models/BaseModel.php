@@ -4,25 +4,23 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Models;
 
-use App\DataMapper\ClientSettings;
-use App\DataMapper\CompanySettings;
-use App\Jobs\Entity\CreateEntityPdf;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use App\Utils\Traits\MakesHash;
+use App\Jobs\Util\WebhookHandler;
+use App\Models\Traits\Excludable;
+use App\DataMapper\ClientSettings;
+use Illuminate\Database\Eloquent\Model;
 use App\Utils\Traits\UserSessionAttributes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException as ModelNotFoundException;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-
 
 /**
  * Class BaseModel
@@ -36,6 +34,7 @@ class BaseModel extends Model
     use MakesHash;
     use UserSessionAttributes;
     use HasFactory;
+    use Excludable;
 
     protected $appends = [
         'hashed_id',
@@ -115,17 +114,17 @@ class BaseModel extends Model
      * reference to the parent class.
      *
      * @param $key The key of property
-     * @return
+     * @deprecated
      */
-    public function getSettingsByKey($key)
-    {
-        /* Does Setting Exist @ client level */
-        if (isset($this->getSettings()->{$key})) {
-            return $this->getSettings()->{$key};
-        } else {
-            return (new CompanySettings($this->company->settings))->{$key};
-        }
-    }
+    // public function getSettingsByKey($key)
+    // {
+    //     /* Does Setting Exist @ client level */
+    //     if (isset($this->getSettings()->{$key})) {
+    //         return $this->getSettings()->{$key};
+    //     } else {
+    //         return (new CompanySettings($this->company->settings))->{$key};
+    //     }
+    // }
 
     public function setSettingsByEntity($entity, $settings)
     {
@@ -141,7 +140,7 @@ class BaseModel extends Model
                 $this->company->settings = $settings;
                 $this->company->save();
                 break;
-            //todo check that saving any other entity (Invoice:: RecurringInvoice::) settings is valid using the default:
+                //todo check that saving any other entity (Invoice:: RecurringInvoice::) settings is valid using the default:
             default:
                 $this->client->settings = $settings;
                 $this->client->save();
@@ -176,6 +175,7 @@ class BaseModel extends Model
 
         return $this
             ->withTrashed()
+            // ->company()
             ->where('id', $this->decodePrimaryKey($value))->firstOrFail();
     }
 
@@ -190,12 +190,12 @@ class BaseModel extends Model
 
     public function numberFormatter()
     {
-        $number = strlen($this->number) >= 1 ? $this->number : class_basename($this) . "_" . Str::random(5); 
+        $number = strlen($this->number) >= 1 ? $this->translate_entity() . "_" . $this->number : class_basename($this) . "_" . Str::random(5);
 
         $formatted_number =  mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $number);
-        
+
         $formatted_number = mb_ereg_replace("([\.]{2,})", '', $formatted_number);
-        
+
         $formatted_number = preg_replace('/\s+/', '_', $formatted_number);
 
         return $formatted_number;
@@ -206,4 +206,22 @@ class BaseModel extends Model
         return ctrans('texts.item');
     }
 
+    /**
+     * Model helper to send events for webhooks
+     *
+     * @param  int    $event_id
+     * @param  string $additional_data optional includes
+     *
+     * @return void
+     */
+    public function sendEvent(int $event_id, string $additional_data = ""): void
+    {
+        $subscriptions = Webhook::where('company_id', $this->company_id)
+                                 ->where('event_id', $event_id)
+                                 ->exists();
+                            
+        if ($subscriptions) {
+            WebhookHandler::dispatch($event_id, $this, $this->company, $additional_data);
+        }
+    }
 }

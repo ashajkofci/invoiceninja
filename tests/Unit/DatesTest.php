@@ -11,7 +11,6 @@
 
 namespace Tests\Unit;
 
-use App\Helpers\Invoice\InvoiceSum;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\MockAccountData;
@@ -70,4 +69,14 @@ class DatesTest extends TestCase
 
         $this->assertFalse($date_in_future->gt(Carbon::parse($date_in_past)->addDays(14)));
     }
+
+    /*Test time travelling behaves as expected */
+    // public function testTimezoneShifts()
+    // {
+    //     $this->travel(Carbon::parse('2022-12-20'));
+
+    //     $this->assertEquals('2022-12-20', now()->setTimeZone('Pacific/Midway')->format('Y-m-d'));
+
+    //     $this->travelBack();
+    // }
 }
