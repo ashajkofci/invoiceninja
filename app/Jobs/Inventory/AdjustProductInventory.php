@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -19,7 +19,7 @@ use App\Mail\Admin\InventoryNotificationObject;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Product;
-use App\Utils\Traits\NumberFormatter;
+use App\Utils\Traits\Notifications\UserNotifies;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -29,7 +29,7 @@ use Illuminate\Queue\SerializesModels;
 
 class AdjustProductInventory implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, UserNotifies;
 
     public Company $company;
 
@@ -63,11 +63,9 @@ class AdjustProductInventory implements ShouldQueue
 
     public function handleDeletedInvoice()
     {
+        MultiDB::setDb($this->company->db);
 
-       MultiDB::setDb($this->company->db);
-
-       foreach ($this->invoice->line_items as $item) {
-
+        foreach ($this->invoice->line_items as $item) {
             $p = Product::where('product_key', $item->product_key)->where('company_id', $this->company->id)->first();
 
             if (! $p) {
@@ -78,15 +76,13 @@ class AdjustProductInventory implements ShouldQueue
 
             $p->saveQuietly();
         }
-
     }
 
     public function handleRestoredInvoice()
     {
+        MultiDB::setDb($this->company->db);
 
-       MultiDB::setDb($this->company->db);
-
-       foreach ($this->invoice->line_items as $item) {
+        foreach ($this->invoice->line_items as $item) {
             $p = Product::where('product_key', $item->product_key)->where('company_id', $this->company->id)->first();
 
             if (! $p) {
@@ -96,7 +92,6 @@ class AdjustProductInventory implements ShouldQueue
             $p->in_stock_quantity -= $item->quantity;
             $p->saveQuietly();
         }
-
     }
 
     public function middleware()
@@ -146,8 +141,12 @@ class AdjustProductInventory implements ShouldQueue
         $nmo->mailable = new NinjaMailer((new InventoryNotificationObject($product, $notification_level))->build());
         $nmo->company = $this->company;
         $nmo->settings = $this->company->settings;
-        $nmo->to_user = $this->company->owner();
 
-        NinjaMailerJob::dispatch($nmo);
+        $this->company->company_users->each(function ($cu) use ($product, $nmo) {
+            if ($this->checkNotificationExists($cu, $product, ['inventory_all', 'inventory_user'])) {
+                $nmo->to_user = $cu->user;
+                NinjaMailerJob::dispatch($nmo);
+            }
+        });
     }
 }

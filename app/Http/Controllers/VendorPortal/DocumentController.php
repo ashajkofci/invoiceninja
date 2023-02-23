@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,8 +13,8 @@
 namespace App\Http\Controllers\VendorPortal;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\VendorPortal\Documents\ShowDocumentRequest;
 use App\Http\Requests\Document\DownloadMultipleDocumentsRequest;
+use App\Http\Requests\VendorPortal\Documents\ShowDocumentRequest;
 use App\Libraries\MultiDB;
 use App\Models\Document;
 use App\Utils\TempFile;
@@ -111,7 +111,7 @@ class DocumentController extends Controller
             $zipFile->saveAsFile($filepath) // save the archive to a file
                    ->close(); // close archive
 
-           return response()->download($filepath, $filename)->deleteFileAfterSend(true);
+            return response()->download($filepath, $filename)->deleteFileAfterSend(true);
         } catch (\PhpZip\Exception\ZipException $e) {
             // handle exception
         } finally {

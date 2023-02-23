@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -41,7 +41,6 @@ class ApplyPayment extends AbstractService
 
         if ($this->invoice->hasPartial()) {
             if ($this->invoice->partial == $this->payment_amount) {
-
                 //is partial and amount is exactly the partial amount
 
                 $amount_paid = $this->payment_amount * -1;

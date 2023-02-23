@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -63,19 +63,16 @@ class AdjustEmailQuota implements ShouldQueue
 
             $email_count = Cache::get($account->key);
 
-            if($email_count > 0){
-
-                try{
+            if ($email_count > 0) {
+                try {
                     LightLogs::create(new EmailCount($email_count, $account->key))->send();
-                }
-                catch(\Exception $e){
+                } catch(\Exception $e) {
                     nlog($e->getMessage());
                 }
             }
 
             Cache::forget($account->key);
             Cache::forget("throttle_notified:{$account->key}");
-
         });
     }
 }

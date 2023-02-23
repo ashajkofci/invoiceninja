@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -46,7 +46,6 @@ trait CleanLineItems
         unset($invoice_item->casts);
 
         foreach ($invoice_item as $key => $value) {
-
             //if the key has not been set, we set it to a default value
             if (! array_key_exists($key, $item) || ! isset($item[$key])) {
                 $item[$key] = $value;

@@ -4,16 +4,16 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Helpers\Mail;
 
+use Google\Client;
 use Google\Service\Gmail;
 use Google\Service\Gmail\Message;
-use Google\Client;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractTransport;
 use Symfony\Component\Mime\MessageConverter;
@@ -23,7 +23,6 @@ use Symfony\Component\Mime\MessageConverter;
  */
 class GmailTransport extends AbstractTransport
 {
-
     public function __construct()
     {
         parent::__construct();
@@ -50,23 +49,27 @@ class GmailTransport extends AbstractTransport
 
         $bcc_list = '';
 
-        if($bccs)
-        {
+        if ($bccs) {
             $bcc_list = 'Bcc: ';
 
-            foreach($bccs->getAddresses() as $address){
-
+            foreach ($bccs->getAddresses() as $address) {
                 $bcc_list .= $address->getAddress() .',';
-
             }
 
             $bcc_list = rtrim($bcc_list, ",") . "\r\n";
-        }  
+        }
 
         $body->setRaw($this->base64_encode($bcc_list.$message->toString()));
 
-        $service->users_messages->send('me', $body, []);
-        
+        try {
+            $service->users_messages->send('me', $body, []);
+        } catch(\Google\Service\Exception $e) {
+            /* Need to slow down */
+            if ($e->getCode() == '429') {
+                nlog("429 google - retrying ");
+                $service->users_messages->send('me', $body, []);
+            }
+        }
     }
  
     private function base64_encode($data)
@@ -78,5 +81,4 @@ class GmailTransport extends AbstractTransport
     {
         return 'gmail';
     }
-
 }

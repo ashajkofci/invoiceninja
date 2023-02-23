@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,12 +13,9 @@ namespace App\Http\Controllers;
 
 use App\Jobs\Account\CreateAccount;
 use App\Libraries\MultiDB;
-use App\Models\Client;
-use App\Models\ClientContact;
 use App\Models\Company;
 use App\Models\CompanyToken;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 
 class HostedMigrationController extends Controller
 {

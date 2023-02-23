@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -57,11 +57,13 @@ class SendEmailRequest extends Request
             unset($input['template']);
         }
 
-        if(array_key_exists('entity_id', $input))
+        if (array_key_exists('entity_id', $input)) {
             $input['entity_id'] = $this->decodePrimaryKey($input['entity_id']);
+        }
         
-        if(array_key_exists('entity', $input))
+        if (array_key_exists('entity', $input)) {
             $input['entity'] = "App\Models\\".ucfirst(Str::camel($input['entity']));
+        }
 
         $this->replace($input);
     }

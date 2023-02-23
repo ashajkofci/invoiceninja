@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -250,19 +250,11 @@ class RecurringInvoice extends BaseModel
         /* If this setting is enabled, the recurring invoice may be set in the past */
 
         if ($this->company->stop_on_unpaid_recurring) {
-
-                /* Lets set the next send date to now so we increment from today, rather than in the past*/
+            /* Lets set the next send date to now so we increment from today, rather than in the past*/
             if (Carbon::parse($this->next_send_date)->lt(now()->subDays(3))) {
                 $this->next_send_date_client = now()->format('Y-m-d');
             }
         }
-
-        /*
-        As we are firing at UTC+0 if our offset is negative it is technically firing the day before so we always need
-        to add ON a day - a day = 86400 seconds
-        */
-        // if($offset < 0)
-        //     $offset += 86400;
 
         switch ($this->frequency_id) {
             case self::FREQUENCY_DAILY:
@@ -303,8 +295,7 @@ class RecurringInvoice extends BaseModel
         /* If this setting is enabled, the recurring invoice may be set in the past */
 
         if ($this->company->stop_on_unpaid_recurring) {
-
-                /* Lets set the next send date to now so we increment from today, rather than in the past*/
+            /* Lets set the next send date to now so we increment from today, rather than in the past*/
             if (Carbon::parse($this->next_send_date)->lt(now()->subDays(3))) {
                 $this->next_send_date_client = now()->format('Y-m-d');
             }
@@ -506,7 +497,6 @@ class RecurringInvoice extends BaseModel
      */
     public function recurringDates()
     {
-
         /* Return early if nothing to send back! */
         if ($this->status_id == self::STATUS_COMPLETED ||
             $this->remaining_cycles == 0 ||
@@ -560,7 +550,7 @@ class RecurringInvoice extends BaseModel
             case '0':
                 return $this->calculateDateFromTerms($date);
                 break;
-				
+                
             case 'on_receipt':
                 return Carbon::parse($date)->copy();
                 break;

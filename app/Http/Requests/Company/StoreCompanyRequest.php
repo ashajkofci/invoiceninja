@@ -4,14 +4,13 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Http\Requests\Company;
 
-use App\DataMapper\CompanySettings;
 use App\Http\Requests\Request;
 use App\Http\ValidationRules\Company\ValidCompanyQuantity;
 use App\Http\ValidationRules\Company\ValidSubdomain;
@@ -61,8 +60,9 @@ class StoreCompanyRequest extends Request
     {
         $input = $this->all();
 
-        if(!isset($input['name']))
+        if (!isset($input['name'])) {
             $input['name'] = 'Untitled Company';
+        }
 
         if (array_key_exists('google_analytics_url', $input)) {
             $input['google_analytics_key'] = $input['google_analytics_url'];

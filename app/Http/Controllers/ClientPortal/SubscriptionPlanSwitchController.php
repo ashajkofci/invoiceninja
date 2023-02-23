@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -16,8 +16,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ClientPortal\Subscriptions\ShowPlanSwitchRequest;
 use App\Models\RecurringInvoice;
 use App\Models\Subscription;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class SubscriptionPlanSwitchController extends Controller
 {
@@ -33,7 +31,9 @@ class SubscriptionPlanSwitchController extends Controller
     {
         $amount = $recurring_invoice->subscription
                                     ->service()
-                                    ->calculateUpgradePrice($recurring_invoice, $target);
+                                    ->calculateUpgradePriceV2($recurring_invoice, $target);
+
+        nlog("payment amount = {$amount}");
         /**
          * Null value here is a proxy for
          * denying the user a change plan option
@@ -42,11 +42,18 @@ class SubscriptionPlanSwitchController extends Controller
             render('subscriptions.denied');
         }
 
+        $amount = max(0, $amount);
+
         return render('subscriptions.switch', [
             'subscription' => $recurring_invoice->subscription,
             'recurring_invoice' => $recurring_invoice,
             'target' => $target,
             'amount' => $amount,
         ]);
+    }
+
+    public function not_availabe()
+    {
+        abort(404, 'ewwo');
     }
 }

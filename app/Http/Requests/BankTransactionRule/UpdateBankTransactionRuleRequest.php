@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -42,14 +42,17 @@ class UpdateBankTransactionRuleRequest extends Request
             'applies_to' => 'bail|sometimes|string',
         ];
 
-        if(isset($this->category_id)) 
+        if (isset($this->category_id)) {
             $rules['category_id'] = 'bail|sometimes|exists:expense_categories,id,company_id,'.auth()->user()->company()->id.',is_deleted,0';
+        }
         
-        if(isset($this->vendor_id))
+        if (isset($this->vendor_id)) {
             $rules['vendor_id'] = 'bail|sometimes|exists:vendors,id,company_id,'.auth()->user()->company()->id.',is_deleted,0';
+        }
 
-        if(isset($this->client_id))
+        if (isset($this->client_id)) {
             $rules['client_id'] = 'bail|sometimes|exists:clients,id,company_id,'.auth()->user()->company()->id.',is_deleted,0';
+        }
 
 
         return $rules;
@@ -63,5 +66,4 @@ class UpdateBankTransactionRuleRequest extends Request
 
         $this->replace($input);
     }
-
 }

@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -118,23 +118,21 @@ class Helpers
         // 04-10-2022 Return Early if no reserved keywords are present, this is a very expensive process
         $string_hit = false;
 
-        foreach ( [':MONTH',':YEAR',':QUARTER',':WEEK'] as $string ) 
-        {
-        
-            if(stripos($value, $string) !== FALSE) {
-                $string_hit = true; 
+        foreach ([':MONTH',':YEAR',':QUARTER',':WEEK'] as $string) {
+            if (stripos($value, $string) !== false) {
+                $string_hit = true;
             }
-            
         }
 
-        if(!$string_hit)
+        if (!$string_hit) {
             return $value;
-        // 04-10-2022 Return Early if no reserved keywords are present, this is a very expensive process
+        }
 
+        // 04-10-2022 Return Early if no reserved keywords are present, this is a very expensive process
         Carbon::setLocale($entity->locale());
 
         if (!$currentDateTime) {
-            $currentDateTime = Carbon::now();
+            $currentDateTime = Carbon::now()->timezone($entity->timezone()->name);
         }
 
         $replacements = [
@@ -248,7 +246,10 @@ class Helpers
                 $replacement = sprintf('%s to %s', $_left, $_right);
 
                 $value = preg_replace(
-                    sprintf('/%s/', preg_quote($match)), $replacement, $value, 1
+                    sprintf('/%s/', preg_quote($match)),
+                    $replacement,
+                    $value,
+                    1
                 );
             }
         }
@@ -269,7 +270,10 @@ class Helpers
 
             if (! Str::contains($match, ['-', '+', '/', '*'])) {
                 $value = preg_replace(
-                    sprintf('/%s/', $matches->keys()->first()), $replacements['literal'][$matches->keys()->first()], $value, 1
+                    sprintf('/%s/', $matches->keys()->first()),
+                    $replacements['literal'][$matches->keys()->first()],
+                    $value,
+                    1
                 );
             }
 
@@ -312,20 +316,22 @@ class Helpers
                     $final_date = $currentDateTime->copy()->addMonths($output - $currentDateTime->month);
 
                     $output = \sprintf(
-                            '%s %s',
-                            $final_date->translatedFormat('F'),
-                            $final_date->year,
-                        );
+                        '%s %s',
+                        $final_date->translatedFormat('F'),
+                        $final_date->year,
+                    );
                 }
 
                 $value = preg_replace(
-                    $target, $output, $value, 1
+                    $target,
+                    $output,
+                    $value,
+                    1
                 );
             }
         }
 
         return $value;
-        
     }
 
     /**

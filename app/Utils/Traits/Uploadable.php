@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -22,9 +22,7 @@ trait Uploadable
 {
     public function removeLogo($company)
     {
-        //if (Storage::disk(config('filesystems.default'))->exists($company->settings->company_logo)) {
-            (new UnlinkFile(config('filesystems.default'), $company->settings->company_logo))->handle();
-        //}
+        (new UnlinkFile(config('filesystems.default'), $company?->settings?->company_logo))->handle();
     }
 
     public function uploadLogo($file, $company, $entity)

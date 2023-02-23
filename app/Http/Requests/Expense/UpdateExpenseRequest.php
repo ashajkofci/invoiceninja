@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -41,6 +41,10 @@ class UpdateExpenseRequest extends Request
             $rules['number'] = Rule::unique('expenses')->where('company_id', auth()->user()->company()->id)->ignore($this->expense->id);
         }
 
+        if ($this->client_id) {
+            $rules['client_id'] = 'bail|sometimes|exists:clients,id,company_id,'.auth()->user()->company()->id;
+        }
+
         $rules['category_id'] = 'bail|sometimes|nullable|exists:expense_categories,id,company_id,'.auth()->user()->company()->id.',is_deleted,0';
 
         return $this->globalRules($rules);
@@ -64,14 +68,11 @@ class UpdateExpenseRequest extends Request
         if (array_key_exists('project_id', $input) && isset($input['project_id'])) {
             $project = Project::withTrashed()->where('id', $input['project_id'])->company()->first();
 
-            if($project){
+            if ($project) {
                 $input['client_id'] = $project->client_id;
-            }
-            else
-            {
+            } else {
                 unset($input['project_id']);
             }
-
         }
 
         $this->replace($input);

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,13 +12,11 @@
 namespace App\Jobs\User;
 
 use App\DataMapper\CompanySettings;
-use App\DataMapper\DefaultSettings;
 use App\Events\User\UserWasCreated;
 use App\Models\User;
 use App\Utils\Ninja;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Http\Request;
 
 class CreateUser
 {
@@ -79,7 +77,6 @@ class CreateUser
             'is_locked' => 0,
             'permissions' => '',
             'notifications' => CompanySettings::notificationDefaults(),
-            //'settings' => DefaultSettings::userSettings(),
             'settings' => null,
         ]);
 

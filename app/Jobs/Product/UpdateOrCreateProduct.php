@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -28,6 +28,8 @@ class UpdateOrCreateProduct implements ShouldQueue
     public $invoice;
 
     public $company;
+
+    public $deleteWhenMissingModels = true;
 
     /**
      * Create a new job instance.
@@ -83,20 +85,18 @@ class UpdateOrCreateProduct implements ShouldQueue
 
             $product = Product::withTrashed()->firstOrNew(['product_key' => $item->product_key, 'company_id' => $this->invoice->company->id]);
 
-                /* If a user is using placeholders in their descriptions, do not update the products */
-                $string_hit = false;
+            /* If a user is using placeholders in their descriptions, do not update the products */
+            $string_hit = false;
 
-                foreach ( [':MONTH',':YEAR',':QUARTER',':WEEK'] as $string ) 
-                {
-                
-                    if(stripos($product->notes, $string) !== FALSE) {
-                        $string_hit = true; 
-                    }
-                    
+            foreach ([':MONTH',':YEAR',':QUARTER',':WEEK'] as $string) {
+                if (stripos($product->notes, $string) !== false) {
+                    $string_hit = true;
                 }
+            }
 
-                if($string_hit)
-                    continue;
+            if ($string_hit) {
+                continue;
+            }
 
             $product->product_key = $item->product_key;
             $product->notes = isset($item->notes) ? $item->notes : '';
@@ -113,23 +113,27 @@ class UpdateOrCreateProduct implements ShouldQueue
             $product->tax_name3 = isset($item->tax_name3) ? $item->tax_name3 : '';
             $product->tax_rate3 = isset($item->tax_rate3) ? $item->tax_rate3 : 0;
 
-            if(isset($item->custom_value1) && strlen($item->custom_value1) >=1)
+            if (isset($item->custom_value1) && strlen($item->custom_value1) >=1) {
                 $product->custom_value1 = $item->custom_value1;
+            }
 
-            if(isset($item->custom_value2) && strlen($item->custom_value1) >=1)
+            if (isset($item->custom_value2) && strlen($item->custom_value1) >=1) {
                 $product->custom_value2 = $item->custom_value2;
+            }
             
-            if(isset($item->custom_value3) && strlen($item->custom_value1) >=1)
+            if (isset($item->custom_value3) && strlen($item->custom_value1) >=1) {
                 $product->custom_value3 = $item->custom_value3;
+            }
             
-            if(isset($item->custom_value4) && strlen($item->custom_value1) >=1)
+            if (isset($item->custom_value4) && strlen($item->custom_value1) >=1) {
                 $product->custom_value4 = $item->custom_value4;
+            }
                        
             $product->user_id = $this->invoice->user_id;
             $product->company_id = $this->invoice->company_id;
             $product->project_id = $this->invoice->project_id;
             $product->vendor_id = $this->invoice->vendor_id;
-            $product->save();
+            $product->saveQuietly();
         }
     }
 

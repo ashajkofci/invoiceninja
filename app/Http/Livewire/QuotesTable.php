@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,8 +13,8 @@
 namespace App\Http\Livewire;
 
 use App\Libraries\MultiDB;
+use App\Models\Company;
 use App\Models\Quote;
-use App\Utils\Traits\WithSorting;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -22,15 +22,27 @@ class QuotesTable extends Component
 {
     use WithPagination;
 
-    public $per_page = 10;
+    public int $per_page = 10;
 
-    public $status = [];
+    public array $status = [];
 
-    public $company;
+    public Company $company;
 
-    public $sort = 'status_id'; // Default sortBy. Feel free to change or pull from client/company settings.
+    public string $sort = 'status_id';
 
-    public $sort_asc = true;
+    public bool $sort_asc = true;
+
+    public int $company_id;
+
+    public string $db;
+
+    public function mount()
+    {
+        MultiDB::setDb($this->db);
+
+        $this->company = Company::find($this->company_id);
+    }
+
 
     public function sortBy($field)
     {
@@ -41,23 +53,15 @@ class QuotesTable extends Component
         $this->sort = $field;
     }
 
-    public function mount()
-    {
-        MultiDB::setDb($this->company->db);
-    }
-
     public function render()
     {
-
         $query = Quote::query()
-            ->with('client.gateway_tokens', 'company', 'client.contacts')
+            ->with('client.contacts', 'company')
             ->orderBy($this->sort, $this->sort_asc ? 'asc' : 'desc');
 
         if (count($this->status) > 0) {
-
             /* Special filter for expired*/
             if (in_array('-1', $this->status)) {
-
                 $query->where(function ($query) {
                     $query->whereDate('due_date', '<=', now()->startOfDay())
                           ->whereNotNull('due_date')

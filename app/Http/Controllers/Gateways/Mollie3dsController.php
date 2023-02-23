@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -14,7 +14,6 @@ namespace App\Http\Controllers\Gateways;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Gateways\Mollie\Mollie3dsRequest;
-use App\Models\PaymentHash;
 
 class Mollie3dsController extends Controller
 {

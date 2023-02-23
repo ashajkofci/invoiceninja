@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -214,21 +214,33 @@ class Activity extends StaticModel
         'backup',
     ];
 
+    /**
+     * @return mixed
+     */
     public function getHashedIdAttribute()
     {
         return $this->encodePrimaryKey($this->id);
     }
 
+    /**
+     * @return mixed
+     */
     public function getEntityType()
     {
         return self::class;
     }
 
+    /**
+     * @return mixed
+     */
     public function backup()
     {
         return $this->hasOne(Backup::class);
     }
 
+    /**
+     * @return mixed
+     */
     public function history()
     {
         return $this->hasOne(Backup::class);
@@ -266,6 +278,9 @@ class Activity extends StaticModel
         return $this->belongsTo(Invoice::class)->withTrashed();
     }
 
+    /**
+     * @return mixed
+     */
     public function vendor()
     {
         return $this->belongsTo(Vendor::class)->withTrashed();
@@ -279,6 +294,9 @@ class Activity extends StaticModel
         return $this->belongsTo(RecurringInvoice::class)->withTrashed();
     }
 
+    /**
+     * @return mixed
+     */
     public function credit()
     {
         return $this->belongsTo(Credit::class)->withTrashed();
@@ -308,39 +326,51 @@ class Activity extends StaticModel
         return $this->belongsTo(Payment::class)->withTrashed();
     }
 
+    /**
+     * @return mixed
+     */
     public function expense()
     {
         return $this->belongsTo(Expense::class)->withTrashed();
     }
 
+    /**
+     * @return mixed
+     */
+    public function recurring_expense()
+    {
+        return $this->belongsTo(RecurringExpense::class)->withTrashed();
+    }
+
+    /**
+     * @return mixed
+     */
     public function purchase_order()
     {
         return $this->belongsTo(PurchaseOrder::class)->withTrashed();
     }
 
+    /**
+     * @return mixed
+     */
     public function vendor_contact()
     {
         return $this->belongsTo(VendorContact::class)->withTrashed();
     }
 
+    /**
+     * @return mixed
+     */
     public function task()
     {
         return $this->belongsTo(Task::class)->withTrashed();
     }
 
+    /**
+     * @return mixed
+     */
     public function company()
     {
         return $this->belongsTo(Company::class);
-    }
-
-    public function resolveRouteBinding($value, $field = null)
-    {
-        if (is_numeric($value)) {
-            throw new ModelNotFoundException("Record with value {$value} not found");
-        }
-
-        return $this
-            //->withTrashed()
-            ->where('id', $this->decodePrimaryKey($value))->firstOrFail();
     }
 }

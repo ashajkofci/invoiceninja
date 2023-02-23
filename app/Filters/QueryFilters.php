@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -15,6 +15,7 @@ namespace App\Filters;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 /**
  * Class QueryFilters.
@@ -54,7 +55,7 @@ abstract class QueryFilters
 
     /**
      * The "with" filter property column.
-     * 
+     *
      * var string
      */
     protected $with_property = 'id';
@@ -129,6 +130,38 @@ abstract class QueryFilters
     }
 
     /**
+     * Filters the list based on the status
+     * archived, active, deleted.
+     *
+     * @param string filter
+     * @return Builder
+     */
+    public function status(string $filter = ''): Builder
+    {
+        if (strlen($filter) == 0) {
+            return $this->builder;
+        }
+
+        $filters = explode(',', $filter);
+
+        return $this->builder->where(function ($query) use ($filters) {
+            if (in_array(self::STATUS_ACTIVE, $filters)) {
+                $query->orWhereNull('deleted_at');
+            }
+
+            if (in_array(self::STATUS_ARCHIVED, $filters)) {
+                $query->orWhere(function ($query) {
+                    $query->whereNotNull('deleted_at')->where('is_deleted', 0);
+                });
+            }
+
+            if (in_array(self::STATUS_DELETED, $filters)) {
+                $query->orWhere('is_deleted', 1);
+            }
+        });
+    }
+
+    /**
      * String to operator convertor.
      *
      * @param string $operator
@@ -155,7 +188,6 @@ abstract class QueryFilters
             default:
                 return '=';
                 break;
-
         }
     }
 
@@ -173,23 +205,44 @@ abstract class QueryFilters
         }
     }
 
-    public function created_at($value)
+    public function created_at($value = '')
     {
-        $created_at = $value ? (int) $value : 0;
-
-        $created_at = date('Y-m-d H:i:s', $value);
-
-        if(is_string($created_at)){
-
-            $created_at = strtotime(str_replace("/","-",$created_at));
-
-            if(!$created_at)
-                return $this->builder;
-
+        if ($value == '') {
+            return $this->builder;
         }
 
-        return $this->builder->where('created_at', '>=', $created_at);
+        try {
+            if (is_numeric($value)) {
+                $created_at = Carbon::createFromTimestamp((int)$value);
+            } else {
+                $created_at = Carbon::parse($value);
+            }
+
+            return $this->builder->where('created_at', '>=', $created_at);
+        } catch(\Exception $e) {
+            return $this->builder;
+        }
     }
+
+    public function updated_at($value = '')
+    {
+        if ($value == '') {
+            return $this->builder;
+        }
+
+        try {
+            if (is_numeric($value)) {
+                $created_at = Carbon::createFromTimestamp((int)$value);
+            } else {
+                $created_at = Carbon::parse($value);
+            }
+
+            return $this->builder->where('updated_at', '>=', $created_at);
+        } catch (\Exception $e) {
+            return $this->builder;
+        }
+    }
+
 
     public function is_deleted($value)
     {
@@ -200,13 +253,22 @@ abstract class QueryFilters
         return $this->builder->where('is_deleted', $value);
     }
 
-    public function client_id(string $client_id = '') :Builder
+    public function client_id(string $client_id = ''): Builder
     {
         if (strlen($client_id) == 0) {
             return $this->builder;
         }
 
         return $this->builder->where('client_id', $this->decodePrimaryKey($client_id));
+    }
+
+    public function vendor_id(string $vendor_id = ''): Builder
+    {
+        if (strlen($vendor_id) == 0) {
+            return $this->builder;
+        }
+
+        return $this->builder->where('vendor_id', $this->decodePrimaryKey($vendor_id));
     }
 
     public function filter_deleted_clients($value)
@@ -233,6 +295,7 @@ abstract class QueryFilters
     {
         return $this->builder
             ->orWhere($this->with_property, $value)
-            ->orderByRaw("{$this->with_property} = ? DESC", [$value]);
+            ->orderByRaw("{$this->with_property} = ? DESC", [$value])
+            ->company();
     }
 }

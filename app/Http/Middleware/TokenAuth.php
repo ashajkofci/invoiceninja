@@ -4,14 +4,13 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Http\Middleware;
 
-use App\Events\User\UserLoggedIn;
 use App\Models\CompanyToken;
 use App\Models\User;
 use App\Utils\Ninja;
@@ -52,12 +51,6 @@ class TokenAuth
                 return response()->json($error, 403);
             }
 
-            $truth = app()->make(TruthSource::class);
-
-            $truth->setCompanyUser($company_token->cu);
-            $truth->setUser($company_token->user);
-            $truth->setCompany($company_token->company);
-            $truth->setCompanyToken($company_token);
 
             /*
             |
@@ -67,6 +60,17 @@ class TokenAuth
             |
             */
 
+            $truth = app()->make(TruthSource::class);
+
+            $truth->setCompanyUser($company_token->cu);
+            $truth->setUser($company_token->user);
+            $truth->setCompany($company_token->company);
+            $truth->setCompanyToken($company_token);
+
+            /*
+            | This method binds the db to the jobs created using this
+            | session
+             */
             app('queue')->createPayloadUsing(function () use ($company_token) {
                 return ['db' => $company_token->company->db];
             });

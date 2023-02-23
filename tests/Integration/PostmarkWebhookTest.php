@@ -12,7 +12,6 @@
 namespace Tests\Integration;
 
 use App\Jobs\PostMark\ProcessPostmarkWebhook;
-use App\Models\Invoice;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\MockAccountData;
 use Tests\TestCase;
@@ -29,7 +28,7 @@ class PostmarkWebhookTest extends TestCase
     {
         parent::setUp();
 
-        if (! config('postmark.secret')) {
+        if (! config('services.postmark.token')) {
             $this->markTestSkipped('Postmark Secret Set');
         }
 
@@ -58,7 +57,7 @@ class PostmarkWebhookTest extends TestCase
         $response->assertStatus(403);
 
         $response = $this->withHeaders([
-            'X-API-SECURITY' => config('postmark.secret'),
+            'X-API-SECURITY' => config('services.postmark.token'),
         ])->post('/api/v1/postmark_webhook', $data);
 
         $response->assertStatus(200);
@@ -106,7 +105,7 @@ class PostmarkWebhookTest extends TestCase
         $response->assertStatus(403);
 
         $response = $this->withHeaders([
-            'X-API-SECURITY' => config('postmark.secret'),
+            'X-API-SECURITY' => config('services.postmark.token'),
         ])->post('/api/v1/postmark_webhook', $data);
 
         $response->assertStatus(200);

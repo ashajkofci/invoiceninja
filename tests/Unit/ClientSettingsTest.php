@@ -11,7 +11,6 @@
 
 namespace Tests\Unit;
 
-use App\DataMapper\ClientSettings;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Validation\ValidationException;
 use Tests\MockAccountData;
@@ -32,7 +31,6 @@ class ClientSettingsTest extends TestCase
         $this->makeTestData();
 
         $this->faker = \Faker\Factory::create();
-
     }
 
     public function testClientBaseline()
@@ -102,7 +100,6 @@ class ClientSettingsTest extends TestCase
 
     public function testClientIllegalCurrency()
     {
-
         $data = [
             'name' => $this->faker->firstName(),
             'id_number' => 'Cooliox2',

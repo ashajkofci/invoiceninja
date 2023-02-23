@@ -36,9 +36,9 @@
             @if(!empty($subscription->recurring_product_ids))
                 @foreach($recurring_products as $index => $product)
                     <li class="flex py-6">
-                      @if(filter_var($product->custom_value1, FILTER_VALIDATE_URL))
+                      @if(filter_var($product->product_image, FILTER_VALIDATE_URL))
                       <div class="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 mr-2">
-                        <img src="{{$product->custom_value1}}" alt="" class="h-full w-full object-cover object-center p-2">
+                        <img src="{{$product->product_image}}" alt="" class="h-full w-full object-cover object-center p-2">
                       </div>
                       @endif
                       <div class="ml-0 flex flex-1 flex-col">
@@ -51,18 +51,34 @@
                           </div>
                           <p class="mt-1 text-sm text-gray-500"></p>
                         </div>
-                        <div class="flex content-end text-sm mt-1">
+                        <div class="flex justify-between text-sm mt-1">
                             @if($subscription->per_seat_enabled)
-                            <p class="text-gray-500 w-full"></p>
+                            <p class="text-gray-500 w-3/4"></p>
                             <div class="flex place-content-end">
+                                @if($subscription->use_inventory_management && $product->in_stock_quantity == 0)
+                                <p class="text-sm font-light text-red-500 text-right mr-2 mt-2">Out of stock</p>
+                                @else
                                 <p class="text-sm font-light text-gray-700 text-right mr-2 mt-2">{{ ctrans('texts.qty') }}</p>
+                                @endif
+                                <select wire:model.debounce.300ms="data.{{ $index }}.recurring_qty" class="rounded-md border-gray-300 shadow-sm sm:text-sm" 
+                                    @if($subscription->use_inventory_management && $product->in_stock_quantity == 0)
+                                    disabled 
+                                    @endif
+                                    >
+                                    <option value="1" selected="selected">1</option>
 
-                                    <select wire:model.debounce.300ms="data.{{ $index }}.recurring_qty" class="rounded-md border-gray-300 shadow-sm sm:text-sm">
-                                        <option value="1" selected="selected">1</option>
-                                        @for ($i = 2; $i <= $subscription->max_seats_limit; $i++)
+                                    @if($subscription->max_seats_limit > 1)
+                                    {
+                                        @for ($i = 2; $i <= ($subscription->use_inventory_management ? min($subscription->max_seats_limit,$product->in_stock_quantity) : $subscription->max_seats_limit); $i++)
                                         <option value="{{$i}}">{{$i}}</option>
                                         @endfor
-                                    </select>
+                                    }
+                                    @else
+                                        @for ($i = 2; $i <= ($subscription->use_inventory_management ? min($product->in_stock_quantity, max(100,$product->max_quantity)) : max(100,$product->max_quantity)); $i++)
+                                        <option value="{{$i}}">{{$i}}</option>
+                                        @endfor
+                                    @endif
+                                </select>
                             </div>
                             @endif
                         </div>
@@ -80,9 +96,9 @@
             @if(!empty($subscription->product_ids))
                 @foreach($products as $product)
                     <li class="flex py-6">
-                      @if(filter_var($product->custom_value1, FILTER_VALIDATE_URL))
+                      @if(filter_var($product->product_image, FILTER_VALIDATE_URL))
                       <div class="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 mr-2">
-                        <img src="{{$product->custom_value1}}" alt="" class="h-full w-full object-cover object-center  p-2">
+                        <img src="{{$product->product_image}}" alt="" class="h-full w-full object-cover object-center  p-2">
                       </div>
                       @endif
                       <div class="ml-0 flex flex-1 flex-col">
@@ -119,9 +135,9 @@
                 @if(!empty($subscription->optional_recurring_product_ids))
                     @foreach($optional_recurring_products as $index => $product)
                         <li class="flex py-6">
-                          @if(filter_var($product->custom_value1, FILTER_VALIDATE_URL))
+                          @if(filter_var($product->product_image, FILTER_VALIDATE_URL))
                           <div class="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 mr-2">
-                            <img src="{{$product->custom_value1}}" alt="" class="h-full w-full object-cover object-center p-2">
+                            <img src="{{$product->product_image}}" alt="" class="h-full w-full object-cover object-center p-2">
                           </div>
                           @endif
                           <div class="ml-0 flex flex-1 flex-col">
@@ -132,7 +148,7 @@
                               </div>
                             </div>
                             <div class="flex justify-between text-sm mt-1">
-                                @if(is_numeric($product->custom_value2))
+                                @if(is_numeric($product->max_quantity))
                                 <p class="text-gray-500 w-3/4"></p>
                                 <div class="flex place-content-end">
                                     @if($subscription->use_inventory_management && $product->in_stock_quantity == 0)
@@ -146,7 +162,7 @@
                                         @endif
                                         >
                                         <option value="0" selected="selected">0</option>
-                                        @for ($i = 1; $i <= ($subscription->use_inventory_management ? min($product->in_stock_quantity, max(100,$product->custom_value2)) : max(100,$product->custom_value2)); $i++)
+                                        @for ($i = 1; $i <= ($subscription->use_inventory_management ? min($product->in_stock_quantity, max(100,$product->max_quantity)) : max(100,$product->max_quantity)); $i++)
                                         <option value="{{$i}}">{{$i}}</option>
                                         @endfor
                                     </select>
@@ -160,9 +176,9 @@
                 @if(!empty($subscription->optional_product_ids))
                     @foreach($optional_products as $index => $product)
                         <li class="flex py-6">
-                      @if(filter_var($product->custom_value1, FILTER_VALIDATE_URL))
+                      @if(filter_var($product->product_image, FILTER_VALIDATE_URL))
                       <div class="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 mr-2">
-                        <img src="{{$product->custom_value1}}" alt="" class="h-full w-full object-cover object-center p-2">
+                        <img src="{{$product->product_image}}" alt="" class="h-full w-full object-cover object-center p-2">
                       </div>
                       @endif
                           <div class="ml-0 flex flex-1 flex-col">
@@ -174,7 +190,7 @@
                               <p class="mt-1 text-sm text-gray-500"></p>
                             </div>
                             <div class="flex justify-between text-sm mt-1">
-                                @if(is_numeric($product->custom_value2))
+                                @if(is_numeric($product->max_quantity))
                                 <p class="text-gray-500 w-3/4"></p>
                                 <div class="flex place-content-end">
                                     @if($subscription->use_inventory_management && $product->in_stock_quantity == 0)
@@ -184,7 +200,7 @@
                                     @endif
                                     <select wire:model.debounce.300ms="data.{{ $index }}.optional_qty" class="rounded-md border-gray-300 shadow-sm sm:text-sm">
                                         <option value="0" selected="selected">0</option>
-                                        @for ($i = 1; $i <= ($subscription->use_inventory_management ? min($product->in_stock_quantity, min(100,$product->custom_value2)) : min(100,$product->custom_value2)); $i++)
+                                        @for ($i = 1; $i <= ($subscription->use_inventory_management ? min($product->in_stock_quantity, min(100,$product->max_quantity)) : min(100,$product->max_quantity)); $i++)
                                         <option value="{{$i}}">{{$i}}</option>
                                         @endfor
                                     </select>
@@ -195,6 +211,13 @@
                           </div>
                         </li>
                     @endforeach    
+                @endif
+                @if(auth()->guard('contact')->check())
+                <li class="flex py-6">
+                    <div class="flex w-full text-left mt-8">
+                        <a href="{{route('client.dashboard')}}" class="button-link text-primary">{{ ctrans('texts.go_back') }}</a>
+                    </div>
+                </li>
                 @endif
             </ul>
         </div>
@@ -209,7 +232,7 @@
 
                 @foreach($bundle->toArray() as $item)
                     <div class="flex justify-between mt-1 mb-1">
-                      <span class="font-light text-sm uppercase">{{$item['product']}} x {{$item['qty']}}</span>
+                      <span class="font-light text-sm">{{ $item['qty'] }} x {{ substr(str_replace(["\r","\n","<BR>","<BR />","<br>","<br />"]," ", $item['product']), 0, 30) . "..." }}</span>
                       <span class="font-bold text-sm">{{ $item['price'] }}</span>
                     </div>
                 @endforeach
@@ -284,6 +307,7 @@
                             </form>
                         @endif
 
+                        @if($is_eligible)
                         <div class="mt-4 container mx-auto flex w-full justify-center" x-show.important="toggle" x-transition>
                             <span class="">
                                 <svg class="animate-spin h-8 w-8 text-primary mx-auto justify-center w-full" xmlns="http://www.w3.org/2000/svg"
@@ -295,6 +319,9 @@
                                 </svg>
                             </span>
                         </div>
+                        @else
+                           <small class="mt-4 block">{{ $this->not_eligible_message }}</small>
+                        @endif
                         
                     </div>
 

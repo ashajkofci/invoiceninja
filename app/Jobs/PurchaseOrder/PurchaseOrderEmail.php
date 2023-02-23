@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -20,7 +20,6 @@ use App\Mail\VendorTemplateEmail;
 use App\Models\Company;
 use App\Models\PurchaseOrder;
 use App\Utils\Ninja;
-use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -60,8 +59,7 @@ class PurchaseOrderEmail implements ShouldQueue
         $this->purchase_order->last_sent_date = now();
 
         $this->purchase_order->invitations->load('contact.vendor.country', 'purchase_order.vendor.country', 'purchase_order.company')->each(function ($invitation) {
-
-        /* Don't fire emails if the company is disabled */
+            /* Don't fire emails if the company is disabled */
             if ($this->company->is_disabled) {
                 return true;
             }
@@ -77,10 +75,11 @@ class PurchaseOrderEmail implements ShouldQueue
             /* Mark entity sent */
             $invitation->purchase_order->service()->markSent()->save();
 
-            if(is_array($this->template_data) && array_key_exists('template', $this->template_data))
+            if (is_array($this->template_data) && array_key_exists('template', $this->template_data)) {
                 $template = $this->template_data['template'];
-            else
+            } else {
                 $template = 'purchase_order';
+            }
 
             $email_builder = (new PurchaseOrderEmailEngine($invitation, $template, $this->template_data))->build();
 

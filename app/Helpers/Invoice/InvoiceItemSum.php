@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -112,11 +112,9 @@ class InvoiceItemSum
         if ($this->invoice->is_amount_discount) {
             $this->setLineTotal($this->getLineTotal() - $this->formatValue($this->item->discount, $this->currency->precision));
         } else {
-
             $discount = ($this->item->line_total * ($this->item->discount / 100));
 
             $this->setLineTotal($this->formatValue(($this->getLineTotal() - $discount), $this->currency->precision));
-
         }
 
         $this->item->is_amount_discount = $this->invoice->is_amount_discount;

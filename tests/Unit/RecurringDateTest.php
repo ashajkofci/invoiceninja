@@ -11,7 +11,6 @@
 
 namespace Tests\Unit;
 
-use App\Models\Invoice;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Carbon;
 use Tests\MockAccountData;

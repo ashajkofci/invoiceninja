@@ -4,21 +4,20 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Models;
 
-use App\Models\Filterable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BankIntegration extends BaseModel
 {
     use SoftDeletes;
     use Filterable;
-
+    
     protected $fillable = [
         'bank_account_name',
         'provider_name',
@@ -27,7 +26,6 @@ class BankIntegration extends BaseModel
         'bank_account_type',
         'balance',
         'currency',
-        'nickname',
         'from_date',
         'auto_sync',
     ];
@@ -59,5 +57,4 @@ class BankIntegration extends BaseModel
     {
         return $this->hasMany(BankTransaction::class)->withTrashed();
     }
-
 }

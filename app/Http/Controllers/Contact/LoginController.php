@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,8 +13,6 @@ namespace App\Http\Controllers\Contact;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Controllers\Controller;
-use App\Jobs\Account\CreateAccount;
-use App\Libraries\MultiDB;
 use App\Libraries\OAuth\OAuth;
 use App\Models\ClientContact;
 use App\Models\User;

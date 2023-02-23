@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Cache;
 
 class YodleeAuthRequest extends Request
 {
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -56,15 +55,12 @@ class YodleeAuthRequest extends Request
         MultiDB::findAndSetDbByCompanyKey($this->getTokenContent()['company_key']);
 
         return User::findOrFail($this->getTokenContent()['user_id']);
-
     }
 
     public function getCompany()
     {
-        
         MultiDB::findAndSetDbByCompanyKey($this->getTokenContent()['company_key']);
 
         return Company::where('company_key', $this->getTokenContent()['company_key'])->firstOrFail();
-
     }
 }

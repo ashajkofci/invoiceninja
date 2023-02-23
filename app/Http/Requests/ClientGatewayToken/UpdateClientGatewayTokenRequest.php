@@ -4,19 +4,15 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Http\Requests\ClientGatewayToken;
 
-use App\DataMapper\CompanySettings;
 use App\Http\Requests\Request;
-use App\Http\ValidationRules\ValidClientGroupSettingsRule;
-use App\Utils\Traits\ChecksEntityStatus;
 use App\Utils\Traits\MakesHash;
-use Illuminate\Validation\Rule;
 
 class UpdateClientGatewayTokenRequest extends Request
 {

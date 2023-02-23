@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -36,9 +36,6 @@ class EntityNotificationMailer extends Mailable
     {
         return $this->from(config('mail.from.address'), config('mail.from.name'))
                     ->subject($this->mail_obj->subject)
-                    ->markdown($this->mail_obj->markdown, $this->mail_obj->data)
-                    ->withSymfonyMessage(function ($message) {
-                        $message->getHeaders()->addTextHeader('Tag', $this->mail_obj->tag);
-                    });
+                    ->markdown($this->mail_obj->markdown, $this->mail_obj->data);
     }
 }

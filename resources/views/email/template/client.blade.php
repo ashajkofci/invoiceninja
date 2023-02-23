@@ -1,5 +1,6 @@
 @php
     $primary_color = isset($settings) ? $settings->primary_color : '#4caf50';
+    $email_alignment = isset($settings->email_alignment) ? $settings->email_alignment : 'center';
 @endphp
 
 
@@ -23,7 +24,7 @@
             supported-color-schemes: light dark;
         }
         @if(isset($settings) && $settings->email_style === 'dark')
-            body {
+        body {
             background-color: #1a1a1a !important;
             color: #ffffff !important;
         }
@@ -60,7 +61,8 @@
             font-size: 13px;
             padding: 15px 50px;
             font-weight: 600;
-            margin-bottom: 30px;
+            margin-bottom: 5px;
+            margin-top: 10px;
         }
         #content h1 {
             font-family: 'canada-type-gibson', 'roboto', Arial, Helvetica, sans-serif;
@@ -80,7 +82,6 @@
         #content .left {
             text-align: left !important;
         }
-
         .stamp {
             transform: rotate(12deg);
             color: #555;
@@ -94,7 +95,6 @@
             z-index:200 !important;
             position: relative;
         }
-
         .is-paid {
             color:  #D23;
             border: 1rem double  #D23;
@@ -107,6 +107,17 @@
             z-index:200 !important;
             position: relative;
         } 
+        a.doc_links {
+            text-decoration: none;
+            padding-bottom: 10px;
+            display: inline-block;
+            color: inherit !important;
+        }
+        
+        .new_button a {
+            background-color: {{ $primary_color }};
+        }
+
     </style>
 
     <!--[if gte mso 9]>
@@ -121,33 +132,30 @@
 
 <body
     style="margin: 0; padding: 0; font-family: 'roboto', Arial, Helvetica, sans-serif; color: #3b3b3b;-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
-<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" >
     <tr>
         <td>
             <table align="center" border="0" cellpadding="0" cellspacing="0" width="570"
-                   style="border-collapse: collapse;" class="dark-bg-base">
-                <tr>
-                    <div style="text-align: center;margin-top: 25px; margin-bottom: 10px;"></div>
+                   style="border: 1px solid #c2c2c2;" class="dark-bg-base">
+                
+                <!--[if mso]>
+                <tr class="dark-bg" style="margin-top:0px; border: none;">
+                <td style="border: none;"></td>
                 </tr>
+                <![endif]-->
+                
                 <tr>
                     <td align="center" cellpadding="20">
                         <div style="border: 1px solid #c2c2c2; border-bottom: none; padding-bottom: 10px; border-top-left-radius: 3px; border-top-right-radius: 3px;">
-
-                            <!--[if gte mso 9]>
-                            <img src="{{ $logo ?? '' }}" alt="" width="400" border="0" align="middle" style="display:block;" />
-                            <div style="mso-hide:all;">
-                            <![endif]-->
-                            <img src="{{ $logo ?? '' }}" alt="" width="400" style="margin-top: 40px; max-width: 200px; display: block; margin-left: auto; margin-right: auto;"/>
-                            <!--[if gte mso 9]>
-                            </div>
-                            <![endif]-->
-
+                            @if($logo && strpos($logo, 'blank.png') === false)
+                             <img class="" src="{{ $logo ?? '' }}" width="50%" height="" alt="alt_text" border="0" style="width: 50%; max-width: 570px; display: block;">
+                            @endif
                         </div>
                     </td>
                 </tr>
                 <tr>
-                    <td cellpadding="20">
-                        <div style="border: 1px solid #c2c2c2; border-top: none; border-bottom: none; padding: 20px; text-align: center" id="content">
+                    <td cellpadding="5">
+                        <div style="border: 1px solid #c2c2c2; border-top: none; border-bottom: none; padding: 20px; text-align: {{ $email_alignment }}" id="content">
                                 <div style="padding-top: 10px;"></div>
 
                                 {{ $slot ?? '' }}
@@ -158,13 +166,21 @@
                                         style="display: inline-block;background-color: {{ $primary_color }}; color: #ffffff; text-transform: uppercase;letter-spacing: 2px; text-decoration: none; font-size: 13px; font-weight: 600;">
                                     </a>
                                 </div>
-                           </div>
+
+                                <div>
+                                    @isset($links)
+                                        @foreach($links as $link)
+                                            {!! $link ?? '' !!}<br>
+                                        @endforeach
+                                    @endisset
+                                </div>
+                        </div>
                     </td>
                 </tr>  
                 
                 <tr>
-                  <td height="20">
-                   <div style="border: 1px solid #c2c2c2; border-top: none; border-bottom: none; padding: 20px; text-align: center" id="content"> </div>
+                  <td height="0">
+                   <div style="border: 1px solid #c2c2c2; border-top: none; border-bottom: none; padding: 5px; text-align: center" id="content"> </div>
                  </td>
                 </tr>
 
@@ -178,7 +194,7 @@
                                 </p>
                             @endisset
 
-                            @if(isset($company) && $company instanceof \App\Models\Company)
+                            @if(isset($company) && $company instanceof \App\Models\Company && $company->getSetting('show_email_footer'))
                                 <p style="font-size: 15px; color: #2e2e2e; font-family: 'roboto', Arial, Helvetica, sans-serif; font-weight: 500; margin-bottom:0;">
                                     {{ $company->present()->name() }}</p>
                                 <p style="font-size: 15px; color: #2e2e2e; font-family: 'roboto', Arial, Helvetica, sans-serif; font-weight: 400; margin-top: 5px;">

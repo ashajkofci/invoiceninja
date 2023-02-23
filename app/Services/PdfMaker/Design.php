@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -13,9 +13,7 @@
 namespace App\Services\PdfMaker;
 
 use App\Models\Credit;
-use App\Models\GatewayType;
 use App\Models\Invoice;
-use App\Models\Payment;
 use App\Models\Quote;
 use App\Services\PdfMaker\Designs\Utilities\BaseDesign;
 use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
@@ -58,6 +56,8 @@ class Design extends BaseDesign
 
     public $company;
 
+    public float $payment_amount_total = 0;
+
     /** @var array */
     public $aging = [];
 
@@ -83,7 +83,6 @@ class Design extends BaseDesign
         Str::endsWith('.html', $design) ? $this->design = $design : $this->design = "{$design}.html";
 
         $this->options = $options;
-
     }
 
     public function html(): ?string
@@ -182,15 +181,17 @@ class Design extends BaseDesign
 
     public function swissQrCodeElement() :array
     {
-        if($this->type == self::DELIVERY_NOTE)
+        if ($this->type == self::DELIVERY_NOTE) {
             return [];
+        }
 
         $elements = [];
 
-        if(strlen($this->company->getSetting('qr_iban')) > 5 && strlen($this->company->getSetting('besr_id')) > 1)
+        if (strlen($this->company->getSetting('qr_iban')) > 5 && strlen($this->company->getSetting('besr_id')) > 1) {
             $elements[] = ['element' => 'qr_code', 'content' => '$swiss_qr', 'show_empty' => false, 'properties' => ['data-ref' => 'swiss-qr-code']];
+        }
 
-        return $elements; 
+        return $elements;
     }
 
     public function companyDetails(): array
@@ -223,8 +224,9 @@ class Design extends BaseDesign
     {
         $elements = [];
 
-        if(!$this->vendor)
+        if (!$this->vendor) {
             return $elements;
+        }
 
         $variables = $this->context['pdf_variables']['vendor_details'];
 
@@ -239,8 +241,9 @@ class Design extends BaseDesign
     {
         $elements = [];
 
-        if(!$this->client)
+        if (!$this->client) {
             return $elements;
+        }
 
         if ($this->type == self::DELIVERY_NOTE) {
             $elements = [
@@ -274,12 +277,11 @@ class Design extends BaseDesign
 
     public function entityDetails(): array
     {
-
-
         if ($this->type === 'statement') {
-
-            $s_date = $this->translateDate(now(), $this->client->date_format(), $this->client->locale());
+            // $s_date = $this->translateDate(now(), $this->client->date_format(), $this->client->locale());
             
+            $s_date = $this->translateDate($this->options['start_date'], $this->client->date_format(), $this->client->locale()) . " - " . $this->translateDate($this->options['end_date'], $this->client->date_format(), $this->client->locale());
+
             return [
                 ['element' => 'tr', 'properties' => ['data-ref' => 'statement-label'], 'elements' => [
                     ['element' => 'th', 'properties' => [], 'content' => ""],
@@ -310,10 +312,8 @@ class Design extends BaseDesign
             $variables = $this->context['pdf_variables']['credit_details'];
         }
 
-        if($this->vendor){
-
+        if ($this->vendor) {
             $variables = $this->context['pdf_variables']['purchase_order_details'];
-
         }
 
         $elements = [];
@@ -499,9 +499,9 @@ class Design extends BaseDesign
         //24-03-2022 show payments per invoice
         foreach ($this->invoices as $invoice) {
             foreach ($invoice->payments as $payment) {
-
-                if($payment->is_deleted)
+                if ($payment->is_deleted) {
                     continue;
+                }
 
                 $element = ['element' => 'tr', 'elements' => []];
 
@@ -512,6 +512,7 @@ class Design extends BaseDesign
 
                 $tbody[] = $element;
                 
+                $this->payment_amount_total += $payment->pivot->amount;
             }
         }
 
@@ -534,7 +535,8 @@ class Design extends BaseDesign
         $payment = $this->payments->first();
 
         return [
-            ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.amount_paid'), Number::formatMoney($this->payments->sum('amount'), $this->client))],
+            // ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.amount_paid'), Number::formatMoney($this->payments->sum('amount'), $this->client))],
+            ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.amount_paid'), Number::formatMoney($this->payment_amount_total, $this->client))],
         ];
     }
 
@@ -700,7 +702,7 @@ class Design extends BaseDesign
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => 'product_table-product.tax2-td']];
                     } elseif ($cell == '$product.tax_rate3') {
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => 'product_table-product.tax3-td']];
-                    } else if ($cell == '$product.unit_cost' || $cell == '$task.rate') {
+                    } elseif ($cell == '$product.unit_cost' || $cell == '$task.rate') {
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['style' => 'white-space: nowrap;', 'data-ref' => "{$_type}_table-" . substr($cell, 1) . '-td']];
                     } else {
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => "{$_type}_table-" . substr($cell, 1) . '-td']];
@@ -721,8 +723,8 @@ class Design extends BaseDesign
         if ($this->type === self::STATEMENT) {
             return [
                 ['element' => 'div', 'properties' => ['style' => 'display: flex; flex-direction: column;'], 'elements' => [
-                    ['element' => 'div', 'properties' => ['style' => 'margin-top: 1.5rem; display: block; align-items: flex-start; page-break-inside: avoid; visible !important;'], 'elements' => [
-                        ['element' => 'img', 'properties' => ['src' => '$invoiceninja.whitelabel', 'style' => 'height: 2.5rem;', 'hidden' => $this->entity->user->account->isPaid() ? 'true' : 'false', 'id' => 'invoiceninja-whitelabel-logo']],
+                    ['element' => 'div', 'properties' => ['style' => 'display: block; align-items: flex-start; page-break-inside: avoid; visible !important;'], 'elements' => [
+                        ['element' => 'img', 'properties' => ['src' => '$invoiceninja.whitelabel', 'style' => 'height: 2.5rem; margin-top: 1.5rem;', 'hidden' => $this->entity->user->account->isPaid() ? 'true' : 'false', 'id' => 'invoiceninja-whitelabel-logo']],
                     ]],
                 ]],
             ];
@@ -764,6 +766,10 @@ class Design extends BaseDesign
             if ($this->entity->partial > 0) {
                 $variables[] = '$partial_due';
             }
+
+            if (in_array('$paid_to_date', $variables)) {
+                $variables = \array_diff($variables, ['$paid_to_date']);
+            }
         }
 
         if ($this->entity instanceof Credit) {
@@ -771,7 +777,6 @@ class Design extends BaseDesign
             if (in_array('$paid_to_date', $variables)) {
                 $variables = \array_diff($variables, ['$paid_to_date']);
             }
-
         }
 
         foreach (['discount'] as $property) {

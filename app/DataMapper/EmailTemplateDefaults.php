@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -20,7 +20,6 @@ class EmailTemplateDefaults
         App::setLocale($locale);
 
         switch ($template) {
-
             /* Template */
 
             case 'email_template_invoice':
@@ -65,7 +64,7 @@ class EmailTemplateDefaults
                 return self::emailPurchaseOrderTemplate();
                 break;
 
-            /* Subject */
+                /* Subject */
             case 'email_subject_purchase_order':
                 return self::emailPurchaseOrderSubject();
             case 'email_subject_invoice':
@@ -235,12 +234,16 @@ class EmailTemplateDefaults
 
     public static function emailStatementSubject()
     {
-        return '';
+        return ctrans('texts.your_statement');
     }
 
     public static function emailStatementTemplate()
     {
-        return '';
+        $statement_message = '<p>$client<br><br>'.self::transformText('client_statement_body').'<br></p>';
+
+        return $statement_message;
+
+        // return ctrans('texts.client_statement_body', ['start_date' => '$start_date', 'end_date' => '$end_date']);
     }
 
     private static function transformText($string)

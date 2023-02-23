@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,17 +12,11 @@
 namespace App\Services\Payment;
 
 use App\Exceptions\PaymentRefundFailed;
-use App\Factory\CreditFactory;
-use App\Factory\InvoiceItemFactory;
-use App\Jobs\Ninja\TransactionLog;
 use App\Jobs\Payment\EmailRefundPayment;
-use App\Jobs\Util\SystemLogger;
 use App\Models\Activity;
 use App\Models\Credit;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Models\SystemLog;
-use App\Models\TransactionEvent;
 use App\Repositories\ActivityRepository;
 use App\Utils\Ninja;
 use stdClass;
@@ -68,16 +62,6 @@ class RefundPayment
             $contact = $this->payment->client->contacts()->whereNotNull('email')->first();
             EmailRefundPayment::dispatch($this->payment, $this->payment->company, $contact);
         }
-
-        $transaction = [
-            'invoice' => [],
-            'payment' => $this->payment->transaction_event(),
-            'client' => $this->payment->client->transaction_event(),
-            'credit' => [],
-            'metadata' => [],
-        ];
-
-        // TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $this->payment->company->db);
 
         $notes = ctrans('texts.refunded') . " : {$this->total_refund} - " . ctrans('texts.gateway_refund') . " : ";
         $notes .= $this->refund_data['gateway_refund'] !== false ? ctrans('texts.yes') : ctrans('texts.no');
@@ -221,18 +205,18 @@ class RefundPayment
                                        ->updateBalance($this->total_refund)
                                        ->updatePaidToDate($this->total_refund * -1)
                                        ->save();
+                    
 
                     $this->total_refund = 0;
                 } else {
                     $paymentable_credit->pivot->refunded += $available_credit;
                     $paymentable_credit->pivot->save();
 
-                    $paymentable_credit->balance += $available_credit;
                     $paymentable_credit->service()
-                                      ->setStatus(Credit::STATUS_SENT)
+                                       ->setStatus(Credit::STATUS_SENT)
                                        ->adjustBalance($available_credit)
                                        ->updatePaidToDate($available_credit * -1)
-                                      ->save();
+                                       ->save();
 
                     $this->total_refund -= $available_credit;
                 }
@@ -253,7 +237,6 @@ class RefundPayment
      */
     private function adjustInvoices()
     {
-
         if (isset($this->refund_data['invoices']) && count($this->refund_data['invoices']) > 0) {
             foreach ($this->refund_data['invoices'] as $refunded_invoice) {
                 $invoice = Invoice::withTrashed()->find($refunded_invoice['invoice_id']);
@@ -288,16 +271,6 @@ class RefundPayment
                                   ->updateBalance($refunded_invoice['amount'])
                                   ->save();
 
-                $transaction = [
-                    'invoice' => $invoice->transaction_event(),
-                    'payment' => [],
-                    'client' => $client->transaction_event(),
-                    'credit' => [],
-                    'metadata' => [],
-                ];
-
-                // TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $invoice->company->db);
-
                 if ($invoice->is_deleted) {
                     $invoice->delete();
                 }
@@ -310,16 +283,6 @@ class RefundPayment
             }
 
             $client->service()->updatePaidToDate(-1 * $refunded_invoice['amount'])->save();
-
-            $transaction = [
-                'invoice' => [],
-                'payment' => [],
-                'client' => $client->transaction_event(),
-                'credit' => [],
-                'metadata' => [],
-            ];
-
-            // TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $client->company->db);
         } else {
             //if we are refunding and no payments have been tagged, then we need to decrement the client->paid_to_date by the total refund amount.
 
@@ -330,16 +293,6 @@ class RefundPayment
             }
 
             $client->service()->updatePaidToDate(-1 * $this->total_refund)->save();
-
-            $transaction = [
-                'invoice' => [],
-                'payment' => [],
-                'client' => $client->transaction_event(),
-                'credit' => [],
-                'metadata' => [],
-            ];
-
-            // TransactionLog::dispatch(TransactionEvent::PAYMENT_REFUND, $transaction, $client->company->db);
         }
 
         return $this;
@@ -356,5 +309,4 @@ class RefundPayment
 
         return $this->payment;
     }
-
 }

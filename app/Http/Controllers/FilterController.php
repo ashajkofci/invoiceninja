@@ -4,16 +4,14 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Http\Controllers;
 
-use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class FilterController extends BaseController
 {
@@ -33,7 +31,6 @@ class FilterController extends BaseController
         $entity_filters = [];
 
         switch ($entity) {
-
             case 'invoice':
                 $entity_filters = ['bulk_download', 'mark_paid', 'mark_sent', 'download', 'cancel', 'email'];
                 break;
@@ -53,7 +50,6 @@ class FilterController extends BaseController
             case 'recurring_invoice':
                 $entity_filters = ['bulk_download', 'start', 'stop', 'email'];
                 break;
-
         }
 
         return response()->json(array_merge($this->base_filters, $entity_filters), 200);

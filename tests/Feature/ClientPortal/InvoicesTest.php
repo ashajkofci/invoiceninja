@@ -12,7 +12,6 @@
 
 namespace Tests\Feature\ClientPortal;
 
-use App\DataMapper\ClientSettings;
 use App\Http\Livewire\InvoicesTable;
 use App\Models\Account;
 use App\Models\Client;
@@ -86,12 +85,12 @@ class InvoicesTest extends TestCase
 
         $this->actingAs($client->contacts->first(), 'contact');
 
-        Livewire::test(InvoicesTable::class, ['company' => $company])
+        Livewire::test(InvoicesTable::class, ['company_id' => $company->id, 'db' => $company->db])
             ->assertSee($sent->number)
             ->assertSee($paid->number)
             ->assertSee($unpaid->number);
 
-        Livewire::test(InvoicesTable::class, ['company' => $company])
+        Livewire::test(InvoicesTable::class, ['company_id' => $company->id, 'db' => $company->db])
             ->set('status', ['paid'])
             ->assertSee($paid->number)
             ->assertDontSee($unpaid->number);

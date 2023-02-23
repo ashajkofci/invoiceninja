@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,7 +12,6 @@
 namespace App\Helpers\Invoice;
 
 use App\Models\Invoice;
-use App\Models\TaxRate;
 use App\Utils\Traits\NumberFormatter;
 use Illuminate\Support\Collection;
 
@@ -101,7 +100,6 @@ class InvoiceSum
 
     private function calculateCustomValues()
     {
-
         $this->total_custom_values += $this->valuer($this->invoice->custom_surcharge1);
 
         $this->total_custom_values += $this->valuer($this->invoice->custom_surcharge2);
@@ -151,7 +149,6 @@ class InvoiceSum
      */
     private function calculateBalance()
     {
-
         $this->setCalculatedAttributes();
 
         return $this;

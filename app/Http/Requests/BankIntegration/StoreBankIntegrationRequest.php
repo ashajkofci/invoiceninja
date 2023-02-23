@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2022. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -31,7 +31,6 @@ class StoreBankIntegrationRequest extends Request
 
     public function rules()
     {
-        
         $rules = [
             'bank_account_name' => 'required|min:3',
             'auto_sync' => 'sometimes|bool'
@@ -44,8 +43,9 @@ class StoreBankIntegrationRequest extends Request
     {
         $input = $this->all();
 
-        if((!array_key_exists('provider_name', $input) || strlen($input['provider_name']) == 0) && array_key_exists('bank_account_name', $input))
+        if ((!array_key_exists('provider_name', $input) || strlen($input['provider_name']) == 0) && array_key_exists('bank_account_name', $input)) {
             $input['provider_name'] = $input['bank_account_name'];
+        }
 
         $this->replace($input);
     }
@@ -54,5 +54,4 @@ class StoreBankIntegrationRequest extends Request
     {
         return [];
     }
-
 }
