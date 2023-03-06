@@ -278,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ]];
     }
 
+
     public function entityVariableCheck(string $variable): bool
     {
         // Extract $invoice.date => date
@@ -312,6 +313,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         return false;
+    }
+
+    public function entityVariableCheckx(string $variable): string
+    {
+        // Extract $invoice.date => date
+        // so we can append date as $entity->date and not $entity->$invoice.date;
+
+        // When it comes to invoice balance, we'll always show it.
+        if ($variable == '$invoice.total') {
+            return 'visible';
+        }
+
+        // Some variables don't map 1:1 to table columns. This gives us support for such cases.
+        $aliases = [
+            '$quote.balance_due' => 'partial',
+        ];
+
+        try {
+            $_variable = explode('.', $variable)[1];
+        } catch (Exception $e) {
+            nlog("Company settings seems to be broken. Could not resolve {$variable} type.");
+            return 'collapse';
+        }
+
+        if (\in_array($variable, \array_keys($aliases))) {
+            $_variable = $aliases[$variable];
+        }
+
+        if (is_null($this->entity->{$_variable})) {
+            return 'collapse';
+        }
+
+        if (empty($this->entity->{$_variable})) {
+            return 'collapse';
+        }
+
+        return 'visible';
     }
 
     public function composeFromPartials(array $partials)
