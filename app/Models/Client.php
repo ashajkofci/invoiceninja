@@ -94,6 +94,7 @@ class Client extends BaseModel implements HasLocalePreference
         'updated_at' => 'timestamp',
         'created_at' => 'timestamp',
         'deleted_at' => 'timestamp',
+        'last_login' => 'timestamp',
     ];
 
     protected $touches = [];
@@ -326,21 +327,6 @@ class Client extends BaseModel implements HasLocalePreference
     {
         return $this->service()->updateBalance($amount);
     }
-
-    /**
-     * Adjusts client "balances" when a client
-     * makes a payment that goes on file, but does
-     * not effect the client.balance record.
-     *
-     * @param  float $amount Adjustment amount
-     * @return Client
-     */
-    // public function processUnappliedPayment($amount) :Client
-    // {
-    //     return $this->service()->updatePaidToDate($amount)
-    //                             ->adjustCreditBalance($amount)
-    //                             ->save();
-    // }
 
     /**
      * Returns the entire filtered set

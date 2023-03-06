@@ -148,7 +148,7 @@
                     <td align="center" cellpadding="20">
                         <div style="border: 1px solid #c2c2c2; border-bottom: none; padding-bottom: 10px; border-top-left-radius: 3px; border-top-right-radius: 3px;">
                             @if($logo && strpos($logo, 'blank.png') === false)
-                             <img class="" src="{{ $logo ?? '' }}" width="50%" height="" alt="alt_text" border="0" style="width: 50%; max-width: 570px; display: block;">
+                             <img class="" src="{{ $logo ?? '' }}" width="50%" height="" alt=" " border="0" style="width: 50%; max-width: 570px; display: block;">
                             @endif
                         </div>
                     </td>
@@ -198,8 +198,8 @@
                                 <p style="font-size: 15px; color: #2e2e2e; font-family: 'roboto', Arial, Helvetica, sans-serif; font-weight: 500; margin-bottom:0;">
                                     {{ $company->present()->name() }}</p>
                                 <p style="font-size: 15px; color: #2e2e2e; font-family: 'roboto', Arial, Helvetica, sans-serif; font-weight: 400; margin-top: 5px;">
-                                    <span>{{ $company->settings->phone }}</span>
-                                    <span style="font-weight: 500"> {{ $company->settings->website }}</span>
+                                    <p>{{ $company->settings->phone }}</p>
+                                    <p style="font-weight: 500"> {{ $company->settings->website }}</p>
                                 </p>
                             @endif
                         </div>
