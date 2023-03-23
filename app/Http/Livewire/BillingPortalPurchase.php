@@ -23,6 +23,8 @@ use App\Models\Invoice;
 use App\Models\Subscription;
 use App\Repositories\ClientContactRepository;
 use App\Repositories\ClientRepository;
+use App\Services\Subscription\SubscriptionService;
+use App\Utils\Ninja;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -168,7 +170,7 @@ class BillingPortalPurchase extends Component
     /**
      * Instance of company.
      *
-     * @var Company
+     * @var \App\Models\Company
      */
     public $company;
 
@@ -396,12 +398,19 @@ class BillingPortalPurchase extends Component
             ->adjustInventory()
             ->save();
 
+        $context = 'purchase';
+
+        // if(Ninja::isHosted() && $this->subscription->service()->recurring_products()->first()?->id == SubscriptionService::WHITE_LABEL) {
+        if (Ninja::isHosted() && $this->subscription->service()->recurring_products()->first()?->product_key == 'whitelabel') {
+            $context = 'whitelabel';
+        }
+
         Cache::put($this->hash, [
             'subscription_id' => $this->subscription->hashed_id,
             'email' => $this->email ?? $this->contact->email,
             'client_id' => $this->contact->client->hashed_id,
             'invoice_id' => $this->invoice->hashed_id,
-            'context' => 'purchase',
+            'context' => $context,
             'campaign' => $this->campaign,
         ], now()->addMinutes(60));
 
