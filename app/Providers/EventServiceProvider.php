@@ -173,8 +173,8 @@ use App\Listeners\Invoice\InvoiceViewedActivity;
 use App\Listeners\Invoice\UpdateInvoiceActivity;
 use App\Listeners\Mail\MailSentListener;
 use App\Listeners\Misc\InvitationViewedListener;
+use App\Listeners\Payment\PaymentBalanceActivity;
 use App\Listeners\Payment\PaymentEmailedActivity;
-use App\Listeners\Payment\PaymentEmailFailureActivity;
 use App\Listeners\Payment\PaymentNotification;
 use App\Listeners\Payment\PaymentRestoredActivity;
 use App\Listeners\PurchaseOrder\CreatePurchaseOrderActivity;
@@ -305,24 +305,30 @@ class EventServiceProvider extends ServiceProvider
         PaymentWasCreated::class => [
             PaymentCreatedActivity::class,
             PaymentNotification::class,
+            PaymentBalanceActivity::class,
         ],
         PaymentWasDeleted::class => [
             PaymentDeletedActivity::class,
+            PaymentBalanceActivity::class,
         ],
         PaymentWasArchived::class => [
             PaymentArchivedActivity::class,
         ],
         PaymentWasUpdated::class => [
             PaymentUpdatedActivity::class,
+            PaymentBalanceActivity::class,
         ],
         PaymentWasRefunded::class => [
             PaymentRefundedActivity::class,
+            PaymentBalanceActivity::class,
         ],
         PaymentWasVoided::class => [
             PaymentVoidedActivity::class,
+            PaymentBalanceActivity::class,
         ],
         PaymentWasRestored::class => [
             PaymentRestoredActivity::class,
+            PaymentBalanceActivity::class,
         ],
         // Clients
         ClientWasCreated::class => [
@@ -449,7 +455,7 @@ class EventServiceProvider extends ServiceProvider
             InvitationViewedListener::class,
         ],
         PaymentWasEmailed::class => [
-            // PaymentEmailedActivity::class,
+            PaymentEmailedActivity::class,
         ],
         PaymentWasEmailedAndFailed::class => [
             // PaymentEmailFailureActivity::class,

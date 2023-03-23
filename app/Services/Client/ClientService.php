@@ -13,6 +13,8 @@ namespace App\Services\Client;
 
 use App\Models\Client;
 use App\Models\Credit;
+use App\Models\Payment;
+use App\Services\Email\Email;
 use App\Services\Email\EmailObject;
 use App\Services\Email\EmailService;
 use App\Utils\Number;
@@ -73,6 +75,23 @@ class ClientService
 
         return $this;
     }
+
+    public function updatePaymentBalance()
+    {
+        $amount = Payment::where('client_id', $this->client->id)
+                        ->where('is_deleted', 0)
+                        ->whereIn('status_id', [Payment::STATUS_COMPLETED, Payment::STATUS_PENDING, Payment::STATUS_PARTIALLY_REFUNDED, Payment::STATUS_REFUNDED])
+                        ->sum(DB::Raw('amount - refunded - applied'));
+
+        DB::connection(config('database.default'))->transaction(function () use ($amount) {
+            $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
+            $this->client->payment_balance = $amount;
+            $this->client->saveQuietly();
+        }, 2);
+
+        return $this;
+    }
+
 
     public function adjustCreditBalance(float $amount)
     {
@@ -149,9 +168,11 @@ class ClientService
         $this->client_start_date = $this->translateDate($options['start_date'], $this->client->date_format(), $this->client->locale());
         $this->client_end_date = $this->translateDate($options['end_date'], $this->client->date_format(), $this->client->locale());
 
-        $email_service = new EmailService($this->buildStatementMailableData($pdf), $this->client->company);
-
-        $email_service->send();
+        // $email_service = new EmailService($this->buildStatementMailableData($pdf), $this->client->company);
+        // $email_service->send();
+        
+        $email_object = $this->buildStatementMailableData($pdf);
+        Email::dispatch($email_object, $this->client->company);
     }
 
     /**
@@ -165,9 +186,7 @@ class ClientService
         $email_object = new EmailObject;
         $email_object->to = [new Address($this->client->present()->email(), $this->client->present()->name())];
         $email_object->attachments = [['file' => base64_encode($pdf), 'name' => ctrans('texts.statement') . ".pdf"]];
-        $email_object->settings = $this->client->getMergedSettings();
-        $email_object->company = $this->client->company;
-        $email_object->client = $this->client;
+        $email_object->client_id = $this->client->id;
         $email_object->email_template_subject = 'email_subject_statement';
         $email_object->email_template_body = 'email_template_statement';
         $email_object->variables = [

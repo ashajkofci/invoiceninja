@@ -118,6 +118,9 @@
             background-color: {{ $primary_color }};
         }
 
+        .logo {
+
+        }
     </style>
 
     <!--[if gte mso 9]>
@@ -167,13 +170,15 @@
                                     </a>
                                 </div>
 
+                                @isset($links)
                                 <div>
-                                    @isset($links)
-                                        @foreach($links as $link)
-                                            {!! $link ?? '' !!}<br>
-                                        @endforeach
-                                    @endisset
+                                    <ul style="list-style-type: none;">
+                                    @foreach($links as $link)
+                                            <li>{!! $link ?? '' !!} <img height="15px" src="{{ asset('images/svg/dark/file.svg') }}"></li>
+                                    @endforeach
+                                    </ul>
                                 </div>
+                                @endisset
                         </div>
                     </td>
                 </tr>  

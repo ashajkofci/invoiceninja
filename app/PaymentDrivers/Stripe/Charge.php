@@ -15,13 +15,11 @@ namespace App\PaymentDrivers\Stripe;
 use App\Jobs\Util\SystemLogger;
 use App\Models\ClientGatewayToken;
 use App\Models\GatewayType;
-use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentHash;
 use App\Models\PaymentType;
 use App\Models\SystemLog;
 use App\PaymentDrivers\StripePaymentDriver;
-use App\Utils\Number;
 use App\Utils\Traits\MakesHash;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\AuthenticationException;
@@ -79,6 +77,9 @@ class Charge
             if ($cgt->gateway_type_id == GatewayType::SEPA) {
                 $data['payment_method_types'] = ['sepa_debit'];
             }
+            if ($cgt->gateway_type_id == GatewayType::BACS) {
+                $data['payment_method_types'] = ['bacs_debit'];
+            }
 
             /* Should improve token billing with client not present */
             if (!auth()->guard('contact')->check()) {
@@ -135,6 +136,9 @@ class Charge
         if ($cgt->gateway_type_id == GatewayType::SEPA) {
             $payment_method_type = PaymentType::SEPA;
             $status = Payment::STATUS_PENDING;
+        } elseif ($cgt->gateway_type_id == GatewayType::BACS) {
+            $payment_method_type = PaymentType::BACS;
+            $status = Payment::STATUS_PENDING;
         } else {
             if (isset($response->latest_charge)) {
                 $charge = \Stripe\Charge::retrieve($response->latest_charge, $this->stripe->stripe_connect_auth);
@@ -147,7 +151,8 @@ class Charge
 
             $status = Payment::STATUS_COMPLETED;
         }
-        
+
+
         if (!in_array($response?->status, ['succeeded', 'processing'])) {
             $this->stripe->processInternallyFailedPayment($this->stripe, new \Exception('Auto billing failed.', 400));
         }
@@ -195,6 +200,8 @@ class Charge
                 break;
             case PaymentType::SEPA:
                 return PaymentType::SEPA;
+            case PaymentType::BACS:
+                return PaymentType::BACS;
             default:
                 return PaymentType::CREDIT_CARD_OTHER;
                 break;

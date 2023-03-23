@@ -14,6 +14,15 @@ namespace App\Services\Email;
 use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\Company;
+use App\Models\Credit;
+use App\Models\CreditInvitation;
+use App\Models\Invoice;
+use App\Models\InvoiceInvitation;
+use App\Models\Payment;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderInvitation;
+use App\Models\Quote;
+use App\Models\QuoteInvitation;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\VendorContact;
@@ -24,23 +33,29 @@ use Illuminate\Mail\Mailables\Address;
  */
 class EmailObject
 {
+    /** @var array[string] $args */
     public array $to = [];
 
     public ?Address $from = null;
 
     public array $reply_to = [];
 
+    /** @var array[Address] $args */
     public array $cc = [];
 
+    /** @var array[Address] $args */
     public array $bcc = [];
 
     public ?string $subject = null;
 
     public ?string $body = null;
 
+    /** @var array{key: value} $args */
     public array $attachments = [];
 
     public string $company_key;
+
+    public Company $company;
 
     public ?object $settings = null;
 
@@ -52,15 +67,31 @@ class EmailObject
 
     public ?string $greeting = null;
 
-    public ?Client $client = null;
+    public ?int $invitation_id = null;
 
-    public ?Vendor $vendor = null;
+    public InvoiceInvitation | QuoteInvitation | CreditInvitation | PurchaseOrderInvitation | null $invitation;
+    
+    public ?int $entity_id = null;
 
-    public ?User $user = null;
+    public Invoice | Quote | Credit | PurchaseOrder | Payment | null $entity;
+    
+    public ?int $client_id = null;
 
-    public ?ClientContact $client_contact = null;
+    public ?Client $client;
+    
+    public ?int $vendor_id = null;
 
-    public ?VendorContact $vendor_contact = null;
+    public ?Vendor $vendor;
+
+    public ?int $user_id = null;
+
+    public ?User $user;
+
+    public ?int $client_contact_id = null;
+
+    public ClientContact | VendorContact | null  $contact;
+
+    public ?int $vendor_contact_id = null;
 
     public ?string $email_template_body = null;
 
@@ -70,15 +101,22 @@ class EmailObject
 
     public ?string $text_template = 'email.template.text';
 
+    /** @var array{key: value} $args */
     public array $headers = [];
-
-    public ?string $invitation_key = null;
-    
-    public ?int $entity_id = null;
 
     public ?string $entity_class = null;
 
+    /** @var array{key: value} $args */
     public array $variables = [];
 
-    public ?Company $company = null;
+    public bool $override = false;
+
+    public ?string $invitation_key = null;
+
+    /** @var array[int] $args */
+    public array $documents = [];
+
+    public ?string $template = null; //invoice //quote //reminder1
+
+    public array $links = [];
 }

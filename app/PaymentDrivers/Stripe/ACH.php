@@ -262,6 +262,7 @@ class ACH
     {
         $this->stripe->init();
 
+        $response = false;
         try {
             $data = [
                 'amount' => $this->stripe->convertToStripeAmount($amount, $this->stripe->client->currency()->precision, $this->stripe->client->currency()),
@@ -280,7 +281,7 @@ class ACH
                 $data['payment_method_types'] = ['us_bank_account'];
             }
 
-            $response = $this->stripe->createPaymentIntent($data, $this->stripe->stripe_connect_auth);
+            $response = $this->stripe->createPaymentIntent($data);
 
             SystemLogger::dispatch($response, SystemLog::CATEGORY_GATEWAY_RESPONSE, SystemLog::EVENT_GATEWAY_SUCCESS, SystemLog::TYPE_STRIPE, $this->stripe->client, $this->stripe->client->company);
         } catch (\Exception $e) {
@@ -354,6 +355,19 @@ class ACH
     {
         $response = json_decode($request->gateway_response);
         $bank_account_response = json_decode($request->bank_account_response);
+
+        if ($response->status == 'requires_source_action' && $response->next_action->type == 'verify_with_microdeposits') {
+            $method = $bank_account_response->payment_method->us_bank_account;
+            $method = $bank_account_response->payment_method->us_bank_account;
+            $method->id = $response->payment_method;
+            $method->state = 'unauthorized';
+            $method->next_action = $response->next_action->verify_with_microdeposits->hosted_verification_url;
+
+            $customer = $this->stripe->getCustomer($request->customer);
+            $cgt = $this->storePaymentMethod($method, GatewayType::BANK_TRANSFER, $customer);
+
+            return redirect()->route('client.payment_methods.show', ['payment_method' => $cgt->hashed_id]);
+        }
 
         $method = $bank_account_response->payment_method->us_bank_account;
         $method->id = $response->payment_method;
@@ -545,6 +559,10 @@ class ACH
             $payment_meta->last4 = (string) $method->last4;
             $payment_meta->type = GatewayType::BANK_TRANSFER;
             $payment_meta->state = $state;
+
+            if (property_exists($method, 'next_action')) {
+                $payment_meta->next_action = $method->next_action;
+            }
 
             $data = [
                 'payment_meta' => $payment_meta,

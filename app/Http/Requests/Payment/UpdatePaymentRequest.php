@@ -36,7 +36,7 @@ class UpdatePaymentRequest extends Request
     public function rules()
     {
         $rules = [
-            'invoices' => ['array', new PaymentAppliedValidAmount, new ValidCreditsPresentRule($this->all())],
+            'invoices' => ['array', new PaymentAppliedValidAmount($this->all()), new ValidCreditsPresentRule($this->all())],
             'invoices.*.invoice_id' => 'distinct',
         ];
 
@@ -44,10 +44,11 @@ class UpdatePaymentRequest extends Request
             $rules['number'] = Rule::unique('payments')->where('company_id', auth()->user()->company()->id)->ignore($this->payment->id);
         }
 
-        if($this->file('documents') && is_array($this->file('documents')))
+        if ($this->file('documents') && is_array($this->file('documents'))) {
             $rules['documents.*'] = $this->file_validation;
-        elseif($this->file('documents'))
+        } elseif ($this->file('documents')) {
             $rules['documents'] = $this->file_validation;
+        }
 
         if ($this->file('file') && is_array($this->file('file'))) {
             $rules['file.*'] = $this->file_validation;
@@ -87,6 +88,7 @@ class UpdatePaymentRequest extends Request
                 }
             }
         }
+
         $this->replace($input);
     }
 

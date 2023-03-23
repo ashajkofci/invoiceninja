@@ -913,7 +913,6 @@ class BaseController extends Controller
      * List response
      *
      * @param  mixed $query
-     * @return void
      */
     protected function listResponse($query)
     {
@@ -1010,7 +1009,6 @@ class BaseController extends Controller
      * Item Response
      *
      * @param  mixed $item
-     * @return void
      */
     protected function itemResponse($item)
     {
@@ -1087,7 +1085,7 @@ class BaseController extends Controller
     {
         if ((bool) $this->checkAppSetup() !== false && $account = Account::first()) {
             //always redirect invoicing.co to invoicing.co
-            if (Ninja::isHosted() && !in_array(request()->getSchemeAndHttpHost(), ['https://staging.invoicing.co', 'https://invoicing.co', 'https://demo.invoicing.co'])) {
+            if (Ninja::isHosted() && !in_array(request()->getSchemeAndHttpHost(), ['https://staging.invoicing.co', 'https://invoicing.co', 'https://demo.invoicing.co', 'https://invoiceninja.net'])) {
                 return redirect()->secure('https://invoicing.co');
             }
 

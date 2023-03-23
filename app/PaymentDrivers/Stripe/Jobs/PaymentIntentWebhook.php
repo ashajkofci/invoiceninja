@@ -89,6 +89,7 @@ class PaymentIntentWebhook implements ShouldQueue
 
         $charge_id = false;
 
+
         if (isset($this->stripe_request['object']['charges']) && optional($this->stripe_request['object']['charges']['data'][0])['id']) {
             $charge_id = $this->stripe_request['object']['charges']['data'][0]['id'];
         } // API VERSION 2018
@@ -186,6 +187,8 @@ class PaymentIntentWebhook implements ShouldQueue
             }
 
             $this->updateAchPayment($payment_hash, $client, $meta);
+        } elseif (isset($pi['payment_method_types']) && in_array('bacs_debit', $pi['payment_method_types'])) {
+            return;
         }
     }
 
@@ -206,7 +209,7 @@ class PaymentIntentWebhook implements ShouldQueue
             'transaction_reference' => $meta['transaction_reference'],
             'gateway_type_id' => GatewayType::BANK_TRANSFER,
         ];
-        
+
         $payment = $driver->createPayment($data, Payment::STATUS_COMPLETED);
 
         SystemLogger::dispatch(
@@ -260,7 +263,6 @@ class PaymentIntentWebhook implements ShouldQueue
         }
     }
 
-
     private function updateCreditCardPayment($payment_hash, $client, $meta)
     {
         $company_gateway = CompanyGateway::find($this->company_gateway_id);
@@ -278,7 +280,7 @@ class PaymentIntentWebhook implements ShouldQueue
             'transaction_reference' => $meta['transaction_reference'],
             'gateway_type_id' => GatewayType::CREDIT_CARD,
         ];
-        
+
         $payment = $driver->createPayment($data, Payment::STATUS_COMPLETED);
 
         SystemLogger::dispatch(

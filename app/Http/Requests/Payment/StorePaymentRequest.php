@@ -70,7 +70,6 @@ class StorePaymentRequest extends Request
         if (isset($input['credits']) && is_array($input['credits']) !== false) {
             foreach ($input['credits'] as $key => $value) {
                 if (array_key_exists('credit_id', $input['credits'][$key])) {
-                    // $input['credits'][$key]['credit_id'] = $value['credit_id'];
                     $input['credits'][$key]['credit_id'] = $this->decodePrimaryKey($value['credit_id']);
 
                     $credits_total += $value['amount'];
@@ -113,10 +112,11 @@ class StorePaymentRequest extends Request
 
         ];
 
-        if($this->file('documents') && is_array($this->file('documents')))
+        if ($this->file('documents') && is_array($this->file('documents'))) {
             $rules['documents.*'] = $this->file_validation;
-        elseif($this->file('documents'))
+        } elseif ($this->file('documents')) {
             $rules['documents'] = $this->file_validation;
+        }
 
         if ($this->file('file') && is_array($this->file('file'))) {
             $rules['file.*'] = $this->file_validation;

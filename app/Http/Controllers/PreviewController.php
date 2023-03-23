@@ -23,7 +23,6 @@ use App\Libraries\MultiDB;
 use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\Credit;
-use App\Models\GroupSetting;
 use App\Models\Invoice;
 use App\Models\InvoiceInvitation;
 use App\Models\Quote;
@@ -37,7 +36,6 @@ use App\Services\PdfMaker\Design;
 use App\Services\PdfMaker\Design as PdfDesignModel;
 use App\Services\PdfMaker\Design as PdfMakerDesign;
 use App\Services\PdfMaker\PdfMaker;
-use App\Services\Preview\StubBuilder;
 use App\Utils\HostedPDF\NinjaPdf;
 use App\Utils\HtmlEngine;
 use App\Utils\Ninja;
@@ -179,9 +177,9 @@ class PreviewController extends BaseController
 
     public function design(DesignPreviewRequest $request)
     {
-        if (Ninja::isHosted() && !in_array($request->getHost(), ['preview.invoicing.co','staging.invoicing.co'])) {
-            return response()->json(['message' => 'This server cannot handle this request.'], 400);
-        }
+        // if (Ninja::isHosted() && !in_array($request->getHost(), ['preview.invoicing.co','staging.invoicing.co'])) {
+        //     return response()->json(['message' => 'This server cannot handle this request.'], 400);
+        // }
 
         $pdf = (new PdfMock($request->all(), auth()->user()->company()))->build()->getPdf();
 

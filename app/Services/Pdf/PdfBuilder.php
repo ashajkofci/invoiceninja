@@ -244,7 +244,7 @@ class PdfBuilder
 
                 $element['elements'][] = ['element' => 'td', 'content' => $invoice->number];
                 $element['elements'][] = ['element' => 'td', 'content' => $this->translateDate($payment->date, $this->service->config->date_format, $this->service->config->locale) ?: '&nbsp;'];
-                $element['elements'][] = ['element' => 'td', 'content' => $payment->type ? $payment->type->name : ctrans('texts.manual_entry')];
+                $element['elements'][] = ['element' => 'td', 'content' => $payment->translatedType()];
                 $element['elements'][] = ['element' => 'td', 'content' => $this->service->config->formatMoney($payment->pivot->amount) ?: '&nbsp;'];
 
                 $tbody[] = $element;
@@ -279,7 +279,7 @@ class PdfBuilder
 
         return [
             ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.amount_paid'), $this->service->config->formatMoney($this->payment_amount_total))],
-            ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.payment_method'), $payment->type ? $payment->type->name : ctrans('texts.manual_entry'))],
+            ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.payment_method'), $payment->translatedType())],
             ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.payment_date'), $this->translateDate($payment->date, $this->service->config->date_format, $this->service->config->locale) ?: '&nbsp;')],
         ];
     }
@@ -444,6 +444,14 @@ class PdfBuilder
 
             return $elements;
         }
+
+        $_type = Str::startsWith($type, '$') ? ltrim($type, '$') : $type;
+        $table_type = "{$_type}_columns";
+        
+        if ($_type == 'product' && $this->service->config->entity instanceof Quote && !$this->service->config->settings?->sync_invoice_quote_columns) {
+            $table_type = "product_quote_columns";
+        }
+
 
         foreach ($items as $row) {
             $element = ['element' => 'tr', 'elements' => []];
@@ -645,7 +653,13 @@ class PdfBuilder
             '$task.rate' => '$task.cost',
         ];
 
-        foreach ($this->service->config->pdf_variables["{$type}_columns"] as $column) {
+        $table_type = "{$type}_columns";
+
+        if ($type == 'product' && $this->service->config->entity instanceof Quote && !$this->service->config->settings_object?->sync_invoice_quote_columns) {
+            $table_type = "product_quote_columns";
+        }
+
+        foreach ($this->service->config->pdf_variables[$table_type] as $column) {
             if (array_key_exists($column, $aliases)) {
                 $elements[] = ['element' => 'th', 'content' => $aliases[$column] . '_label', 'properties' => ['data-ref' => "{$type}_table-" . substr($aliases[$column], 1) . '-th', 'hidden' => $this->service->config->settings->hide_empty_columns_on_pdf]];
             } elseif ($column == '$product.discount' && !$this->service->company->enable_product_discount) {

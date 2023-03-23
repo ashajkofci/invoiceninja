@@ -12,13 +12,16 @@
 namespace App\Http\Requests\Email;
 
 use App\Http\Requests\Request;
+use App\Utils\Ninja;
 use App\Utils\Traits\MakesHash;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
 class SendEmailRequest extends Request
 {
     use MakesHash;
 
+    private string $error_message = '';
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -40,6 +43,7 @@ class SendEmailRequest extends Request
             'template' => 'bail|required',
             'entity' => 'bail|required',
             'entity_id' => 'bail|required',
+            'cc_email' => 'bail|sometimes|email|nullable',
         ];
     }
 
@@ -78,7 +82,14 @@ class SendEmailRequest extends Request
     private function checkUserAbleToSend()
     {
         $input = $this->all();
+        
+        
+        if (Ninja::isHosted() && !auth()->user()->account->account_sms_verified) {
+            $this->error_message = ctrans('texts.authorization_sms_failure');
 
+            return false;
+        }
+        
         /*Make sure we have all the require ingredients to send a template*/
         if (array_key_exists('entity', $input) && array_key_exists('entity_id', $input) && is_string($input['entity']) && $input['entity_id']) {
             $company = auth()->user()->company();
@@ -95,5 +106,10 @@ class SendEmailRequest extends Request
         }
 
         return false;
+    }
+
+    protected function failedAuthorization()
+    {
+        throw new AuthorizationException($this->error_message);
     }
 }
