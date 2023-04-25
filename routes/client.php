@@ -1,5 +1,7 @@
 <?php
 
+use App\Utils\Ninja;
+use App\Models\Account;
 use App\Utils\PhantomJS\Phantom;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BaseController;
@@ -100,7 +102,7 @@ Route::group(['middleware' => ['auth:contact', 'locale', 'domain_db','check_clie
     Route::resource('documents', App\Http\Controllers\ClientPortal\DocumentController::class)->only(['index', 'show']);
 
     Route::get('subscriptions/{recurring_invoice}/plan_switch/{target}', [App\Http\Controllers\ClientPortal\SubscriptionPlanSwitchController::class, 'index'])->name('subscription.plan_switch');
-    
+
     Route::get('subscriptions/{recurring_invoice}', [SubscriptionController::class, 'show'])->middleware('portal_enabled')->name('subscriptions.show');
     Route::get('subscriptions', [SubscriptionController::class, 'index'])->middleware('portal_enabled')->name('subscriptions.index');
 
@@ -128,6 +130,7 @@ Route::group(['middleware' => ['invite_db'], 'prefix' => 'client', 'as' => 'clie
     Route::get('credit/{invitation_key}', [App\Http\Controllers\ClientPortal\InvitationController::class, 'creditRouter']);
     Route::get('recurring_invoice/{invitation_key}/download_pdf', [RecurringInvoiceController::class, 'downloadPdf'])->name('recurring_invoice.download_invitation_key');
     Route::get('invoice/{invitation_key}/download_pdf', [InvoiceController::class, 'downloadPdf'])->name('invoice.download_invitation_key');
+    Route::get('invoice/{invitation_key}/download_e_invoice', [InvoiceController::class, 'downloadEInvoice'])->name('invoice.download_e_invoice');
     Route::get('quote/{invitation_key}/download_pdf', [QuoteController::class, 'downloadPdf'])->name('quote.download_invitation_key');
     Route::get('credit/{invitation_key}/download_pdf', [CreditController::class, 'downloadPdf'])->name('credit.download_invitation_key');
     Route::get('{entity}/{invitation_key}/download', [App\Http\Controllers\ClientPortal\InvitationController::class, 'routerForDownload']);
@@ -138,4 +141,21 @@ Route::group(['middleware' => ['invite_db'], 'prefix' => 'client', 'as' => 'clie
 
 Route::get('phantom/{entity}/{invitation_key}', [Phantom::class, 'displayInvitation'])->middleware(['invite_db', 'phantom_secret'])->name('phantom_view');
 
-Route::fallback([BaseController::class, 'notFoundClient']);
+Route::fallback(function () {
+
+    if (Ninja::isSelfHost() && Account::first()?->set_react_as_default_ap) {
+
+        $account = Account::first();
+
+        return response()->view('react.index', [
+            'rc' => request()->input('rc', ''),
+            'login' => request()->input('login', ''),
+            'signup' => request()->input('signup', ''),
+            'report_errors' => $account->report_errors,
+            'user_agent' => request()->server('HTTP_USER_AGENT'),
+        ])->header('X-Frame-Options', 'SAMEORIGIN', false);
+    }
+
+    abort(404);
+
+});

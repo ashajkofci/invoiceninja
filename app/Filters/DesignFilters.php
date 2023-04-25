@@ -21,10 +21,9 @@ class DesignFilters extends QueryFilters
     /**
      * Filter based on search text.
      *
-     * @param string query filter
+     * @param string $filter
      * @return Builder
      *
-     * @deprecated
      */
     public function filter(string $filter = ''): Builder
     {
@@ -33,14 +32,14 @@ class DesignFilters extends QueryFilters
         }
 
         return $this->builder->where(function ($query) use ($filter) {
-            $query->where('designs.name', 'like', '%'.$filter.'%');
+            $query->where('name', 'like', '%'.$filter.'%');
         });
     }
 
     /**
      * Sorts the list based on $sort.
      *
-     * @param string sort formatted as column|asc
+     * @param string $sort formatted as column|asc
      *
      * @return Builder
      */
@@ -58,10 +57,29 @@ class DesignFilters extends QueryFilters
     /**
      * Filters the query by the users company ID.
      *
-     * @return Illuminate\Database\Query\Builder
+     * @return Builder
      */
     public function entityFilter(): Builder
     {
-        return $this->builder->where('company_id', auth()->user()->company()->id)->orWhere('company_id', null)->orderBy('id', 'asc');
+        //19-03-2023 change the scope for the design filters
+        return  $this->builder->where(function ($query) {
+            $query->where('company_id', auth()->user()->company()->id)->orWhere('company_id', null)->orderBy('id', 'asc');
+    // return $this->builder->where('company_id', auth()->user()->company()->id)->orWhere('company_id', null)->orderBy('id', 'asc');
+
+        });
+    }
+
+    /**
+     * Filter the designs by `is_custom` column.
+     *
+     * @return Builder
+     */
+    public function custom(string $custom): Builder
+    {
+        if (strlen($custom) === 0) {
+            return $this->builder;
+        }
+
+        return $this->builder->where('is_custom', filter_var($custom, FILTER_VALIDATE_BOOLEAN));
     }
 }

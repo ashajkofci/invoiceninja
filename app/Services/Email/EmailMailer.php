@@ -95,7 +95,7 @@ class EmailMailer implements ShouldQueue
             
             $mailer->send($this->email_mailable);
 
-            Cache::increment($this->email_service->company->account->key);
+            Cache::increment("email_quota".$this->email_service->company->account->key);
 
             LightLogs::create(new EmailSuccess($this->email_service->company->company_key))
                      ->send();
@@ -136,6 +136,8 @@ class EmailMailer implements ShouldQueue
 
 
             /* Releasing immediately does not add in the backoff */
+            sleep(rand(0, 3));
+
             $this->release($this->backoff()[$this->attempts()-1]);
 
             $message = null;

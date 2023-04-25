@@ -135,7 +135,7 @@ class SelfUpdateController extends BaseController
         Artisan::call('route:clear');
         Artisan::call('view:clear');
         Artisan::call('migrate', ['--force' => true]);
-        Artisan::call('optimize');
+        Artisan::call('config:clear');
 
         $this->buildCache(true);
 
@@ -162,6 +162,9 @@ class SelfUpdateController extends BaseController
                 $this->deleteDirectory(base_path('vendor/beganovich/snappdf/versions/'.$file->getFileName()));
             }
         }
+
+        $iterator = null;
+        
     }
 
     private function deleteDirectory($dir)
@@ -206,6 +209,8 @@ class SelfUpdateController extends BaseController
         foreach (new \RecursiveIteratorIterator($directoryIterator) as $file) {
             unlink(base_path('bootstrap/cache/').$file->getFileName());
         }
+
+        $directoryIterator = null;
     }
 
     private function testWritable()
@@ -225,6 +230,8 @@ class SelfUpdateController extends BaseController
             }
         }
 
+        $directoryIterator = null;
+        
         return true;
     }
 
