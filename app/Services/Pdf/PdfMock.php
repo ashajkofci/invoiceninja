@@ -63,13 +63,17 @@ class PdfMock
         $pdf_config->entity_design_id = $pdf_config->settings->{"{$pdf_config->entity_string}_design_id"};
         $pdf_config->setPdfVariables();
         $pdf_config->setCurrency(Currency::find($this->settings->currency_id));
-        $pdf_config->setCountry(Country::find($this->settings->country_id));
+        $pdf_config->setCountry(Country::find($this->settings->country_id ?: 840));
         $pdf_config->design = Design::find($this->decodePrimaryKey($pdf_config->entity_design_id));
         $pdf_config->currency_entity = $this->mock->client;
         
         $pdf_service->config = $pdf_config;
 
-        $pdf_designer = (new PdfDesigner($pdf_service))->build();
+        if(isset($this->request['design']))
+            $pdf_designer = (new PdfDesigner($pdf_service))->buildFromPartials($this->request['design']);
+        else
+            $pdf_designer = (new PdfDesigner($pdf_service))->build();
+        
         $pdf_service->designer = $pdf_designer;
 
         $pdf_service->html_variables = $document_type == 'purchase_order' ? $this->getVendorStubVariables() : $this->getStubVariables();

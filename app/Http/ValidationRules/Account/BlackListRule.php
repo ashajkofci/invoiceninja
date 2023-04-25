@@ -28,7 +28,9 @@ class BlackListRule implements Rule
         'dataservices.space',
         'karenkey.com',
         'sharklasers.com',
-        '100072641.help'
+        '100072641.help',
+        'yandex.com',
+        'bloheyz.com',
     ];
 
     /**

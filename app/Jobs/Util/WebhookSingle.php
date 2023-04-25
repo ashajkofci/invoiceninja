@@ -63,7 +63,7 @@ class WebhookSingle implements ShouldQueue
 
     public function backoff()
     {
-        return [10, 30, 60, 180, 3600];
+        return [15, 35, 65, 185, 3605];
     }
 
     /**
@@ -78,7 +78,7 @@ class WebhookSingle implements ShouldQueue
         $subscription = Webhook::with('company')->find($this->subscription_id);
 
         if ($subscription) {
-            nlog("firing event ID {$subscription->event_id} company_id {$subscription->company_id}");
+            // nlog("firing event ID {$subscription->event_id} company_id {$subscription->company_id}");
         }
         
         if (!$subscription) {
@@ -222,6 +222,9 @@ class WebhookSingle implements ShouldQueue
                 $this->resolveClient(),
                 $this->company,
             ))->handle();
+
+            //add some entropy to the retry
+            sleep(rand(0, 3));
 
             $this->release($this->backoff()[$this->attempts()-1]);
         }

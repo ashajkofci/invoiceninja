@@ -18,7 +18,6 @@ use Illuminate\Support\Collection;
 class InvoiceSum
 {
     use Taxer;
-    use Balancer;
     use CustomValuer;
     use Discounter;
     use NumberFormatter;
@@ -294,6 +293,11 @@ class InvoiceSum
     public function getTotal()
     {
         return $this->total;
+    }
+
+    public function getTotalSurcharges()
+    {
+        return $this->total_custom_values;
     }
 
     public function setTaxMap()
