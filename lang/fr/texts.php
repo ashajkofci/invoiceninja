@@ -4975,7 +4975,7 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'payment_type_Interac E Transfer' => 'Virement Interac E',
     'xinvoice_payable' => 'Payable sous :payeddue days net jusqu\'au :paydate',
     'xinvoice_no_buyers_reference' => "Aucune référence d'acheteur donnée",
-    'xinvoice_online_payment' => 'La facture doit être payée en ligne via le lien fourni',
+    'xinvoice_online_payment' => 'The invoice needs to be paid online via the provided link',
     'pre_payment' => 'Prépaiement',
     'number_of_payments' => 'Nombre de paiements',
     'number_of_payments_helper' => 'Le nombre de fois que ce paiement sera effectué',
@@ -4983,11 +4983,6 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'notification_payment_emailed' => 'Paiement :payment a été envoyé par e-mail à :client',
     'notification_payment_emailed_subject' => 'Paiement :payment a été envoyé par e-mail',
     'record_not_found' => 'Enregistrement non trouvé',
-    'product_tax_exempt' => 'Exemption de taxe sur les produits',
-    'product_type_physical' => 'Biens physiques',
-    'product_type_digital' => 'Biens numériques',
-    'product_type_service' => 'Prestations de service',
-    'product_type_freight' => 'Expédition',
     'minimum_payment_amount' => 'Montant du paiement minimal',
     'client_initiated_payments' => 'Paiements initiés par le client',
     'client_initiated_payments_help' => 'Assistance pour effectuer un paiement dans le portail client sans facture',
@@ -5056,6 +5051,16 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'here' => 'ici',
     'industry_Restaurant & Catering' => 'Restaurant & Catering',
     'show_credits_table' => 'Show Credits Table',
+    'manual_payment' => 'Payment Manual',
+    'tax_summary_report' => 'Tax Summary Report',
+    'tax_category' => 'Tax Category',
+    'physical_goods' => 'Physical Goods',
+    'digital_products' => 'Digital Products',
+    'services' => 'Services',
+    'shipping' => 'Shipping',
+    'tax_exempt' => 'Tax Exempt',
+    'late_fee_added_locked_invoice' => 'Late fee for invoice :invoice added on :date',
+
 );
 
 

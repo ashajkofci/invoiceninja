@@ -4964,7 +4964,7 @@ Nemôžete nájsť faktúru? Potrebujete poradiť? Radi Vám pomôžeme         
     'payment_type_Interac E Transfer' => 'Interac E Transfer',
     'xinvoice_payable' => 'Splatné do :payeddue dní netto do :paydate',
     'xinvoice_no_buyers_reference' => "Nebola uvedená žiadna referencia kupujúceho",
-    'xinvoice_online_payment' => 'Faktúru je potrebné uhradiť online cez uvedený odkaz',
+    'xinvoice_online_payment' => 'The invoice needs to be paid online via the provided link',
     'pre_payment' => 'Platba vopred',
     'number_of_payments' => 'Počet platieb',
     'number_of_payments_helper' => 'Koľkokrát sa táto platba uskutoční',
@@ -4972,11 +4972,6 @@ Nemôžete nájsť faktúru? Potrebujete poradiť? Radi Vám pomôžeme         
     'notification_payment_emailed' => 'Platba :payment bola odoslaná e-mailom na adresu :client',
     'notification_payment_emailed_subject' => 'Platba :payment bola odoslaná e-mailom',
     'record_not_found' => 'Záznam sa nenašiel',
-    'product_tax_exempt' => 'Oslobodenie od dane z produktov',
-    'product_type_physical' => 'Fyzický tovar',
-    'product_type_digital' => 'Digitálny tovar',
-    'product_type_service' => 'Služby',
-    'product_type_freight' => 'Doprava',
     'minimum_payment_amount' => 'Minimálna výška platby',
     'client_initiated_payments' => 'Platby iniciované klientom',
     'client_initiated_payments_help' => 'Podpora uskutočňovania platby na klientskom portáli bez faktúry',
@@ -5045,6 +5040,16 @@ Nemôžete nájsť faktúru? Potrebujete poradiť? Radi Vám pomôžeme         
     'here' => 'tu',
     'industry_Restaurant & Catering' => 'Reštaurácia &amp; Catering',
     'show_credits_table' => 'Zobraziť tabuľku kreditov',
+    'manual_payment' => 'Payment Manual',
+    'tax_summary_report' => 'Tax Summary Report',
+    'tax_category' => 'Tax Category',
+    'physical_goods' => 'Physical Goods',
+    'digital_products' => 'Digital Products',
+    'services' => 'Services',
+    'shipping' => 'Shipping',
+    'tax_exempt' => 'Tax Exempt',
+    'late_fee_added_locked_invoice' => 'Late fee for invoice :invoice added on :date',
+
 );
 
 

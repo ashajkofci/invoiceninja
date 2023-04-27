@@ -5002,7 +5002,7 @@ $LANG = array(
     'payment_type_Interac E Transfer' => 'Interac E Transfer',
     'xinvoice_payable' => 'مستحق الدفع paydate: صافي أيام الدفع payeddue: تاريخ الدفع',
     'xinvoice_no_buyers_reference' => "لم يتم إعطاء إشارة للمشتري",
-    'xinvoice_online_payment' => 'يجب دفع الفاتورة عبر الإنترنت من خلال الرابط المقدم',
+    'xinvoice_online_payment' => 'The invoice needs to be paid online via the provided link',
     'pre_payment' => 'الدفع المسبق',
     'number_of_payments' => 'عدد الدفعات',
     'number_of_payments_helper' => 'عدد المرات التي سيتم فيها إجراء هذه الدفعة',
@@ -5010,11 +5010,6 @@ $LANG = array(
     'notification_payment_emailed' => 'الدفع: تم إرسال الدفع بالبريد الإلكتروني إلى: العميل',
     'notification_payment_emailed_subject' => 'الدفع: الدفع بالبريد الإلكتروني',
     'record_not_found' => 'لم يتم العثور على السجل',
-    'product_tax_exempt' => 'معفى من ضريبة المنتج',
-    'product_type_physical' => 'البضائع المادية',
-    'product_type_digital' => 'السلع الرقمية',
-    'product_type_service' => 'خدمات',
-    'product_type_freight' => 'شحن',
     'minimum_payment_amount' => 'الحد الأدنى لمبلغ السداد',
     'client_initiated_payments' => 'مدفوعات يبدأها العميل',
     'client_initiated_payments_help' => 'دعم إجراء الدفع في بوابة العميل بدون فاتورة',
@@ -5083,6 +5078,16 @@ $LANG = array(
     'here' => 'هنا',
     'industry_Restaurant & Catering' => 'Restaurant & Catering',
     'show_credits_table' => 'Show Credits Table',
+    'manual_payment' => 'Payment Manual',
+    'tax_summary_report' => 'Tax Summary Report',
+    'tax_category' => 'Tax Category',
+    'physical_goods' => 'Physical Goods',
+    'digital_products' => 'Digital Products',
+    'services' => 'Services',
+    'shipping' => 'Shipping',
+    'tax_exempt' => 'Tax Exempt',
+    'late_fee_added_locked_invoice' => 'Late fee for invoice :invoice added on :date',
+
 );
 
 
