@@ -4979,7 +4979,7 @@ $LANG = array(
     'payment_type_Interac E Transfer' => 'Transferencia Interac E',
     'xinvoice_payable' => 'Payable within :payeddue days net until :paydate',
     'xinvoice_no_buyers_reference' => "No se da referencia del comprador",
-    'xinvoice_online_payment' => 'La factura debe pagarse en línea a través del enlace provisto',
+    'xinvoice_online_payment' => 'The invoice needs to be paid online via the provided link',
     'pre_payment' => 'Prepago',
     'number_of_payments' => 'numero de pagos',
     'number_of_payments_helper' => 'El número de veces que se realizará este pago.',
@@ -4987,11 +4987,6 @@ $LANG = array(
     'notification_payment_emailed' => 'El pago :payment se envió por correo electrónico a :client',
     'notification_payment_emailed_subject' => 'El pago :payment fue enviado por correo electrónico',
     'record_not_found' => 'Registro no encontrado',
-    'product_tax_exempt' => 'Producto exento de impuestos',
-    'product_type_physical' => 'Bienes físicos',
-    'product_type_digital' => 'Bienes digitales',
-    'product_type_service' => 'Servicios',
-    'product_type_freight' => 'Envío',
     'minimum_payment_amount' => 'Monto mínimo de pago',
     'client_initiated_payments' => 'Pagos iniciados por el cliente',
     'client_initiated_payments_help' => 'Soporte para realizar un pago en el portal del cliente sin factura',
@@ -5060,6 +5055,16 @@ $LANG = array(
     'here' => 'aquí',
     'industry_Restaurant & Catering' => 'Restaurant & Catering',
     'show_credits_table' => 'Show Credits Table',
+    'manual_payment' => 'Payment Manual',
+    'tax_summary_report' => 'Tax Summary Report',
+    'tax_category' => 'Tax Category',
+    'physical_goods' => 'Physical Goods',
+    'digital_products' => 'Digital Products',
+    'services' => 'Services',
+    'shipping' => 'Shipping',
+    'tax_exempt' => 'Tax Exempt',
+    'late_fee_added_locked_invoice' => 'Late fee for invoice :invoice added on :date',
+
 );
 
 

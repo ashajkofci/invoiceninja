@@ -4012,6 +4012,7 @@ $LANG = array(
      'notification_invoice_reminder1_sent_subject' => 'Reminder 1 for Invoice :invoice was sent to :client',
      'notification_invoice_reminder2_sent_subject' => 'Reminder 2 for Invoice :invoice was sent to :client',
      'notification_invoice_reminder3_sent_subject' => 'Reminder 3 for Invoice :invoice was sent to :client',
+     'notification_invoice_custom_sent_subject' => 'Custom reminder for Invoice :invoice was sent to :client',
      'notification_invoice_reminder_endless_sent_subject' => 'Endless reminder for Invoice :invoice was sent to :client',
      'assigned_user' => 'Assigned User',
      'setup_steps_notice' => 'To proceed to next step, make sure you test each section.',
@@ -4981,7 +4982,7 @@ $LANG = array(
     'payment_type_Interac E Transfer' => 'Interac E Transfer',
     'xinvoice_payable' => 'Payable within :payeddue days net until :paydate',
     'xinvoice_no_buyers_reference' => "No buyer's reference given",
-    'xinvoice_online_payment' => 'The invoice needs to be payed online via the provided link',
+    'xinvoice_online_payment' => 'The invoice needs to be paid online via the provided link',
     'pre_payment' => 'Pre Payment',
     'number_of_payments' => 'Number of payments',
     'number_of_payments_helper' => 'The number of times this payment will be made',
@@ -4989,11 +4990,6 @@ $LANG = array(
     'notification_payment_emailed' => 'Payment :payment was emailed to :client',
     'notification_payment_emailed_subject' => 'Payment :payment was emailed',
     'record_not_found' => 'Record not found',
-    'product_tax_exempt' => 'Product Tax Exempt',
-    'product_type_physical' => 'Physical Goods',
-    'product_type_digital' => 'Digital Goods',
-    'product_type_service' => 'Services',
-    'product_type_freight' => 'Shipping',
     'minimum_payment_amount' => 'Minimum Payment Amount',
     'client_initiated_payments' => 'Client Initiated Payments',
     'client_initiated_payments_help' => 'Support making a payment in the client portal without an invoice',
@@ -5070,6 +5066,8 @@ $LANG = array(
     'services' => 'Services',
     'shipping' => 'Shipping',
     'tax_exempt' => 'Tax Exempt',
+    'late_fee_added_locked_invoice' => 'Late fee for invoice :invoice added on :date',
+    'lang_Khmer' => 'Khmer',
 );
 
 
