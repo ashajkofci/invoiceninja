@@ -1,0 +1,14 @@
+includes:
+    - ./vendor/nunomaduro/larastan/extension.neon
+
+parameters:
+    ignoreErrors:
+        - '#Call to an undefined method .*badMethod\(\)#'
+        - '#Call to an undefined method Illuminate\Database\Eloquent\Builder::exclude#'
+    level: 4
+    paths:
+        - 'app/'
+    excludePaths:
+        - 'vendor/'
+    universalObjectCratesClasses:
+        - App\DataMapper\Tax\RuleInterface
