@@ -64,23 +64,19 @@ use Laracasts\Presenter\PresentableTrait;
  * @property int|null $hosted_company_count
  * @property string|null $inapp_transaction_id
  * @property bool $set_react_as_default_ap
- * @property int $is_flagged
+ * @property bool $is_flagged
  * @property int $is_verified_account
  * @property string|null $account_sms_verification_code
  * @property string|null $account_sms_verification_number
- * @property int $account_sms_verified
+ * @property bool $account_sms_verified
  * @property string|null $bank_integration_account_id
  * @property int $is_trial
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BankIntegration> $bank_integrations
  * @property-read int|null $bank_integrations_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Company> $companies
  * @property-read int|null $companies_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CompanyUser> $company_users
  * @property-read int|null $company_users_count
  * @property-read \App\Models\Company|null $default_company
  * @property-read mixed $hashed_id
  * @property-read \App\Models\Payment|null $payment
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
  * @property-read int|null $users_count
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel company()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel exclude($columns)
@@ -131,6 +127,8 @@ use Laracasts\Presenter\PresentableTrait;
  * @method static \Illuminate\Database\Eloquent\Builder|Account whereUtmSource($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Account whereUtmTerm($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Account first()
+ * @method static \Illuminate\Database\Eloquent\Builder|Account with()
+ * @method static \Illuminate\Database\Eloquent\Builder|Account count() 
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BankIntegration> $bank_integrations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Company> $companies
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CompanyUser> $company_users
@@ -262,6 +260,11 @@ class Account extends BaseModel
     public function owner()
     {
         return $this->hasMany(CompanyUser::class)->where('is_owner', true)->first() ? $this->hasMany(CompanyUser::class)->where('is_owner', true)->first()->user : false;
+    }
+
+    public function tokens()
+    {
+        return $this->hasMany(CompanyToken::class)->withTrashed();
     }
 
     public function getPlan()

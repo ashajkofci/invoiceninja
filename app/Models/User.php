@@ -36,6 +36,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  *
  * @property int $id
  * @property int $account_id
+ * @property int $company_id
  * @property string|null $first_name
  * @property string|null $last_name
  * @property string|null $phone
@@ -177,7 +178,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $dateFormat = 'Y-m-d H:i:s.u';
 
-    public Company $company;
+    public ?Company $company = null;
 
     protected $appends = [
         'hashed_id',
@@ -202,6 +203,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'custom_value3',
         'custom_value4',
         'is_deleted',
+        'shopify_user_id',
         // 'oauth_user_token',
         // 'oauth_user_refresh_token',
     ];

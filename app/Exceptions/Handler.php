@@ -17,7 +17,6 @@ use App\Utils\Ninja;
 use Sentry\State\Scope;
 use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Sentry\Laravel\Integration;
 use Illuminate\Support\Facades\Schema;
 use GuzzleHttp\Exception\ConnectException;
@@ -35,20 +34,21 @@ use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Illuminate\Database\Eloquent\ModelNotFoundException as ModelNotFoundException;
+use InvalidArgumentException;
 
 class Handler extends ExceptionHandler
 {
     /**
      * A list of the exception types that are not reported.
      *
-     * @var array
+     * @var array<int, class-string<Throwable>>
      */
     protected $dontReport = [
-        PDOException::class,
+        // PDOException::class,
         MaxAttemptsExceededException::class,
         CommandNotFoundException::class,
         ValidationException::class,
-        ModelNotFoundException::class,
+        // ModelNotFoundException::class,
         NotFoundHttpException::class,
     ];
 
@@ -79,7 +79,7 @@ class Handler extends ExceptionHandler
     /**
      * A list of the inputs that are never flashed for validation exceptions.
      *
-     * @var array
+     * @var array<1, string>
      */
     protected $dontFlash = [
         'current_password',
@@ -102,6 +102,11 @@ class Handler extends ExceptionHandler
         }
 
         if (Ninja::isHosted()) {
+
+            if($exception instanceof ThrottleRequestsException && class_exists(\Modules\Admin\Events\ThrottledExceptionRaised::class)) {
+                event(new \Modules\Admin\Events\ThrottledExceptionRaised(auth()->user()->account->key));
+            }
+
             Integration::configureScope(function (Scope $scope): void {
                 $name = 'hosted@invoiceninja.com';
 
@@ -202,7 +207,6 @@ class Handler extends ExceptionHandler
      *
      * @param Request $request
      * @param Throwable $exception
-     * @return Response
      * @throws Throwable
      */
     public function render($request, Throwable $exception)

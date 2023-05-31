@@ -29,7 +29,7 @@ class InvoiceItemSum
     use Discounter;
     use Taxer;
 
-    private array $tax_jurisdictions = [
+    private array $eu_tax_jurisdictions = [
         'AT', // Austria
         'BE', // Belgium
         'BG', // Bulgaria
@@ -57,6 +57,36 @@ class InvoiceItemSum
         'SE', // Sweden
         'SI', // Slovenia
         'SK', // Slovakia
+    ];
+
+    private array $tax_jurisdictions = [
+        // 'AT', // Austria
+        // 'BE', // Belgium
+        // 'BG', // Bulgaria
+        // 'CY', // Cyprus
+        // 'CZ', // Czech Republic
+        'DE', // Germany
+        // 'DK', // Denmark
+        // 'EE', // Estonia
+        // 'ES', // Spain
+        // 'FI', // Finland
+        // 'FR', // France
+        // 'GR', // Greece
+        // 'HR', // Croatia
+        // 'HU', // Hungary
+        // 'IE', // Ireland
+        // 'IT', // Italy
+        // 'LT', // Lithuania
+        // 'LU', // Luxembourg
+        // 'LV', // Latvia
+        // 'MT', // Malta
+        // 'NL', // Netherlands
+        // 'PL', // Poland
+        // 'PT', // Portugal
+        // 'RO', // Romania
+        // 'SE', // Sweden
+        // 'SI', // Slovenia
+        // 'SK', // Slovakia
 
         'US', // USA
 
@@ -116,7 +146,6 @@ class InvoiceItemSum
     {
         if (!$this->invoice->line_items || !is_array($this->invoice->line_items)) {
             $this->items = [];
-
             return $this;
         }
 
@@ -140,22 +169,26 @@ class InvoiceItemSum
 
     private function shouldCalculateTax(): self
     {
-        if (!$this->invoice->company->calculate_taxes) {
+        
+        if (!$this->invoice->company->calculate_taxes || $this->invoice->company->account->isFreeHostedClient()) {
             $this->calc_tax = false;
             return $this;
         }
         
-        //should we be filtering by client country here? do we need to reflect at the company <=> client level?
-        if (in_array($this->client->country->iso_3166_2, $this->tax_jurisdictions)) { //only calculate for supported tax jurisdictions
+        if (in_array($this->client->company->country()->iso_3166_2, $this->tax_jurisdictions) ) { //only calculate for supported tax jurisdictions
             
             $class = "App\DataMapper\Tax\\".$this->client->company->country()->iso_3166_2."\\Rule";
 
             $this->rule = new $class();
+
+        if($this->rule->regionWithNoTaxCoverage($this->client->country->iso_3166_2))
+            return $this;
+
             $this->rule
                  ->setEntity($this->invoice)
                  ->init();
                  
-            $this->calc_tax = true;
+            $this->calc_tax = $this->rule->shouldCalcTax();
 
             return $this;
         }
@@ -216,7 +249,12 @@ class InvoiceItemSum
 
         return $this;
     }
-
+    
+    /**
+     * calcTaxes
+     *
+     * @return self
+     */
     private function calcTaxes()
     {
         if ($this->calc_tax) {

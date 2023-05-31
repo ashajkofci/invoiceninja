@@ -153,10 +153,13 @@ class TemplateEmail extends Mailable
                 $this->attachData($ubl_string, $this->invitation->invoice->getFileName('xml'));
             }
         }
-        if ($this->invitation && $this->invitation->invoice && $company->enable_e_invoice && $this->company->account->hasFeature(Account::FEATURE_PDF_ATTACHMENT)) {
-            $this->invitation->invoice->service()->getEInvoice($this->invitation->contact);
-            $disk = config('filesystems.default');
-            $this->attach(Storage::disk($disk)->path($this->invitation->invoice->client->xinvoice_filepath($this->invitation->invoice->invitations->first()) . $this->invitation->invoice->getFileName("xml")));
+        if ($this->invitation && $this->invitation->invoice && $this->invitation->invoice->client->getSetting('enable_e_invoice') && $this->company->account->hasFeature(Account::FEATURE_PDF_ATTACHMENT)) {
+            
+            $xinvoice_filepath = $this->invitation->invoice->service()->getEInvoice($this->invitation->contact);
+
+            if(Storage::disk(config('filesystems.default'))->exists($xinvoice_filepath))
+                $this->attach(Storage::disk(config('filesystems.default'))->path($xinvoice_filepath), ['as' => $this->invitation->invoice->getFileName("xml"), 'mime' => null]);
+        
         }
 
         return $this;

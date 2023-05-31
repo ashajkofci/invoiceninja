@@ -48,8 +48,15 @@ class InvoiceService
 
         return $this;
     }
-
-    public function applyPaymentAmount($amount, ?string $reference = null)
+    
+    /**
+     * applyPaymentAmount
+     *
+     * @param  float $amount
+     * @param  ?string $reference
+     * @return self
+     */
+    public function applyPaymentAmount($amount, ?string $reference = null): self
     {
         $this->invoice = (new ApplyPaymentAmount($this->invoice, $amount, $reference))->run();
 
@@ -450,7 +457,7 @@ class InvoiceService
                 $this->invoice->invitations->each(function ($invitation) {
                     (new CreateEntityPdf($invitation))->handle();
 
-                    if ($invitation->company->enable_e_invoice && $invitation instanceof InvoiceInvitation)
+                    if ($invitation->invoice->client->getSetting('enable_e_invoice') && $invitation instanceof InvoiceInvitation)
                     {
                         (new CreateEInvoice($invitation->invoice, true))->handle();
                     }
@@ -464,7 +471,7 @@ class InvoiceService
             $this->invoice->invitations->each(function ($invitation) {
                 CreateEntityPdf::dispatch($invitation);
 
-                if ($invitation->company->enable_e_invoice && $invitation instanceof InvoiceInvitation) {
+                if ($invitation->invoice->client->getSetting('enable_e_invoice') && $invitation instanceof InvoiceInvitation) {
                     CreateEInvoice::dispatch($invitation->invoice, true);
                 }
 

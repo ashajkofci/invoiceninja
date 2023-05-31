@@ -371,7 +371,8 @@ class BaseTransformer
      */
     public function getCountryId($name)
     {
-        if (strlen($name) == 2) {
+
+        if (strlen(trim($name)) == 2) {
             return $this->getCountryIdBy2($name);
         }
 
@@ -397,7 +398,7 @@ class BaseTransformer
     /**
      * @param $name
      *
-     * @return int
+     * @return float
      */
     public function getTaxRate($name)
     {
@@ -437,7 +438,7 @@ class BaseTransformer
      * @param mixed  $data
      * @param mixed  $field
      *
-     * @return null
+     * @return ?string
      */
     public function getDate($data, $field)
     {
@@ -599,6 +600,8 @@ class BaseTransformer
      */
     public function getExpenseCategoryId($name)
     {
+        /** @var \App\Models\ExpenseCategory $ec */
+        
         $ec = ExpenseCategory::where('company_id', $this->company->id)
             ->where('is_deleted', false)
             ->whereRaw("LOWER(REPLACE(`name`, ' ' ,''))  = ?", [
@@ -606,6 +609,13 @@ class BaseTransformer
             ])
             ->first();
 
+        if($ec)
+            return $ec->id;
+
+        $ec = \App\Factory\ExpenseCategoryFactory::create($this->company->id, $this->company->owner()->id);
+        $ec->name = $name;
+        $ec->save();
+        
         return $ec ? $ec->id : null;
     }
 

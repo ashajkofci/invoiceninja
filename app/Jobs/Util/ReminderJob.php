@@ -11,23 +11,22 @@
 
 namespace App\Jobs\Util;
 
+use App\Utils\Ninja;
+use App\Models\Invoice;
+use App\Libraries\MultiDB;
+use Illuminate\Bus\Queueable;
+use Illuminate\Support\Carbon;
 use App\DataMapper\InvoiceItem;
 use App\Factory\InvoiceFactory;
 use App\Jobs\Entity\EmailEntity;
-use App\Jobs\Ninja\TransactionLog;
-use App\Libraries\MultiDB;
-use App\Models\Invoice;
-use App\Models\TransactionEvent;
-use App\Utils\Ninja;
 use App\Utils\Traits\MakesDates;
+use Illuminate\Support\Facades\App;
 use App\Utils\Traits\MakesReminders;
-use Illuminate\Bus\Queueable;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\App;
 
 class ReminderJob implements ShouldQueue
 {
@@ -53,6 +52,8 @@ class ReminderJob implements ShouldQueue
     {
         set_time_limit(0);
 
+        Auth::logout();
+
         if (! config('ninja.db.multi_db_enabled')) {
             nlog("Sending invoice reminders on ".now()->format('Y-m-d h:i:s'));
 
@@ -74,7 +75,7 @@ class ReminderJob implements ShouldQueue
                          $this->sendReminderForInvoice($invoice);
                      }
 
-                     sleep(2);
+                     sleep(1);
                  });
         } else {
             //multiDB environment, need to
@@ -104,7 +105,7 @@ class ReminderJob implements ShouldQueue
                              $this->sendReminderForInvoice($invoice);
                          }
 
-                         sleep(2);
+                         sleep(1);
                      });
             }
         }

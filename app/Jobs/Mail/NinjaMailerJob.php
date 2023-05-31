@@ -72,7 +72,9 @@ class NinjaMailerJob implements ShouldQueue
 
     public function backoff()
     {
-        return [5, 10, 30, 240];
+        // return [5, 10, 30, 240];
+        return [rand(5, 10), rand(30, 40), rand(60, 79), rand(160, 400)];
+
     }
 
     public function handle()
@@ -518,12 +520,6 @@ class NinjaMailerJob implements ShouldQueue
 
         /* If the account is verified, we allow emails to flow */
         if (Ninja::isHosted() && $this->company->account && $this->company->account->is_verified_account) {
-            //11-01-2022
-
-            /* Continue to analyse verified accounts in case they later start sending poor quality emails*/
-            // if(class_exists(\Modules\Admin\Jobs\Account\EmailQuality::class))
-            //     (new \Modules\Admin\Jobs\Account\EmailQuality($this->nmo, $this->company))->run();
-
             return false;
         }
 
