@@ -245,17 +245,17 @@ class Statement
         switch ($status) {
             case 'all':
                 return [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL, Invoice::STATUS_PAID];
-                break;
+                
             case 'paid':
                 return [Invoice::STATUS_PAID];
-                break;
+                
             case 'unpaid':
                 return [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL];
-                break;
+                
 
             default:
                 return [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL, Invoice::STATUS_PAID];
-                break;
+                
         }
     }
 
@@ -411,6 +411,6 @@ class Statement
             $id = (int) $this->client->getSetting('entity_design_id');
         }
 
-        return Design::find($id);
+        return Design::withTrashed()->find($id);
     }
 }

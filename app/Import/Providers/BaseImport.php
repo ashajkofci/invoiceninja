@@ -19,6 +19,7 @@ use App\Models\Invoice;
 use League\Csv\Statement;
 use App\Factory\QuoteFactory;
 use App\Factory\ClientFactory;
+use Illuminate\Support\Carbon;
 use App\Factory\InvoiceFactory;
 use App\Factory\PaymentFactory;
 use App\Import\ImportException;
@@ -64,6 +65,8 @@ class BaseImport
 
     public ?bool $skip_header;
 
+    public array $entity_count = [];
+    
     public function __construct(array $request, Company $company)
     {
         $this->company = $company;
@@ -80,9 +83,10 @@ class BaseImport
 
         auth()->login($this->company->owner(), true);
 
-        auth()
-            ->user()
-            ->setCompany($this->company);
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        $user->setCompany($this->company);
     }
 
     public function getCsvData($entity_type)
@@ -209,6 +213,9 @@ class BaseImport
         }
 
         foreach ($data as $key => $record) {
+            
+            unset($record['']);
+
             try {
                 $entity = $this->transformer->transform($record);
 
@@ -388,7 +395,7 @@ class BaseImport
                     report($ex);
                     $message = 'Unknown error ';
                     nlog($ex->getMessage());
-                    nlog($raw_invoice);
+                    nlog($invoice_data);
                 }
 
                 $this->error_array['recurring_invoice'][] = [
@@ -424,7 +431,8 @@ class BaseImport
         foreach ($invoices as $raw_invoice) {
             try {
                 $invoice_data = $invoice_transformer->transform($raw_invoice);
-
+                $invoice_data['user_id'] = $this->company->owner()->id;
+                
                 $invoice_data['line_items'] = $this->cleanItems(
                     $invoice_data['line_items'] ?? []
                 );
@@ -460,11 +468,14 @@ class BaseImport
                 } else {
                     $invoice = InvoiceFactory::create(
                         $this->company->id,
-                        $this->getUserIDForRecord($invoice_data)
+                        $this->company->owner()->id
                     );
                     if (! empty($invoice_data['status_id'])) {
                         $invoice->status_id = $invoice_data['status_id'];
                     }
+                    
+                    nlog($invoice_data);
+
                     $invoice_repository->save($invoice_data, $invoice);
 
                     $count++;
@@ -492,7 +503,8 @@ class BaseImport
 
                                 /* Make sure we don't apply any payments to invoices with a Zero Amount*/
                                 if ($invoice->amount > 0) {
-                                    $payment_repository->save(
+                                    
+                                    $payment = $payment_repository->save(
                                         $payment_data,
                                         PaymentFactory::create(
                                             $this->company->id,
@@ -500,6 +512,16 @@ class BaseImport
                                             $invoice->client_id
                                         )
                                     );
+
+                                    $payment_date = Carbon::parse($payment->date);
+
+                                    if(!$payment_date->isToday())
+                                    {
+
+                                        $payment->paymentables()->update(['created_at' => $payment_date]);
+
+                                    }
+
                                 }
                             }
                         }
@@ -579,12 +601,12 @@ class BaseImport
         $quote_data,
         $quote_repository
     ) {
-        if (! empty($invoice_data['archived'])) {
+        if (! empty($quote_data['archived'])) {
             $quote_repository->archive($quote);
             $quote->fresh();
         }
 
-        if (! empty($invoice_data['viewed'])) {
+        if (! empty($quote_data['viewed'])) {
             $quote = $quote
                 ->service()
                 ->markViewed()

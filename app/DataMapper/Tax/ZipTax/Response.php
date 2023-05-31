@@ -100,13 +100,15 @@ class Response
 
     public string $originDestination = ""; // defines if the client origin is the locale where the tax is remitted to
 
-    public function __construct($data)
+    public function __construct($data = null)
     {
-        if(!$data)
-            return;
 
-        foreach($data as $key => $value){
-            $this->{$key} = $value;
+        if($data) {
+
+            foreach($data as $key => $value) {
+                $this->{$key} = $value;
+            }
+
         }
         
     }

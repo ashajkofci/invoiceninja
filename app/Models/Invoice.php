@@ -11,24 +11,24 @@
 
 namespace App\Models;
 
-use App\Events\Invoice\InvoiceReminderWasEmailed;
-use App\Events\Invoice\InvoiceWasEmailed;
-use App\Helpers\Invoice\InvoiceSum;
-use App\Helpers\Invoice\InvoiceSumInclusive;
-use App\Jobs\Entity\CreateEntityPdf;
-use App\Models\Presenters\InvoicePresenter;
-use App\Services\Invoice\InvoiceService;
-use App\Services\Ledger\LedgerService;
 use App\Utils\Ninja;
-use App\Utils\Traits\Invoice\ActionsInvoice;
+use Illuminate\Support\Carbon;
 use App\Utils\Traits\MakesDates;
-use App\Utils\Traits\MakesInvoiceValues;
+use App\Helpers\Invoice\InvoiceSum;
+use App\Jobs\Entity\CreateEntityPdf;
 use App\Utils\Traits\MakesReminders;
 use App\Utils\Traits\NumberFormatter;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
+use App\Services\Ledger\LedgerService;
 use Illuminate\Support\Facades\Storage;
+use App\Services\Invoice\InvoiceService;
+use App\Utils\Traits\MakesInvoiceValues;
+use App\Events\Invoice\InvoiceWasEmailed;
 use Laracasts\Presenter\PresentableTrait;
+use App\Models\Presenters\InvoicePresenter;
+use App\Helpers\Invoice\InvoiceSumInclusive;
+use App\Utils\Traits\Invoice\ActionsInvoice;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Events\Invoice\InvoiceReminderWasEmailed;
 
 /**
  * App\Models\Invoice
@@ -530,9 +530,11 @@ class Invoice extends BaseModel
     {
         return $this->hasOne(Expense::class);
     }
-
+ 
     /**
      * Service entry points.
+     *
+     * @return InvoiceService
      */
     public function service() :InvoiceService
     {
@@ -801,7 +803,6 @@ class Invoice extends BaseModel
 
     public function entityEmailEvent($invitation, $reminder_template, $template = '')
     {
-        nlog($template);
 
         switch ($reminder_template) {
             case 'invoice':
@@ -823,7 +824,7 @@ class Invoice extends BaseModel
             case 'custom1':
             case 'custom2':
             case 'custom3':
-                event(new InvoiceReminderWasEmailed($invitation, $invitation->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null), $template));
+                event(new InvoiceWasEmailed($invitation, $invitation->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null), $template));
                 break;
             default:
                 // code...

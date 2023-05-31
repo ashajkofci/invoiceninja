@@ -135,7 +135,7 @@ class CreateEntityPdf implements ShouldQueue
 
         $entity_design_id = $this->entity->design_id ? $this->entity->design_id : $this->decodePrimaryKey($this->client->getSetting($entity_design_id));
 
-        $design = Design::find($entity_design_id);
+        $design = Design::withTrashed()->find($entity_design_id);
 
         /* Catch all in case migration doesn't pass back a valid design */
         if (! $design) {
@@ -222,7 +222,7 @@ class CreateEntityPdf implements ShouldQueue
                 throw new FilePermissionsFailure($e->getMessage());
             }
         }
-        if ($this->entity_string == "invoice" && $this->company->enable_e_invoice){
+        if ($this->entity_string == "invoice" && $this->client->getSetting('enable_e_invoice')){
             (new CreateEInvoice($this->entity, true))->handle();
         }
         $this->invitation = null;

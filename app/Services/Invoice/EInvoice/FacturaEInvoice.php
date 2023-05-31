@@ -17,12 +17,32 @@ use App\Services\AbstractService;
 use josemmo\Facturae\FacturaeItem;
 use josemmo\Facturae\FacturaeParty;
 use Illuminate\Support\Facades\Storage;
+use josemmo\Facturae\Common\FacturaeSigner;
+use josemmo\Facturae\FacturaeCentre;
 
 class FacturaEInvoice extends AbstractService
 {
     private Facturae $fac;
     
     private $calc;
+
+    private $centre_codes = [
+        'CONTABLE' => FacturaeCentre::ROLE_CONTABLE,
+        'FISCAL' => FacturaeCentre::ROLE_FISCAL,
+        'GESTOR' => FacturaeCentre::ROLE_GESTOR,
+        'RECEPTOR' => FacturaeCentre::ROLE_RECEPTOR,
+        'TRAMITADOR' => FacturaeCentre::ROLE_TRAMITADOR,
+        'PAGADOR' => FacturaeCentre::ROLE_PAGADOR,
+        'PROPONENTE' => FacturaeCentre::ROLE_PAGADOR,
+        'B2B_FISCAL' => FacturaeCentre::ROLE_B2B_FISCAL,
+        'B2B_PAYER' => FacturaeCentre::ROLE_B2B_PAYER,
+        'B2B_BUYER' => FacturaeCentre::ROLE_B2B_BUYER,
+        'B2B_COLLECTOR' => FacturaeCentre::ROLE_B2B_COLLECTOR,
+        'B2B_SELLER' => FacturaeCentre::ROLE_B2B_SELLER,
+        'B2B_PAYMENT_RECEIVER' => FacturaeCentre::ROLE_B2B_PAYMENT_RECEIVER ,
+        'B2B_COLLECTION_RECEIVER' => FacturaeCentre::ROLE_B2B_COLLECTION_RECEIVER ,
+        'B2B_ISSUER' => FacturaeCentre::ROLE_B2B_ISSUER,
+    ];
 
     // Facturae::SCHEMA_3_2	Invoice Format 3.2
     // Facturae::SCHEMA_3_2_1	Invoice Format 3.2.1
@@ -110,6 +130,25 @@ class FacturaEInvoice extends AbstractService
     // FacturaeCentre::ROLE_B2B_COLLECTION_RECEIVER	Collection receiver in FACeB2B
     // FacturaeCentre::ROLE_B2B_ISSUER	Issuer in FACeB2B
 
+    /*
+    const ROLE_CONTABLE = "01";
+    const ROLE_FISCAL = "01";
+    const ROLE_GESTOR = "02";
+    const ROLE_RECEPTOR = "02";
+    const ROLE_TRAMITADOR = "03";
+    const ROLE_PAGADOR = "03";
+    const ROLE_PROPONENTE = "04";
+
+    const ROLE_B2B_FISCAL = "Fiscal";
+    const ROLE_B2B_PAYER = "Payer";
+    const ROLE_B2B_BUYER = "Buyer";
+    const ROLE_B2B_COLLECTOR = "Collector";
+    const ROLE_B2B_SELLER = "Seller";
+    const ROLE_B2B_PAYMENT_RECEIVER = "Payment receiver";
+    const ROLE_B2B_COLLECTION_RECEIVER = "Collection receiver";
+    const ROLE_B2B_ISSUER = "Issuer";
+    */
+
 
     public function __construct(public Invoice $invoice, private mixed $profile)
     {
@@ -129,8 +168,8 @@ class FacturaEInvoice extends AbstractService
              ->buildSeller()
              ->buildItems()
              ->setDiscount()
-             ->setPoNumber();
-
+             ->setPoNumber()
+             ->signDocument();
 
         $disk = config('filesystems.default');
 
@@ -142,6 +181,33 @@ class FacturaEInvoice extends AbstractService
 
         return $this->invoice->client->e_invoice_filepath($this->invoice->invitations->first()) . $this->invoice->getFileName("xsig");
 
+    }
+
+    /** Check if this is a public administration body */
+    private function setFace(): array
+    {
+        $facturae_centres = [];
+
+        if($this->invoice->client->custom_value1 == 'yes')
+        {
+
+            foreach($this->invoice->client->contacts()->whereNotNull('custom_value1')->whereNull('deleted_at')->cursor() as $contact)
+            {
+
+                if(in_array($contact->custom_value1, array_keys($this->centre_codes)))
+                {
+                    $facturae_centres[] = new FacturaeCentre([
+                        'role' => $this->centre_codes[$contact->custom_value1],
+                        'code' => $contact->custom_value2,
+                        'name' => $contact->custom_value3,
+                    ]);
+                }
+
+            }
+
+        }
+
+        return $facturae_centres;
     }
 
     private function setPoNumber(): self
@@ -167,6 +233,7 @@ class FacturaEInvoice extends AbstractService
 
         foreach($this->invoice->line_items as $item) {
             $this->fac->addItem(new FacturaeItem([
+                'name' => $item->product_key,
                 'description' => $item->notes,
                 'quantity' => $item->quantity,
                 'unitPrice' => $item->cost,
@@ -180,7 +247,7 @@ class FacturaEInvoice extends AbstractService
             ]));
             
         }
-    
+
         return $this;
     
     }
@@ -191,21 +258,26 @@ class FacturaEInvoice extends AbstractService
 
         if (strlen($item->tax_name1) > 1) {
         
-            $data[] = [$this->resolveTaxCode($item->tax_name1) => $item->tax_rate1];
+            $data[$this->resolveTaxCode($item->tax_name1)] = $item->tax_rate1;
         
         }
 
         if (strlen($item->tax_name2) > 1) {
                 
-            $data[] = [$this->resolveTaxCode($item->tax_name2) => $item->tax_rate2];
+
+            $data[$this->resolveTaxCode($item->tax_name2)] = $item->tax_rate2;
                 
         }
 
         if (strlen($item->tax_name3) > 1) {
                 
-            $data[] = [$this->resolveTaxCode($item->tax_name3) => $item->tax_rate3];
+
+            $data[$this->resolveTaxCode($item->tax_name3)] = $item->tax_rate3;
                 
         }
+        
+        if(count($data) == 0)
+            $data[Facturae::TAX_IVA] = 0;
 
         return $data;
     }
@@ -253,27 +325,28 @@ class FacturaEInvoice extends AbstractService
         $company = $this->invoice->company;
 
         $seller = new FacturaeParty([
-        "isLegalEntity" => true, // Se asume true si se omite
-        "taxNumber"     => $company->settings->vat_number,
-        "name"          => $company->present()->name(),
-        "address"       => $company->settings->address1,
-        "postCode"      => $company->settings->postal_code,
-        "town"          => $company->settings->city,
-        "province"      => $company->settings->state,
-        "countryCode"   => $company->country()->iso_3166_3,  // Se asume España si se omite
-        "book"             => "0",  // Libro
-        "merchantRegister" => "RG", // Registro Mercantil
-        "sheet"            => "1",  // Hoja
-        "folio"            => "2",  // Folio
-        "section"          => "3",  // Sección
-        "volume"           => "4",  // Tomo
-        "email"   => $company->settings->email,
-        "phone"   => $company->settings->phone,
-        "fax"     => "",
-        "website" => $company->settings->website,
-        "contactPeople" => $company->owner()->present()->name(),
-        // "cnoCnae" => "04647", // Clasif. Nacional de Act. Económicas
-        // "ineTownCode" => "280796" // Cód. de municipio del INE
+            "isLegalEntity" => true, // Se asume true si se omite
+            "taxNumber" => $company->settings->vat_number,
+            "name" => substr($company->present()->name(), 0, 40),
+            "address" => substr($company->settings->address1, 0, 80),
+            "postCode" => substr($this->invoice->client->postal_code, 0, 5),
+            "town" => substr($company->settings->city, 0, 50),
+            "province" => substr($company->settings->state, 0, 20),
+            "countryCode" => $company->country()->iso_3166_3,  // Se asume España si se omite
+            "book" => "0",  // Libro
+            "merchantRegister" => "RG", // Registro Mercantil
+            "sheet" => "1",  // Hoja
+            "folio" => "2",  // Folio
+            "section" => "3",  // Sección
+            "volume" => "4",  // Tomo
+            "email" => substr($company->settings->email, 0, 60),
+            "phone" => substr($company->settings->phone, 0, 15),
+            "fax" => "",
+            "website" => substr($company->settings->website, 0, 50),
+            "contactPeople" => substr($company->owner()->present()->name(), 0, 40),
+            // 'centres' => $this->setFace(),
+            // "cnoCnae" => "04647", // Clasif. Nacional de Act. Económicas
+            // "ineTownCode" => "280796" // Cód. de municipio del INE
         ]);
 
         $this->fac->setSeller($seller);
@@ -287,19 +360,20 @@ class FacturaEInvoice extends AbstractService
         $buyer = new FacturaeParty([
         "isLegalEntity" => $this->invoice->client->has_valid_vat_number,
         "taxNumber"     => $this->invoice->client->vat_number,
-        "name"          => $this->invoice->client->present()->name(),
-        "firstSurname"  => $this->invoice->client->present()->first_name(),
-        "lastSurname"   => $this->invoice->client->present()->last_name(),
-        "address"       => $this->invoice->client->address1,
-        "postCode"      => $this->invoice->client->postal_code,
-        "town"          => $this->invoice->client->city,
-        "province"      => $this->invoice->client->state,
+        "name"          => substr($this->invoice->client->present()->name(),0, 40),
+        "firstSurname"  => substr($this->invoice->client->present()->first_name(),0, 40),
+        "lastSurname"   => substr($this->invoice->client->present()->last_name(),0, 40),
+        "address"       => substr($this->invoice->client->address1,0, 80),
+        "postCode"      => substr($this->invoice->client->postal_code,0,5),
+        "town"          => substr($this->invoice->client->city,0, 50),
+        "province"      => substr($this->invoice->client->state,0, 20),
         "countryCode"   => $this->invoice->client->country->iso_3166_3,  // Se asume España si se omite
-        "email"   => $this->invoice->client->present()->email(),
-        "phone"   => $this->invoice->client->present()->phone(),
+        "email"   => substr($this->invoice->client->present()->email(),0, 60),
+        "phone"   => substr($this->invoice->client->present()->phone(),0, 15),
         "fax"     => "",
-        "website" => $this->invoice->client->present()->website(),
-        "contactPeople" => $this->invoice->client->present()->first_name()." ".$this->invoice->client->present()->last_name(),
+        "website" => substr($this->invoice->client->present()->website(), 0 ,60),
+        "contactPeople" => substr($this->invoice->client->present()->first_name()." ".$this->invoice->client->present()->last_name(), 0, 40),
+        'centres' => $this->setFace(),
         // "cnoCnae" => "04791", // Clasif. Nacional de Act. Económicas
         // "ineTownCode" => "280796" // Cód. de municipio del INE
         ]);
@@ -308,5 +382,18 @@ class FacturaEInvoice extends AbstractService
 
         return $this;
     }
+
+    private function signDocument(): self
+    {
+
+        $ssl_cert = $this->invoice->company->getInvoiceCert();
+        $ssl_passphrase = $this->invoice->company->getSslPassPhrase();
+
+        if($ssl_cert)
+            $this->fac->sign($ssl_cert, null, $ssl_passphrase);
+
+        return $this;
+    }
+
 
 }
