@@ -32,11 +32,13 @@ class ExpenseFilters extends QueryFilters
         }
 
         return  $this->builder->where(function ($query) use ($filter) {
-            $query->where('public_notes', 'like', '%'.$filter.'%')
-                          ->orWhere('custom_value1', 'like', '%'.$filter.'%')
-                          ->orWhere('custom_value2', 'like', '%'.$filter.'%')
-                          ->orWhere('custom_value3', 'like', '%'.$filter.'%')
-                          ->orWhere('custom_value4', 'like', '%'.$filter.'%');
+            $query->where('number', 'like', '%'.$filter.'%')
+                ->orWhere('amount', 'like', '%'.$filter.'%')
+                ->orWhere('public_notes', 'like', '%'.$filter.'%')
+                ->orWhere('custom_value1', 'like', '%'.$filter.'%')
+                ->orWhere('custom_value2', 'like', '%'.$filter.'%')
+                ->orWhere('custom_value3', 'like', '%'.$filter.'%')
+                ->orWhere('custom_value4', 'like', '%'.$filter.'%');
         });
     }
 
@@ -107,6 +109,29 @@ class ExpenseFilters extends QueryFilters
     }
 
     /**
+     * Filter expenses that only have invoices
+     *
+     * @param string $value
+     * @return Builder
+     */
+    public function has_invoices(string $value = ''): Builder
+    {
+        $split = explode(",", $value);
+
+        if (is_array($split) && in_array($split[0], ['client', 'project'])) {
+
+            $search_key = $split[0] == 'client' ? 'client_id' : 'project_id';
+
+            return $this->builder->whereHas('invoice', function ($query) use ($search_key, $split){
+                        $query->where($search_key, $this->decodePrimaryKey($split[1]))
+                              ->whereIn('status_id', [\App\Models\Invoice::STATUS_DRAFT, \App\Models\Invoice::STATUS_SENT, \App\Models\Invoice::STATUS_PARTIAL]);
+            });
+        }
+
+        return $this->builder;
+    }
+
+    /**
      * Returns a list of expenses that can be matched to bank transactions
      */
     public function match_transactions($value = '')
@@ -140,6 +165,17 @@ class ExpenseFilters extends QueryFilters
         if (!is_array($sort_col) || count($sort_col) != 2) {
             return $this->builder;
         }
+
+        if ($sort_col[0] == 'client_id') {
+            return $this->builder->orderBy(\App\Models\Client::select('name')
+                    ->whereColumn('clients.id', 'expenses.client_id'), $sort_col[1]);
+        }
+
+        if ($sort_col[0] == 'vendor_id') {
+            return $this->builder->orderBy(\App\Models\Vendor::select('name')
+                    ->whereColumn('vendors.id', 'expenses.vendor_id'), $sort_col[1]);
+        }
+
 
         if (is_array($sort_col) && in_array($sort_col[1], ['asc', 'desc']) && in_array($sort_col[0], ['public_notes', 'date', 'id_number', 'custom_value1', 'custom_value2', 'custom_value3', 'custom_value4'])) {
             return $this->builder->orderBy($sort_col[0], $sort_col[1]);

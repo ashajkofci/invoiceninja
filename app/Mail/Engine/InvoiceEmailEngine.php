@@ -76,7 +76,6 @@ class InvoiceEmailEngine extends BaseEmailEngine
                     'company' => $this->invoice->company->present()->name(),
                     'amount' => Number::formatMoney($this->invoice->balance, $this->client),
                 ],
-                null,
                 $this->client->locale()
             );
 
@@ -90,7 +89,6 @@ class InvoiceEmailEngine extends BaseEmailEngine
                 'company' => $this->invoice->company->present()->name(),
                 'amount' => Number::formatMoney($this->invoice->balance, $this->client),
             ],
-            null,
             $this->client->locale()
         )."\n\n".$this->invitation->getLink();
 
@@ -109,7 +107,6 @@ class InvoiceEmailEngine extends BaseEmailEngine
                     'number' => $this->invoice->number,
                     'account' => $this->invoice->company->present()->name(),
                 ],
-                null,
                 $this->client->locale()
             );
         }
@@ -174,7 +171,7 @@ class InvoiceEmailEngine extends BaseEmailEngine
                 }
 
                 if (count($expense_ids) > 0) {
-                    $expenses = Expense::whereIn('id', $this->transformKeys($expense_ids))
+                    $expenses = Expense::query()->whereIn('id', $this->transformKeys($expense_ids))
                                        ->where('invoice_documents', 1)
                                        ->cursor()
                                        ->each(function ($expense) {
@@ -195,7 +192,7 @@ class InvoiceEmailEngine extends BaseEmailEngine
                 }
 
                 if (count($task_ids) > 0 && $this->invoice->company->invoice_task_documents) {
-                    $tasks = Task::whereIn('id', $this->transformKeys($task_ids))
+                    $tasks = Task::query()->whereIn('id', $this->transformKeys($task_ids))
                                        ->cursor()
                                        ->each(function ($task) {
                                            foreach ($task->documents as $document) {

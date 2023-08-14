@@ -31,7 +31,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\Company|null $company
  * @property-read mixed $hashed_id
  * @property-read \App\Models\User|null $user
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel company()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel exclude($columns)
  * @method static \Illuminate\Database\Eloquent\Builder|Webhook filter(\App\Filters\QueryFilters $filters)
  * @method static \Illuminate\Database\Eloquent\Builder|Webhook newModelQuery()
@@ -39,18 +38,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder|Webhook onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder|Webhook query()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel scope()
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereCompanyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereEventId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereFormat($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereHeaders($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereIsDeleted($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereRestMethod($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereTargetUrl($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Webhook whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Webhook withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder|Webhook withoutTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder|Webhook where()
@@ -268,12 +255,12 @@ class Webhook extends BaseModel
         'deleted_at' => 'timestamp',
     ];
 
-    public function user()
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class)->withTrashed();
     }
 
-    public function company()
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Company::class);
     }

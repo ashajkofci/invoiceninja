@@ -41,11 +41,11 @@ use Illuminate\Support\Facades\Storage;
  * @property int|null $deleted_at
  * @property string|null $signature_ip
  * @property string|null $email_status
- * @property-read \App\Models\Company $company
- * @property-read \App\Models\ClientContact $contact
- * @property-read mixed $hashed_id
- * @property-read \App\Models\Quote $quote
- * @property-read \App\Models\User $user
+ * @property \App\Models\Company $company
+ * @property \App\Models\ClientContact $contact
+ * @property mixed $hashed_id
+ * @property \App\Models\Quote $quote
+ * @property \App\Models\User $user
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel company()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel exclude($columns)
  * @method static \Database\Factories\QuoteInvitationFactory factory($count = null, $state = [])
@@ -54,25 +54,6 @@ use Illuminate\Support\Facades\Storage;
  * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation query()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel scope()
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereClientContactId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereCompanyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereEmailError($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereEmailStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereKey($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereMessageId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereOpenedDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereQuoteId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereSentDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereSignatureBase64($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereSignatureDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereSignatureIp($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereTransactionReference($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereUserId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation whereViewedDate($value)
  * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder|QuoteInvitation withoutTrashed()
  * @mixin \Eloquent
@@ -109,6 +90,14 @@ class QuoteInvitation extends BaseModel
      * @return mixed
      */
     public function quote()
+    {
+        return $this->belongsTo(Quote::class)->withTrashed();
+    }
+
+    /**
+     * @return mixed
+     */
+    public function entity()
     {
         return $this->belongsTo(Quote::class)->withTrashed();
     }

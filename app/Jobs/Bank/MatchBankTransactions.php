@@ -47,11 +47,13 @@ class MatchBankTransactions implements ShouldQueue
 
     private array $input;
 
-    protected Company $company;
+    /** @var \App\Models\Company */
+    protected ?Company $company;
 
     public Invoice $invoice;
 
-    private BankTransaction $bt;
+    /** @var \App\Models\BankTransaction $bt */
+    private ?BankTransaction $bt;
 
     private $categories;
 
@@ -78,14 +80,12 @@ class MatchBankTransactions implements ShouldQueue
     /**
      * Execute the job.
      *
-     *
-     * @return void
      */
     public function handle()
     {
         MultiDB::setDb($this->db);
 
-        $this->company = Company::find($this->company_id);
+        $this->company = Company::query()->find($this->company_id);
 
         if ($this->company->account->bank_integration_account_id) {
             $yodlee = new Yodlee($this->company->account->bank_integration_account_id);
@@ -115,7 +115,7 @@ class MatchBankTransactions implements ShouldQueue
             }
         }
 
-        return BankTransaction::whereIn('id', $this->bts);
+        return BankTransaction::query()->whereIn('id', $this->bts);
     }
 
     private function getInvoices(string $invoice_hashed_ids): array
@@ -150,7 +150,7 @@ class MatchBankTransactions implements ShouldQueue
 
     private function linkExpense($input)
     {
-        $this->bt = BankTransaction::find($input['id']);
+        $this->bt = BankTransaction::withTrashed()->find($input['id']);
 
         if (!$this->bt) {
             return $this;
@@ -195,7 +195,7 @@ class MatchBankTransactions implements ShouldQueue
 
     private function linkPayment($input)
     {
-        $this->bt = BankTransaction::find($input['id']);
+        $this->bt = BankTransaction::query()->withTrashed()->find($input['id']);
 
         if (!$this->bt || $this->bt->status_id == BankTransaction::STATUS_CONVERTED) {
             return $this;
@@ -220,7 +220,7 @@ class MatchBankTransactions implements ShouldQueue
 
     private function matchInvoicePayment($input) :self
     {
-        $this->bt = BankTransaction::find($input['id']);
+        $this->bt = BankTransaction::withTrashed()->find($input['id']);
 
         if (!$this->bt || $this->bt->status_id == BankTransaction::STATUS_CONVERTED) {
             return $this;
@@ -245,7 +245,7 @@ class MatchBankTransactions implements ShouldQueue
     private function matchExpense($input) :self
     {
         //if there is a category id, pull it from Yodlee and insert - or just reuse!!
-        $this->bt = BankTransaction::find($input['id']);
+        $this->bt = BankTransaction::query()->withTrashed()->find($input['id']);
 
         if (!$this->bt || $this->bt->status_id == BankTransaction::STATUS_CONVERTED) {
             return $this;
@@ -288,7 +288,7 @@ class MatchBankTransactions implements ShouldQueue
         $this->available_balance = $amount;
 
         \DB::connection(config('database.default'))->transaction(function () use ($invoices) {
-            $invoices->each(function ($invoice) use ($invoices) {
+            $invoices->each(function ($invoice) {
                 $this->invoice = Invoice::withTrashed()->where('id', $invoice->id)->lockForUpdate()->first();
 
                 $_amount = false;
@@ -362,7 +362,7 @@ class MatchBankTransactions implements ShouldQueue
         $this->invoice
                 ->service()
                 ->applyNumber()
-                ->touchPdf()
+                ->deletePdf()
                 ->save();
 
         $payment->ledger()
@@ -400,7 +400,7 @@ class MatchBankTransactions implements ShouldQueue
 
         $category = $this->categories->firstWhere('highLevelCategoryId', $this->bt->category_id);
 
-        $ec = ExpenseCategory::where('company_id', $this->bt->company_id)->where('bank_category_id', $this->bt->category_id)->first();
+        $ec = ExpenseCategory::query()->where('company_id', $this->bt->company_id)->where('bank_category_id', $this->bt->category_id)->first();
 
         if ($ec) {
             return $ec->id;

@@ -11,42 +11,66 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use App\Utils\Traits\MakesHash;
+use App\Jobs\Entity\CreateRawPdf;
 use App\Jobs\Util\WebhookHandler;
 use App\Models\Traits\Excludable;
-use App\Utils\Traits\MakesHash;
+use Illuminate\Database\Eloquent\Model;
+use App\Jobs\Vendor\CreatePurchaseOrderPdf;
 use App\Utils\Traits\UserSessionAttributes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException as ModelNotFoundException;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 /**
  * Class BaseModel
  *
  * @method scope() static
+ * @method company() static
  * @package App\Models
  * @property-read mixed $hashed_id
  * @property string $number
  * @property int $company_id
+ * @property int $id
+ * @property int $user_id
+ * @property int $assigned_user_id
+ * @method BaseModel service()
  * @property \App\Models\Company $company
+ * @method static BaseModel find($value) 
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel<static> company()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel|Illuminate\Database\Eloquent\Relations\BelongsTo|\Awobaz\Compoships\Database\Eloquent\Relations\BelongsTo|\App\Models\Company company()
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel|Illuminate\Database\Eloquent\Relations\HasMany|BaseModel orderBy()
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel on(?string $connection = null)
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel exclude($columns)
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel with($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel newModelQuery($query)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel newQuery($query)
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel query()
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel exclude(array $excludeable)
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel withTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel scopeExclude()
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel find() 
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel whereIn()
- * @method static \Illuminate\Database\Eloquent\Builder|BankIntegration where()
- * @method \App\Models\Company company()
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel whereId($query)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel whereIn($query)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel where($query)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel count()
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel create($query)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel insert($query)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel orderBy($column, $direction)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel invitations()
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel whereHas($query)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel without($query)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\InvoiceInvitation | \App\Models\CreditInvitation | \App\Models\QuoteInvitation | \App\Models\RecurringInvoiceInvitation> $invitations
+ * @property-read int|null $invitations_count
  * @method int companyId()
- * @method Builder|static exclude($columns)
- * @method static \Illuminate\Database\Eloquent\Builder exclude(array $columns)
+ * @method createInvitations()
+ * @method Builder scopeCompany(Builder $builder)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> company()
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel|\Illuminate\Database\Query\Builder withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel|\Illuminate\Database\Query\Builder onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|BaseModel|\Illuminate\Database\Query\Builder withoutTrashed()
  * @mixin \Eloquent
  * @mixin \Illuminate\Database\Eloquent\Builder
+ * 
+ * @property \Illuminate\Support\Collection $tax_map
+ * @property array $total_tax_map
  */
 class BaseModel extends Model
 {
@@ -98,10 +122,11 @@ class BaseModel extends Model
         return parent::__call($method, $params);
     }
 
-    /*
-    V2 type of scope
-     */
-    public function scopeCompany($query)
+    /**
+    * @param  \Illuminate\Database\Eloquent\Builder  $query
+    * @return \Illuminate\Database\Eloquent\Builder
+    */
+    public function scopeCompany($query): \Illuminate\Database\Eloquent\Builder
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
@@ -111,8 +136,8 @@ class BaseModel extends Model
         return $query;
     }
 
-    /*
-     V1 type of scope
+    /**
+     * @deprecated version
      */
     public function scopeScope($query)
     {
@@ -247,5 +272,31 @@ class BaseModel extends Model
         if ($subscriptions) {
             WebhookHandler::dispatch($event_id, $this, $this->company, $additional_data);
         }
+    }
+
+    /**
+     * Returns the base64 encoded PDF string of the entity
+     */
+    public function fullscreenPdfViewer($invitation = null): string
+    {
+
+        if (! $invitation) {
+            if ($this->invitations()->exists()) {
+                $invitation = $this->invitations()->first();
+            } else {
+                $this->service()->createInvitations();
+                $invitation = $this->invitations()->first();
+            }
+        }
+
+        if (! $invitation) {
+            throw new \Exception('Hard fail, could not create an invitation.');
+        }
+
+        if($this instanceof \App\Models\PurchaseOrder) 
+            return "data:application/pdf;base64,".base64_encode((new CreatePurchaseOrderPdf($invitation, $invitation->company->db))->rawPdf());
+        
+        return "data:application/pdf;base64,".base64_encode((new CreateRawPdf($invitation, $invitation->company->db))->handle());
+
     }
 }

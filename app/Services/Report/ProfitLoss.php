@@ -11,18 +11,19 @@
 
 namespace App\Services\Report;
 
-use App\Libraries\Currency\Conversion\CurrencyApi;
-use App\Libraries\MultiDB;
-use App\Models\Company;
-use App\Models\Currency;
-use App\Models\Expense;
-use App\Models\Payment;
 use App\Utils\Ninja;
 use App\Utils\Number;
+use League\Csv\Writer;
+use App\Models\Company;
+use App\Models\Expense;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\Currency;
+use App\Libraries\MultiDB;
+use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Str;
-use League\Csv\Writer;
+use App\Libraries\Currency\Conversion\CurrencyApi;
 
 class ProfitLoss
 {
@@ -269,7 +270,7 @@ class ProfitLoss
     {
         $this->invoice_payment_map = [];
 
-        Payment::where('company_id', $this->company->id)
+        Payment::query()->where('company_id', $this->company->id)
                         ->whereIn('status_id', [1, 4, 5])
                         ->where('is_deleted', 0)
                         ->whereBetween('date', [$this->start_date, $this->end_date])
@@ -279,8 +280,6 @@ class ProfitLoss
                         ->with(['company', 'client'])
                         ->cursor()
                         ->each(function ($payment) {
-                            $company = $payment->company;
-                            $client = $payment->client;
 
                             $map = new \stdClass;
                             $amount_payment_paid = 0;
@@ -293,17 +292,20 @@ class ProfitLoss
                             $tax_amount_credit_converted = $tax_amount_credit_converted = 0;
 
                             foreach ($payment->paymentables as $pivot) {
-                                if ($pivot->paymentable instanceof \App\Models\Invoice) {
-                                    $invoice = $pivot->paymentable;
+                                if ($pivot->paymentable_type == 'invoices') {
+                                    $invoice = Invoice::query()->withTrashed()->find($pivot->paymentable_id);
 
                                     $amount_payment_paid += $pivot->amount - $pivot->refunded;
                                     $amount_payment_paid_converted += $amount_payment_paid / ($payment->exchange_rate ?: 1);
+                                    
+                                    if ($invoice->amount > 0) {
+                                        $tax_amount += ($amount_payment_paid / $invoice->amount) * $invoice->total_taxes;
+                                        $tax_amount_converted += (($amount_payment_paid / $invoice->amount) * $invoice->total_taxes) / $payment->exchange_rate;
+                                    }
 
-                                    $tax_amount += ($amount_payment_paid / $invoice->amount) * $invoice->total_taxes;
-                                    $tax_amount_converted += (($amount_payment_paid / $invoice->amount) * $invoice->total_taxes) / $payment->exchange_rate;
                                 }
 
-                                if ($pivot->paymentable instanceof \App\Models\Credit) {
+                                if ($pivot->paymentable_type == 'credits') {
                                     $amount_credit_paid += $pivot->amount - $pivot->refunded;
                                     $amount_credit_paid_converted += $amount_payment_paid / ($payment->exchange_rate ?: 1);
 
@@ -364,7 +366,7 @@ class ProfitLoss
 
         $csv->insertOne(['--------------------']);
 
-        $csv->insertOne([ctrans('texts.total_revenue'), Number::formatMoney($this->income, $this->company)]);
+        $csv->insertOne([ctrans('texts.total_revenue'), Number::formatMoney($this->income - $this->income_taxes, $this->company)]);
 
         //total taxes
 
@@ -384,7 +386,7 @@ class ProfitLoss
         $csv->insertOne([ctrans('texts.total_taxes'), Number::formatMoney(array_sum(array_column($this->expense_break_down, 'tax')), $this->company)]);
 
         $csv->insertOne(['--------------------']);
-        $csv->insertOne([ctrans('texts.total_profit'), Number::formatMoney($this->income - array_sum(array_column($this->expense_break_down, 'total')), $this->company)]);
+        $csv->insertOne([ctrans('texts.total_profit'), Number::formatMoney($this->income - $this->income_taxes - array_sum(array_column($this->expense_break_down, 'total'))- array_sum(array_column($this->expense_break_down, 'tax')), $this->company)]);
 
         //net profit
 
@@ -450,7 +452,7 @@ class ProfitLoss
 
     private function expenseData()
     {
-        $expenses = Expense::where('company_id', $this->company->id)
+        $expenses = Expense::query()->where('company_id', $this->company->id)
                            ->where('is_deleted', 0)
                            ->withTrashed()
                            ->whereBetween('date', [$this->start_date, $this->end_date])
@@ -593,52 +595,50 @@ class ProfitLoss
             case 'all':
                 $this->start_date = now()->subYears(50);
                 $this->end_date = now();
-                // return $query;
-                // no break
+                break;
+
             case 'last7':
                 $this->start_date = now()->subDays(7);
                 $this->end_date = now();
-                // return $query->whereBetween($this->date_key, [now()->subDays(7), now()])->orderBy($this->date_key, 'ASC');
-                // no break
+                break;
+
             case 'last30':
                 $this->start_date = now()->subDays(30);
                 $this->end_date = now();
-                // return $query->whereBetween($this->date_key, [now()->subDays(30), now()])->orderBy($this->date_key, 'ASC');
-                // no break
+                break;
+
             case 'this_month':
                 $this->start_date = now()->startOfMonth();
                 $this->end_date = now();
-                //return $query->whereBetween($this->date_key, [now()->startOfMonth(), now()])->orderBy($this->date_key, 'ASC');
-                // no break
+                break;
+
             case 'last_month':
                 $this->start_date = now()->startOfMonth()->subMonth();
                 $this->end_date = now()->startOfMonth()->subMonth()->endOfMonth();
-                //return $query->whereBetween($this->date_key, [now()->startOfMonth()->subMonth(), now()->startOfMonth()->subMonth()->endOfMonth()])->orderBy($this->date_key, 'ASC');
-                // no break
+                break;
+
             case 'this_quarter':
                 $this->start_date = (new \Carbon\Carbon('-3 months'))->firstOfQuarter();
                 $this->end_date = (new \Carbon\Carbon('-3 months'))->lastOfQuarter();
-                //return $query->whereBetween($this->date_key, [(new \Carbon\Carbon('-3 months'))->firstOfQuarter(), (new \Carbon\Carbon('-3 months'))->lastOfQuarter()])->orderBy($this->date_key, 'ASC');
-                // no break
+                break;
+
             case 'last_quarter':
                 $this->start_date = (new \Carbon\Carbon('-6 months'))->firstOfQuarter();
                 $this->end_date = (new \Carbon\Carbon('-6 months'))->lastOfQuarter();
-                //return $query->whereBetween($this->date_key, [(new \Carbon\Carbon('-6 months'))->firstOfQuarter(), (new \Carbon\Carbon('-6 months'))->lastOfQuarter()])->orderBy($this->date_key, 'ASC');
-                // no break
+                break;
+
             case 'this_year':
                 $this->start_date = now()->startOfYear();
                 $this->end_date = now();
-                //return $query->whereBetween($this->date_key, [now()->startOfYear(), now()])->orderBy($this->date_key, 'ASC');
-                // no break
+                break;
+
             case 'custom':
                 $this->start_date = $custom_start_date;
                 $this->end_date = $custom_end_date;
-                //return $query->whereBetween($this->date_key, [$custom_start_date, $custom_end_date])->orderBy($this->date_key, 'ASC');
-                // no break
+                break;
             default:
                 $this->start_date = now()->startOfYear();
                 $this->end_date = now();
-                // return $query->whereBetween($this->date_key, [now()->startOfYear(), now()])->orderBy($this->date_key, 'ASC');
         }
 
         return $this;

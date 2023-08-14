@@ -56,7 +56,11 @@ class BaseDriver extends AbstractPaymentDriver
     /* The Invitation */
     public $invitation;
 
-    /* The client */
+    /**
+     * The Client
+     *
+     * @var \App\Models\Client|null $client 
+    */
     public $client;
 
     /* Gateway capabilities */
@@ -279,7 +283,7 @@ class BaseDriver extends AbstractPaymentDriver
     public function attachInvoices(Payment $payment, PaymentHash $payment_hash): Payment
     {
         $paid_invoices = $payment_hash->invoices();
-        $invoices = Invoice::whereIn('id', $this->transformKeys(array_column($paid_invoices, 'invoice_id')))->withTrashed()->get();
+        $invoices = Invoice::query()->whereIn('id', $this->transformKeys(array_column($paid_invoices, 'invoice_id')))->withTrashed()->get();
         $payment->invoices()->sync($invoices);
 
         $payment->service()->applyNumber()->save();
@@ -320,7 +324,7 @@ class BaseDriver extends AbstractPaymentDriver
         $payment->company_gateway_id = $this->company_gateway->id;
         $payment->status_id = $status;
         $payment->currency_id = $this->client->getSetting('currency_id');
-        $payment->date = Carbon::now();
+        $payment->date = Carbon::now()->addSeconds($this->client->company->timezone()->utc_offset)->format('Y-m-d');
         $payment->gateway_type_id = $data['gateway_type_id'];
 
         $client_contact = $this->getContact();
@@ -392,7 +396,7 @@ class BaseDriver extends AbstractPaymentDriver
         $fee_total = $this->payment_hash->fee_total;
 
         /*Hydrate invoices*/
-        $invoices = Invoice::whereIn('id', $this->transformKeys(array_column($payment_invoices, 'invoice_id')))->withTrashed()->get();
+        $invoices = Invoice::query()->whereIn('id', $this->transformKeys(array_column($payment_invoices, 'invoice_id')))->withTrashed()->get();
 
         $invoices->each(function ($invoice) {
             if (collect($invoice->line_items)->contains('type_id', '3')) {
@@ -410,7 +414,7 @@ class BaseDriver extends AbstractPaymentDriver
      */
     public function unWindGatewayFees(PaymentHash $payment_hash)
     {
-        $invoices = Invoice::whereIn('id', $this->transformKeys(array_column($payment_hash->invoices(), 'invoice_id')))->withTrashed()->get();
+        $invoices = Invoice::query()->whereIn('id', $this->transformKeys(array_column($payment_hash->invoices(), 'invoice_id')))->withTrashed()->get();
 
         $invoices->each(function ($invoice) {
             $invoice->service()->removeUnpaidGatewayFees();
@@ -522,10 +526,10 @@ class BaseDriver extends AbstractPaymentDriver
             $nmo->company = $this->client->company;
             $nmo->settings = $this->client->company->settings;
 
-            $invoices = Invoice::whereIn('id', $this->transformKeys(array_column($this->payment_hash->invoices(), 'invoice_id')))->withTrashed()->get();
+            $invoices = Invoice::query()->whereIn('id', $this->transformKeys(array_column($this->payment_hash->invoices(), 'invoice_id')))->withTrashed()->get();
 
             $invoices->each(function ($invoice) {
-                $invoice->service()->touchPdf();
+                $invoice->service()->deletePdf();
             });
 
             $invoices->first()->invitations->each(function ($invitation) use ($nmo) {
@@ -567,10 +571,10 @@ class BaseDriver extends AbstractPaymentDriver
         $nmo->company = $this->client->company;
         $nmo->settings = $this->client->company->settings;
 
-        $invoices = Invoice::whereIn('id', $this->transformKeys(array_column($this->payment_hash->invoices(), 'invoice_id')))->withTrashed()->get();
+        $invoices = Invoice::query()->whereIn('id', $this->transformKeys(array_column($this->payment_hash->invoices(), 'invoice_id')))->withTrashed()->get();
 
         $invoices->each(function ($invoice) {
-            $invoice->service()->touchPdf();
+            $invoice->service()->deletePdf();
         });
 
         $invoices->first()->invitations->each(function ($invitation) use ($nmo) {
@@ -728,12 +732,17 @@ class BaseDriver extends AbstractPaymentDriver
         App::setLocale($this->client->company->locale());
         
         if (! $this->payment_hash || !$this->client) 
-            return 'x';
+            return 'Descriptor';
 
         $invoices_string = \implode(', ', collect($this->payment_hash->invoices())->pluck('invoice_number')->toArray()) ?: null;
 
+        if (!$invoices_string) 
+            return str_replace(["*","<",">","'",'"'], "", $this->client->company->present()->name());
+
         $invoices_string = str_replace(["*","<",">","'",'"'], "-", $invoices_string);
         
+        $invoices_string = "I-".$invoices_string;
+
         $invoices_string = substr($invoices_string,0,22);
         
         $invoices_string = str_pad($invoices_string, 5, ctrans('texts.invoice'), STR_PAD_LEFT);

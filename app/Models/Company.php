@@ -16,6 +16,7 @@ use App\Casts\EncryptedCast;
 use App\Utils\Traits\AppSetup;
 use App\Utils\Traits\MakesHash;
 use App\DataMapper\CompanySettings;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Laracasts\Presenter\PresentableTrait;
 use App\Utils\Traits\CompanySettingsSaver;
@@ -57,7 +58,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $portal_domain
  * @property int $enable_modules
  * @property object $custom_fields
- * @property object $settings
+ * @property \App\DataMapper\CompanySettings $settings
  * @property string $slack_webhook_url
  * @property string $google_analytics_key
  * @property int|null $created_at
@@ -66,6 +67,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_large
  * @property int $enable_shop_api
  * @property string $default_auto_bill
+ * @property string $custom_value1
+ * @property string $custom_value2
+ * @property string $custom_value3
+ * @property string $custom_value4
  * @property bool $mark_expenses_invoiceable
  * @property bool $mark_expenses_paid
  * @property bool $invoice_expense_documents
@@ -198,6 +203,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Vendor> $vendors
  * @property-read int|null $vendors_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Webhook> $webhooks
+ * @method static \Illuminate\Database\Eloquent\Builder|Company where($query)
+ * @method static \Illuminate\Database\Eloquent\Builder|Company find($query)
  * @property-read int|null $webhooks_count
  * @property int $calculate_taxes
  * @property mixed $tax_data
@@ -212,66 +219,70 @@ class Company extends BaseModel
     use AppSetup;
     use \Awobaz\Compoships\Compoships;
 
-    const ENTITY_RECURRING_INVOICE = 'recurring_invoice';
+    // const ENTITY_RECURRING_INVOICE = 'recurring_invoice';
 
-    const ENTITY_CREDIT = 'credit';
+    // const ENTITY_CREDIT = 'credit';
 
-    const ENTITY_QUOTE = 'quote';
+    // const ENTITY_QUOTE = 'quote';
 
-    const ENTITY_TASK = 'task';
+    // const ENTITY_TASK = 'task';
 
-    const ENTITY_EXPENSE = 'expense';
+    // const ENTITY_EXPENSE = 'expense';
 
-    const ENTITY_PROJECT = 'project';
+    // const ENTITY_PROJECT = 'project';
 
-    const ENTITY_VENDOR = 'vendor';
+    // const ENTITY_VENDOR = 'vendor';
 
-    const ENTITY_TICKET = 'ticket';
+    // const ENTITY_TICKET = 'ticket';
 
-    const ENTITY_PROPOSAL = 'proposal';
+    // const ENTITY_PROPOSAL = 'proposal';
 
-    const ENTITY_RECURRING_EXPENSE = 'recurring_expense';
+    // const ENTITY_RECURRING_EXPENSE = 'recurring_expense';
 
-    const ENTITY_RECURRING_TASK = 'task';
+    // const ENTITY_RECURRING_TASK = 'task';
 
-    const ENTITY_RECURRING_QUOTE = 'recurring_quote';
+    // const ENTITY_RECURRING_QUOTE = 'recurring_quote';
 
+    /** @var CompanyPresenter */
     protected $presenter = CompanyPresenter::class;
 
     protected array $tax_coverage_countries = [
         'US',
         // //EU countries
-        // 'AT', // Austria
-        // 'BE', // Belgium
-        // 'BG', // Bulgaria
-        // 'CY', // Cyprus
-        // 'CZ', // Czech Republic
-        // 'DE', // Germany
-        // 'DK', // Denmark
-        // 'EE', // Estonia
-        // 'ES', // Spain
-        // 'FI', // Finland
-        // 'FR', // France
-        // 'GR', // Greece
-        // 'HR', // Croatia
-        // 'HU', // Hungary
-        // 'IE', // Ireland
-        // 'IT', // Italy
-        // 'LT', // Lithuania
-        // 'LU', // Luxembourg
-        // 'LV', // Latvia
-        // 'MT', // Malta
-        // 'NL', // Netherlands
-        // 'PL', // Poland
-        // 'PT', // Portugal
-        // 'RO', // Romania
-        // 'SE', // Sweden
-        // 'SI', // Slovenia
-        // 'SK', // Slovakia
+        'AT', // Austria
+        'BE', // Belgium
+        'BG', // Bulgaria
+        'CY', // Cyprus
+        'CZ', // Czech Republic
+        'DE', // Germany
+        'DK', // Denmark
+        'EE', // Estonia
+        'ES', // Spain
+        'FI', // Finland
+        'FR', // France
+        'GR', // Greece
+        'HR', // Croatia
+        'HU', // Hungary
+        'IE', // Ireland
+        'IT', // Italy
+        'LT', // Lithuania
+        'LU', // Luxembourg
+        'LV', // Latvia
+        'MT', // Malta
+        'NL', // Netherlands
+        'PL', // Poland
+        'PT', // Portugal
+        'RO', // Romania
+        'SE', // Sweden
+        'SI', // Slovenia
+        'SK', // Slovakia
         // //EU Countries
+        'AU', // Australia
     ];
 
     protected $fillable = [
+        'invoice_task_item_description',
+        'invoice_task_project_header',
         'invoice_task_hours',
         'markdown_enabled',
         'calculate_expense_tax_by_amount',
@@ -306,7 +317,6 @@ class Company extends BaseModel
         'google_analytics_key',
         'matomo_url',
         'matomo_id',
-        'enable_e_invoice',
         'client_can_register',
         'enable_shop_api',
         'invoice_task_timelog',
@@ -365,47 +375,45 @@ class Company extends BaseModel
 
     protected $with = [];
 
-    public static $modules = [
-        self::ENTITY_RECURRING_INVOICE => 1,
-        self::ENTITY_CREDIT => 2,
-        self::ENTITY_QUOTE => 4,
-        self::ENTITY_TASK => 8,
-        self::ENTITY_EXPENSE => 16,
-        self::ENTITY_PROJECT => 32,
-        self::ENTITY_VENDOR => 64,
-        self::ENTITY_TICKET => 128,
-        self::ENTITY_PROPOSAL => 256,
-        self::ENTITY_RECURRING_EXPENSE => 512,
-        self::ENTITY_RECURRING_TASK => 1024,
-        self::ENTITY_RECURRING_QUOTE => 2048,
-    ];
+    // public static $modules = [
+    //     self::ENTITY_RECURRING_INVOICE => 1,
+    //     self::ENTITY_CREDIT => 2,
+    //     self::ENTITY_QUOTE => 4,
+    //     self::ENTITY_TASK => 8,
+    //     self::ENTITY_EXPENSE => 16,
+    //     self::ENTITY_PROJECT => 32,
+    //     self::ENTITY_VENDOR => 64,
+    //     self::ENTITY_TICKET => 128,
+    //     self::ENTITY_PROPOSAL => 256,
+    //     self::ENTITY_RECURRING_EXPENSE => 512,
+    //     self::ENTITY_RECURRING_TASK => 1024,
+    //     self::ENTITY_RECURRING_QUOTE => 2048,
+    // ];
 
     public function shouldCalculateTax()
     {
         return $this->calculate_taxes && in_array($this->getSetting('country_id'), $this->tax_coverage_countries);
     }
 
-    public function refreshTaxData()
-    {
-
-    }
-
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany<Document>
+     */
     public function documents()
     {
         return $this->morphMany(Document::class, 'documentable');
     }
 
-    public function schedulers()
+    public function schedulers() :HasMany
     {
         return $this->hasMany(Scheduler::class);
     }
 
-    public function task_schedulers() //alias for schedulers
+    public function task_schedulers() :HasMany
     {
         return $this->hasMany(Scheduler::class);
     }
 
-    public function all_documents()
+    public function all_documents() :HasMany
     {
         return $this->hasMany(Document::class);
     }
@@ -415,22 +423,22 @@ class Company extends BaseModel
         return self::class;
     }
 
-    public function ledger()
+    public function ledger() :HasMany
     {
         return $this->hasMany(CompanyLedger::class);
     }
 
-    public function bank_integrations()
+    public function bank_integrations() :HasMany
     {
         return $this->hasMany(BankIntegration::class);
     }
 
-    public function bank_transactions()
+    public function bank_transactions() :HasMany
     {
         return $this->hasMany(BankTransaction::class);
     }
 
-    public function bank_transaction_rules()
+    public function bank_transaction_rules() :HasMany
     {
         return $this->hasMany(BankTransactionRule::class);
     }
@@ -440,42 +448,45 @@ class Company extends BaseModel
         return $this->encodePrimaryKey($this->id);
     }
 
-    public function account()
+    public function account(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Account::class);
     }
 
-    public function client_contacts()
+    public function client_contacts() :HasMany
     {
         return $this->hasMany(ClientContact::class)->withTrashed();
     }
 
-    public function users()
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function users(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
     {
         return $this->hasManyThrough(User::class, CompanyUser::class, 'company_id', 'id', 'id', 'user_id')->withTrashed();
     }
 
-    public function expense_categories()
+    public function expense_categories() :HasMany
     {
         return $this->hasMany(ExpenseCategory::class)->withTrashed();
     }
 
-    public function subscriptions()
+    public function subscriptions() :HasMany
     {
         return $this->hasMany(Subscription::class)->withTrashed();
     }
 
-    public function purchase_orders()
+    public function purchase_orders() :HasMany
     {
         return $this->hasMany(PurchaseOrder::class)->withTrashed();
     }
 
-    public function task_statuses()
+    public function task_statuses() :HasMany
     {
         return $this->hasMany(TaskStatus::class)->withTrashed();
     }
 
-    public function clients()
+    public function clients() :HasMany
     {
         return $this->hasMany(Client::class)->withTrashed();
     }
@@ -483,12 +494,12 @@ class Company extends BaseModel
     /**
      * @return HasMany
      */
-    public function tasks()
+    public function tasks() :HasMany
     {
         return $this->hasMany(Task::class)->withTrashed();
     }
 
-    public function webhooks()
+    public function webhooks() :HasMany
     {
         return $this->hasMany(Webhook::class);
     }
@@ -496,7 +507,7 @@ class Company extends BaseModel
     /**
      * @return HasMany
      */
-    public function projects()
+    public function projects() :HasMany
     {
         return $this->hasMany(Project::class)->withTrashed();
     }
@@ -504,17 +515,17 @@ class Company extends BaseModel
     /**
      * @return HasMany
      */
-    public function vendors()
+    public function vendors() :HasMany
     {
         return $this->hasMany(Vendor::class)->withTrashed();
     }
 
-    public function all_activities()
+    public function all_activities() :\Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Activity::class);
     }
 
-    public function activities()
+    public function activities() :HasMany
     {
         return $this->hasMany(Activity::class)->orderBy('id', 'DESC')->take(50);
     }
@@ -689,6 +700,11 @@ class Company extends BaseModel
         return $this->getLocale();
     }
 
+    public function setLocale()
+    {
+        App::setLocale($this->getLocale());
+    }
+    
     public function getSetting($setting)
     {
         if (property_exists($this->settings, $setting) != false) {
@@ -729,48 +745,42 @@ class Company extends BaseModel
         return $this->belongsTo(PaymentType::class);
     }
 
-    /**
-     * @return mixed
-     */
-    public function expenses()
+    public function expenses(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Expense::class)->withTrashed();
     }
 
-    /**
-     * @return mixed
-     */
-    public function payments()
+    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Payment::class)->withTrashed();
     }
 
-    public function tokens()
+    public function tokens(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(CompanyToken::class);
     }
 
-    public function client_gateway_tokens()
+    public function client_gateway_tokens(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ClientGatewayToken::class);
     }
 
-    public function system_logs()
+    public function system_logs(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(SystemLog::class)->orderBy('id', 'DESC')->take(100);
     }
 
-    public function system_log_relation()
+    public function system_log_relation(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(SystemLog::class)->orderBy('id', 'DESC');
     }
 
-    public function tokens_hashed()
+    public function tokens_hashed(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(CompanyToken::class);
     }
 
-    public function company_users()
+    public function company_users(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(CompanyUser::class)->withTrashed();
     }
@@ -807,7 +817,7 @@ class Company extends BaseModel
                     ->firstOrFail();
     }
 
-    public function domain()
+    public function domain(): string 
     {
         if (Ninja::isHosted()) {
             if ($this->portal_mode == 'domain' && strlen($this->portal_domain) > 3) {
@@ -825,12 +835,12 @@ class Company extends BaseModel
         return new NotificationService($this, $notification);
     }
 
-    public function routeNotificationForSlack($notification)
+    public function routeNotificationForSlack($notification): string
     {
         return $this->slack_webhook_url;
     }
 
-    public function file_path()
+    public function file_path(): string
     {
         return $this->company_key.'/';
     }
@@ -869,7 +879,7 @@ class Company extends BaseModel
         return $data;
     }
 
-    public function timezone_offset()
+    public function timezone_offset(): int
     {
         $offset = 0;
 

@@ -95,7 +95,7 @@ class ACH
     {
         $stripe_event = $event['data']['object'];
 
-        $token = ClientGatewayToken::where('token', $stripe_event['id'])
+        $token = ClientGatewayToken::query()->where('token', $stripe_event['id'])
                                    ->where('gateway_customer_reference', $stripe_event['customer'])
                                    ->first();
 
@@ -186,6 +186,16 @@ class ACH
         $description = $this->stripe->getDescription(false);
 
         $intent = false;
+
+        if (count($data['tokens']) == 1) {
+        
+            $token = $data['tokens'][0];
+
+            $meta = $token->meta;
+
+            if(isset($meta->state) && $meta->state == 'unauthorized')
+                return redirect()->route('client.payment_methods.show', $token->hashed_id);
+        }
 
         if (count($data['tokens']) == 0) {
             $intent =

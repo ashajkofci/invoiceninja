@@ -39,7 +39,6 @@ class PdfBuilder
     /**
      * The DOM Document;
      *
-     * @var $document
      */
     public DomDocument $document;
 
@@ -102,7 +101,12 @@ class PdfBuilder
 
         $this->document = $document;
 
-        // $this->xpath = new DOMXPath($document);
+        return $this;
+    }
+
+    public function setDocument($document): self
+    {
+        $this->document = $document;
 
         return $this;
     }
@@ -127,6 +131,13 @@ class PdfBuilder
     private function mergeSections(array $section) :self
     {
         $this->sections = array_merge($this->sections, $section);
+
+        return $this;
+    }
+
+    public function setSections($sections): self
+    {
+        $this->sections = $sections;
 
         return $this;
     }
@@ -605,9 +616,8 @@ class PdfBuilder
     /**
      * Formats the line items for display.
      *
-     * @param mixed $items
+     * @param array<\App\DataMapper\InvoiceItem> $items
      * @param string $table_type
-     * @param mixed|null $custom_fields
      *
      * @return array
      */
@@ -653,7 +663,7 @@ class PdfBuilder
             $data[$key][$table_type.".{$_table_type}4"] = strlen($item->custom_value4) >= 1 ? $helpers->formatCustomFieldValue($this->service->company->custom_fields, "{$_table_type}4", $item->custom_value4, $this->service->config->currency_entity) : '';
 
             if ($item->quantity > 0 || $item->cost > 0) {
-                $data[$key][$table_type.'.quantity'] = $this->service->config->formatMoney($item->quantity);
+                $data[$key][$table_type.'.quantity'] = $item->quantity;
 
                 $data[$key][$table_type.'.unit_cost'] = $this->service->config->formatMoney($item->cost);
 
@@ -944,7 +954,7 @@ class PdfBuilder
      * Performs a variable check to ensure
      * the variable exists
      *
-     * @param  string $variables
+     * @param  string $variable
      * @return bool
      *
      */
@@ -1301,7 +1311,7 @@ class PdfBuilder
      * Generates the custom values for the
      * entity.
      *
-     * @param  array
+     * @param  array $variables
      * @return array
      */
     public function genericDetailsBuilder(array $variables): array
@@ -1458,7 +1468,7 @@ class PdfBuilder
      * Passes an array of items by reference
      * and performs a nl2br
      *
-     * @param  array
+     * @param  array $items
      * @return void
      *
      */
@@ -1641,6 +1651,7 @@ class PdfBuilder
 
     public function updateVariables()
     {
+
         $html = strtr($this->getCompiledHTML(), $this->service->html_variables['labels']);
 
         $html = strtr($html, $this->service->html_variables['values']);

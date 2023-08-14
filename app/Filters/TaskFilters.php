@@ -24,7 +24,7 @@ class TaskFilters extends QueryFilters
     /**
      * Filter based on search text.
      *
-     * @param string query filter
+     * @param string $filter
      * @return Builder
      * @deprecated
      */
@@ -39,7 +39,13 @@ class TaskFilters extends QueryFilters
                           ->orWhere('custom_value1', 'like', '%'.$filter.'%')
                           ->orWhere('custom_value2', 'like', '%'.$filter.'%')
                           ->orWhere('custom_value3', 'like', '%'.$filter.'%')
-                          ->orWhere('custom_value4', 'like', '%'.$filter.'%');
+                          ->orWhere('custom_value4', 'like', '%'.$filter.'%')
+                          ->orWhereHas('project', function ($q) use ($filter) {
+                                $q->where('name', 'like', '%'.$filter.'%');
+                            })
+                          ->orWhereHas('client', function ($q) use ($filter) {
+                                $q->where('name', 'like', '%'.$filter.'%');
+                            });
         });
     }
 
@@ -50,7 +56,7 @@ class TaskFilters extends QueryFilters
      * - all
      * - invoiced
      *
-     * @param string client_status The invoice status as seen by the client
+     * @param string $value The invoice status as seen by the client
      * @return Builder
      */
     public function client_status(string $value = ''): Builder
@@ -93,7 +99,7 @@ class TaskFilters extends QueryFilters
     /**
      * Sorts the list based on $sort.
      *
-     * @param string sort formatted as column|asc
+     * @param string $sort formatted as column|asc
      * @return Builder
      */
     public function sort(string $sort = ''): Builder
@@ -104,8 +110,33 @@ class TaskFilters extends QueryFilters
             return $this->builder;
         }
 
+        if ($sort_col[0] == 'client_id') {
+            return $this->builder->orderBy(\App\Models\Client::select('name')
+                    ->whereColumn('clients.id', 'tasks.client_id'), $sort_col[1]);
+        }
+
+        if ($sort_col[0] == 'user_id') {
+            return $this->builder->orderBy(\App\Models\User::select('first_name')
+                    ->whereColumn('users.id', 'tasks.user_id'), $sort_col[1]);
+        }
+
         return $this->builder->orderBy($sort_col[0], $sort_col[1]);
     }
+
+    public function task_status(string $value = ''): Builder
+    {
+        if (strlen($value) == 0) {
+            return $this->builder;
+        }
+
+        $status_parameters = explode(',', $value);
+
+        if(count($status_parameters) >= 1)
+            $this->builder->whereIn('status_id', $this->transformKeys($status_parameters));
+
+        return $this->builder;
+    }
+
 
     /**
      * Filters the query by the users company ID.

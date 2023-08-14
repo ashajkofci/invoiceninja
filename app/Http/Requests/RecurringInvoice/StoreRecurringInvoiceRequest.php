@@ -31,11 +31,18 @@ class StoreRecurringInvoiceRequest extends Request
      */
     public function authorize() : bool
     {
-        return auth()->user()->can('create', RecurringInvoice::class);
+
+        /** @var \App\Models\User auth()->user() */
+        $user = auth()->user();
+
+        return $user->can('create', RecurringInvoice::class);
     }
 
     public function rules()
     {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
         $rules = [];
 
         if ($this->file('documents') && is_array($this->file('documents'))) {
@@ -50,7 +57,7 @@ class StoreRecurringInvoiceRequest extends Request
             $rules['file'] = $this->file_validation;
         }
 
-        $rules['client_id'] = 'required|exists:clients,id,company_id,'.auth()->user()->company()->id;
+        $rules['client_id'] = 'required|exists:clients,id,company_id,'.$user->company()->id;
 
         $rules['invitations.*.client_contact_id'] = 'distinct';
 
@@ -67,7 +74,8 @@ class StoreRecurringInvoiceRequest extends Request
         $rules['tax_name2'] = 'bail|sometimes|string|nullable';
         $rules['tax_name3'] = 'bail|sometimes|string|nullable';
         $rules['due_date_days'] = 'bail|sometimes|string';
-        
+        $rules['exchange_rate'] = 'bail|sometimes|numeric';
+
         return $rules;
     }
 
@@ -77,6 +85,10 @@ class StoreRecurringInvoiceRequest extends Request
 
         if (array_key_exists('due_date_days', $input) && is_null($input['due_date_days'])) {
             $input['due_date_days'] = 'terms';
+        }
+
+        if(!isset($input['next_send_date']) || $input['next_send_date'] == '') {
+            $input['next_send_date'] = now()->format('Y-m-d');
         }
 
         if (array_key_exists('next_send_date', $input) && is_string($input['next_send_date'])) {
@@ -132,7 +144,8 @@ class StoreRecurringInvoiceRequest extends Request
         if (isset($input['auto_bill'])) {
             $input['auto_bill_enabled'] = $this->setAutoBillFlag($input['auto_bill']);
         } else {
-            if (array_key_exists('client_id', $input) && $client = Client::find($input['client_id'])) {
+            if (array_key_exists('client_id', $input) && $client = Client::query()->find($input['client_id'])) {
+                /** @var \App\Models\Client $client */
                 $input['auto_bill'] = $client->getSetting('auto_bill');
                 $input['auto_bill_enabled'] = $this->setAutoBillFlag($input['auto_bill']);
             }
@@ -141,6 +154,10 @@ class StoreRecurringInvoiceRequest extends Request
         /* If there is no number, just unset it here. */
         if (array_key_exists('number', $input) && (is_null($input['number']) || empty($input['number']))) {
             unset($input['number']);
+        }
+
+        if (array_key_exists('exchange_rate', $input) && (is_null($input['exchange_rate']) || $input['exchange_rate'] == 0)) {
+            $input['exchange_rate'] = 1;
         }
 
         $this->replace($input);

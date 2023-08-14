@@ -27,6 +27,7 @@ use App\Services\Subscription\SubscriptionService;
 use App\Utils\Traits\MakesDates;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Contracts\View\Factory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -111,6 +112,7 @@ class PaymentController extends Controller
 
     public function response(PaymentResponseRequest $request)
     {
+        /** @var \App\Models\CompanyGateway $gateway **/
         $gateway = CompanyGateway::findOrFail($request->input('company_gateway_id'));
         $payment_hash = PaymentHash::where('hash', $request->payment_hash)->firstOrFail();
         $invoice = Invoice::with('client')->find($payment_hash->fee_invoice_id);
@@ -143,7 +145,7 @@ class PaymentController extends Controller
      * Pay for invoice/s using credits only.
      *
      * @param Request $request The request object
-     * @return Response         The response view
+     * @return \Response         The response view
      */
     public function credit_response(Request $request)
     {
@@ -166,18 +168,20 @@ class PaymentController extends Controller
 
         $payment = $payment->service()->applyCredits($payment_hash)->save();
 
-        $invoices = Invoice::whereIn('id', $this->transformKeys(array_column($payment_hash->invoices(), 'invoice_id')));
-        
-        $invoices->each(function ($i) {
-            $i->is_proforma = false;
-            $i->saveQuietly();
+        /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\Invoice> $invoices */
+        $invoices = Invoice::query()->whereIn('id', $this->transformKeys(array_column($payment_hash->invoices(), 'invoice_id')));
+
+        $invoices->each(function ($invoice) {
+            /** @var \App\Models\Invoice $invoice **/
+            $invoice->is_proforma = false;
+            $invoice->saveQuietly();
         });
 
         event('eloquent.created: App\Models\Payment', $payment);
 
         if ($invoices->sum('balance') > 0) {
+            /** @var \App\Models\Invoice $invoice **/
             $invoice = $invoices->first();
-            $invoice->service()->touchPdf(true);
 
             return redirect()->route('client.invoice.show', ['invoice' => $invoice->hashed_id, 'hash' => $request->input('hash')]);
         }
