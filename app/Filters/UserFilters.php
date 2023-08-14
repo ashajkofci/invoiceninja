@@ -21,7 +21,7 @@ class UserFilters extends QueryFilters
     /**
      * Filter based on search text.
      *
-     * @param string query filter
+     * @param string $filter
      * @return Builder
      * @deprecated
      */
@@ -43,7 +43,7 @@ class UserFilters extends QueryFilters
     /**
      * Sorts the list based on $sort.
      *
-     * @param string sort formatted as column|asc
+     * @param string $sort formatted as column|asc
      * @return Builder
      */
     public function sort(string $sort = ''): Builder
@@ -70,6 +70,19 @@ class UserFilters extends QueryFilters
     }
 
     /**
+     * Filters users that have been removed from the
+     * company, but not deleted from the system.
+     *
+     * @return void
+     */
+    public function hideRemovedUsers()
+    {
+        return $this->builder->whereHas('company_users', function ($q) {
+            $q->where('company_id', '=', auth()->user()->company()->id)->whereNull('deleted_at');
+        });
+    }
+
+    /**
      * Overrides the base with() function as no company ID
      * exists on the user table
      *
@@ -89,6 +102,15 @@ class UserFilters extends QueryFilters
             ->where('account_id', auth()->user()->account_id);
     }
     
+    public function sending_users(string $value = ''): Builder
+    {
+        if (strlen($value) == 0 || $value != 'true') {
+            return $this->builder;
+        }
+
+        return $this->builder->whereNotNull('oauth_user_refresh_token');
+    }
+    
     /**
      * Exclude a list of user_ids, can pass multiple
      * user IDs by separating them with a comma.
@@ -105,8 +127,7 @@ class UserFilters extends QueryFilters
         $user_array = $this->transformKeys(explode(',', $user_id));
 
         return  $this->builder->where(function ($query) use ($user_array) {
-            $query->whereNotIn('id', $user_array)
-                  ->where('account_id', auth()->user()->account_id);
+            $query->whereNotIn('id', $user_array);
         });
     }
 }

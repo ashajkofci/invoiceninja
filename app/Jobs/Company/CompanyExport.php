@@ -11,64 +11,61 @@
 
 namespace App\Jobs\Company;
 
-use App\Jobs\Mail\NinjaMailerJob;
-use App\Jobs\Mail\NinjaMailerObject;
-use App\Libraries\MultiDB;
-use App\Mail\DownloadBackup;
-use App\Models\Company;
-use App\Models\CreditInvitation;
-use App\Models\InvoiceInvitation;
-use App\Models\PurchaseOrderInvitation;
-use App\Models\QuoteInvitation;
-use App\Models\RecurringInvoiceInvitation;
 use App\Models\User;
-use App\Models\VendorContact;
 use App\Utils\Ninja;
-use App\Utils\Traits\MakesHash;
+use App\Models\Company;
+use App\Libraries\MultiDB;
+use Illuminate\Support\Str;
+use App\Mail\DownloadBackup;
+use App\Jobs\Util\UnlinkFile;
+use App\Models\VendorContact;
 use Illuminate\Bus\Queueable;
+use App\Models\QuoteInvitation;
+use App\Utils\Traits\MakesHash;
+use App\Models\CreditInvitation;
+use App\Jobs\Mail\NinjaMailerJob;
+use App\Models\InvoiceInvitation;
+use Illuminate\Support\Facades\App;
+use App\Jobs\Mail\NinjaMailerObject;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Queue\SerializesModels;
+use App\Models\PurchaseOrderInvitation;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Queue\InteractsWithQueue;
+use App\Models\RecurringInvoiceInvitation;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Storage;
 
 class CompanyExport implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, MakesHash;
 
-    public $company;
-
-    private $export_format;
+    private $export_format = 'json';
 
     private $export_data = [];
 
-    public $user;
 
     /**
      * Create a new job instance.
      *
-     * @param Company $company
-     * @param User $user
-     * @param string $custom_token_name
+     * @param \App\Models\Company $company
+     * @param \App\Models\User $user
+     * @param string $hash
      */
-    public function __construct(Company $company, User $user, $export_format = 'json')
+    public function __construct(public Company $company, private User $user, public string $hash)
     {
-        $this->company = $company;
-        $this->user = $user;
-        $this->export_format = $export_format;
     }
 
     /**
      * Execute the job.
      *
-     * @return CompanyToken|null
+     * @return void
      */
     public function handle()
     {
         MultiDB::setDb($this->company->db);
 
-        $this->company = Company::where('company_key', $this->company->company_key)->first();
+        $this->company = Company::query()->where('company_key', $this->company->company_key)->first();
 
         set_time_limit(0);
 
@@ -190,7 +187,7 @@ class CompanyExport implements ShouldQueue
         })->all();
 
 
-        $this->export_data['credit_invitations'] = CreditInvitation::where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($credit) {
+        $this->export_data['credit_invitations'] = CreditInvitation::query()->where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($credit) {
             $credit = $this->transformArrayOfKeys($credit, ['company_id', 'user_id', 'client_contact_id', 'credit_id']);
 
             return $credit->makeVisible(['id']);
@@ -239,7 +236,7 @@ class CompanyExport implements ShouldQueue
         })->all();
 
 
-        $this->export_data['invoice_invitations'] = InvoiceInvitation::where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($invoice) {
+        $this->export_data['invoice_invitations'] = InvoiceInvitation::query()->where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($invoice) {
             $invoice = $this->transformArrayOfKeys($invoice, ['company_id', 'user_id', 'client_contact_id', 'invoice_id']);
 
             return $invoice->makeVisible(['id']);
@@ -283,7 +280,7 @@ class CompanyExport implements ShouldQueue
         })->all();
 
 
-        $this->export_data['quote_invitations'] = QuoteInvitation::where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($quote) {
+        $this->export_data['quote_invitations'] = QuoteInvitation::query()->where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($quote) {
             $quote = $this->transformArrayOfKeys($quote, ['company_id', 'user_id', 'client_contact_id', 'quote_id']);
 
             return $quote->makeVisible(['id']);
@@ -304,7 +301,7 @@ class CompanyExport implements ShouldQueue
         })->all();
 
 
-        $this->export_data['recurring_invoice_invitations'] = RecurringInvoiceInvitation::where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($ri) {
+        $this->export_data['recurring_invoice_invitations'] = RecurringInvoiceInvitation::query()->where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($ri) {
             $ri = $this->transformArrayOfKeys($ri, ['company_id', 'user_id', 'client_contact_id', 'recurring_invoice_id']);
 
             return $ri;
@@ -384,7 +381,7 @@ class CompanyExport implements ShouldQueue
                                         'company_id',]);
         })->all();
 
-        $this->export_data['purchase_order_invitations'] = PurchaseOrderInvitation::where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($purchase_order) {
+        $this->export_data['purchase_order_invitations'] = PurchaseOrderInvitation::query()->where('company_id', $this->company->id)->withTrashed()->cursor()->map(function ($purchase_order) {
             $purchase_order = $this->transformArrayOfKeys($purchase_order, ['company_id', 'user_id', 'vendor_contact_id', 'purchase_order_id']);
 
             return $purchase_order->makeVisible(['id']);
@@ -444,15 +441,15 @@ class CompanyExport implements ShouldQueue
 
         $path = 'backups';
 
-        Storage::makeDirectory(public_path('storage/backups/'));
+        Storage::makeDirectory(storage_path('backups/'));
 
         try {
-            mkdir(public_path('storage/backups/'));
+            mkdir(storage_path('backups/'));
         } catch(\Exception $e) {
             nlog("could not create directory");
         }
 
-        $zip_path = public_path('storage/backups/'.$file_name);
+        $zip_path = storage_path('backups/'.$file_name);
         $zip = new \ZipArchive();
 
         if ($zip->open($zip_path, \ZipArchive::CREATE)!==true) {
@@ -462,11 +459,19 @@ class CompanyExport implements ShouldQueue
         $zip->addFromString("backup.json", json_encode($this->export_data));
         $zip->close();
 
-        if (Ninja::isHosted()) {
-            Storage::disk(config('filesystems.default'))->put('backups/'.$file_name, file_get_contents($zip_path));
-        }
+        Storage::disk(config('filesystems.default'))->put('backups/'.$file_name, file_get_contents($zip_path));
 
-        $storage_file_path = Storage::disk(config('filesystems.default'))->url('backups/'.$file_name);
+        if(file_exists($zip_path))
+            unlink($zip_path);        
+
+        if(Ninja::isSelfHost())
+            $storage_path = 'backups/'.$file_name;
+        else
+            $storage_path = Storage::disk(config('filesystems.default'))->path('backups/'.$file_name);
+
+        $url = Cache::get($this->hash);
+
+        Cache::put($this->hash, $storage_path, now()->addHour());
 
         App::forgetInstance('translator');
         $t = app('translator');
@@ -475,16 +480,20 @@ class CompanyExport implements ShouldQueue
         $company_reference = Company::find($this->company->id);
 
         $nmo = new NinjaMailerObject;
-        $nmo->mailable = new DownloadBackup($storage_file_path, $company_reference);
+        $nmo->mailable = new DownloadBackup($url, $company_reference);
         $nmo->to_user = $this->user;
         $nmo->company = $company_reference;
         $nmo->settings = $this->company->settings;
         
         NinjaMailerJob::dispatch($nmo, true);
+        
+        UnlinkFile::dispatch(config('filesystems.default'), $storage_path)->delay(now()->addHours(1));
 
         if (Ninja::isHosted()) {
             sleep(3);
-            unlink($zip_path);
+            
+            if(file_exists($zip_path))
+                unlink($zip_path);
         }
     }
 }

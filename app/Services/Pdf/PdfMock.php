@@ -103,32 +103,37 @@ class PdfMock
 
         switch ($this->request['entity_type']) {
             case 'invoice':
+                /** @var \App\Models\Invoice | \App\Models\Credit | \App\Models\Quote $entity */
                 $entity = Invoice::factory()->make();
                 $entity->client = Client::factory()->make(['settings' => $settings]);
                 $entity->invitation = InvoiceInvitation::factory()->make();
                 break;
             case 'quote':
+                /** @var \App\Models\Invoice | \App\Models\Credit | \App\Models\Quote $entity */
                 $entity = Quote::factory()->make();
                 $entity->client = Client::factory()->make(['settings' => $settings]);
                 $entity->invitation = QuoteInvitation::factory()->make();
                 break;
             case 'credit':
+                /** @var \App\Models\Invoice | \App\Models\Credit | \App\Models\Quote $entity */
                 $entity = Credit::factory()->make();
                 $entity->client = Client::factory()->make(['settings' => $settings]);
                 $entity->invitation = CreditInvitation::factory()->make();
                 break;
             case 'purchase_order':
+                /** @var \App\Models\Invoice | \App\Models\Credit | \App\Models\Quote $entity */
                 $entity = PurchaseOrder::factory()->make();
                 $entity->client = Client::factory()->make(['settings' => $settings]);
                 $entity->invitation = PurchaseOrderInvitation::factory()->make();
                 break;
             case PurchaseOrder::class:
+                /** @var \App\Models\PurchaseOrder $entity */
                 $entity = PurchaseOrder::factory()->make();
                 $entity->invitation = PurchaseOrderInvitation::factory()->make();
                 $entity->vendor = Vendor::factory()->make();
                 break;
             default:
-                # code...
+                $entity = false;
                 break;
         }
 
@@ -147,11 +152,12 @@ class PdfMock
      */
     public function getMergedSettings() :object
     {
+        $settings = $this->company->settings;
+
         match ($this->request['settings_type']) {
             'group' => $settings = ClientSettings::buildClientSettings($this->company->settings, $this->request['settings']),
             'client' => $settings = ClientSettings::buildClientSettings($this->company->settings, $this->request['settings']),
-            'company' => $settings = (object)$this->request['settings'],
-            default => $settings = $this->company->settings,
+            'company' => $settings = (object)$this->request['settings']
         };
 
         $settings = CompanySettings::setProperties($settings);
@@ -163,9 +169,9 @@ class PdfMock
     /**
      * getTaxMap
      *
-     * @return void
+     * @return \Illuminate\Support\Collection
      */
-    private function getTaxMap()
+    private function getTaxMap(): \Illuminate\Support\Collection
     {
         return collect([['name' => 'GST', 'total' => 10]]);
     }
@@ -173,9 +179,9 @@ class PdfMock
     /**
      * getTotalTaxMap
      *
-     * @return void
+     * @return array
      */
-    private function getTotalTaxMap()
+    private function getTotalTaxMap(): array
     {
         return [['name' => 'GST', 'total' => 10]];
     }
@@ -183,9 +189,9 @@ class PdfMock
     /**
      * getStubVariables
      *
-     * @return void
+     * @return array
      */
-    public function getStubVariables()
+    public function getStubVariables(): array
     {
         return ['values' =>
          [
@@ -205,7 +211,7 @@ class PdfMock
     '$client.billing_address2' => '63993 Aiyana View',
     '$client.billing_address1' => '8447',
     '$client.shipping_country' => 'USA',
-    '$invoiceninja.whitelabel' => 'https://raw.githubusercontent.com/invoiceninja/invoiceninja/v5-develop/public/images/new_logo.png',
+    '$invoiceninja.whitelabel' => 'https://invoicing.co/images/new_logo.png',
     '$client.billing_address' => '8447<br/>63993 Aiyana View<br/>Aufderharchester, North Carolina 11243<br/>Afghanistan<br/>',
     '$client.billing_country' => 'USA',
     '$task.gross_line_total' => '100',
@@ -232,6 +238,9 @@ class PdfMock
     '$secondary_font_url' => 'https://fonts.googleapis.com/css2?family=Roboto&display=swap',
     '$contact.signature' => '',
     '$company_logo_size' => $this->settings->company_logo_size ?: '65%',
+    '$product.tax_rate1' => ctrans('texts.tax'),
+    '$product.tax_rate2' => ctrans('texts.tax'),
+    '$product.tax_rate3' => ctrans('texts.tax'),
     '$product.tax_name1' => '',
     '$product.tax_name2' => '',
     '$product.tax_name3' => '',
@@ -688,8 +697,11 @@ class PdfMock
             '$net_subtotal_label' => ctrans('texts.net_subtotal'),
             '$credit.total_label' => ctrans('texts.total'),
             '$quote.amount_label' => ctrans('texts.amount'),
-            '$description_label' => ctrans('texts.description'),
+            '$product.tax_rate1_label' => ctrans('texts.tax'),
+            '$product.tax_rate2_label' => ctrans('texts.tax'),
+            '$product.tax_rate3_label' => ctrans('texts.tax'),
             '$product.tax_label' => ctrans('texts.tax'),
+            '$description_label' => ctrans('texts.description'),
             '$your_entity_label' => ctrans("texts.your_{$this->entity_string}"),
             '$view_button_label' => ctrans('texts.view'),
             '$status_logo_label' => ctrans('texts.logo'),
@@ -782,9 +794,9 @@ class PdfMock
             '$amount_label' => ctrans('texts.amount'),
             '$notes_label' => ctrans('texts.notes'),
             '$terms_label' => ctrans('texts.terms'),
-            'tax_rate1_label' => ctrans('texts.tax_rate1'),
-            'tax_rate2_label' => ctrans('texts.tax_rate2'),
-            'tax_rate3_label' => ctrans('texts.tax_rate3'),
+            '$tax_rate1_label' => ctrans('texts.tax_rate1'),
+            '$tax_rate2_label' => ctrans('texts.tax_rate2'),
+            '$tax_rate3_label' => ctrans('texts.tax_rate3'),
             '$phone_label' => ctrans('texts.phone'),
             '$email_label' => ctrans('texts.email'),
             '$taxes_label' => ctrans('texts.taxes'),
@@ -811,7 +823,7 @@ class PdfMock
           '$purchase_order.due_date' => '02-12-2021',
           '$vendor.billing_address1' => '589',
           '$vendor.billing_address2' => '761 Odessa Centers Suite 673',
-          '$invoiceninja.whitelabel' => 'https://raw.githubusercontent.com/invoiceninja/invoiceninja/v5-develop/public/images/new_logo.png',
+          '$invoiceninja.whitelabel' => 'https://invoicing.co/images/new_logo.png',
           '$purchase_order.custom1' => 'Custom 1',
           '$purchase_order.custom2' => 'Custom 2',
           '$purchase_order.custom3' => 'Custom 3',

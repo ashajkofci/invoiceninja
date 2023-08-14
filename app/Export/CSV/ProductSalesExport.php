@@ -23,8 +23,6 @@ use League\Csv\Writer;
 
 class ProductSalesExport extends BaseExport
 {
-    private Company $company;
-
     public string $date_key = 'created_at';
 
     protected Collection $products;
@@ -87,7 +85,7 @@ class ProductSalesExport extends BaseExport
         $t = app('translator');
         $t->replace(Ninja::transformTranslations($this->company->settings));
 
-        $this->products = Product::where('company_id', $this->company->id)->withTrashed()->get();
+        $this->products = Product::query()->where('company_id', $this->company->id)->withTrashed()->get();
         
         //load the CSV document from a string
         $this->csv = Writer::createFromString();
@@ -189,6 +187,7 @@ class ProductSalesExport extends BaseExport
         $product = $this->getProduct($entity['product_key']);
 
         $entity['cost'] = $product->cost ?? 0;
+        /** @var float $unit_cost */
         $unit_cost = $entity['cost'] == 0 ? 1 : $entity['cost'];
 
         $entity['client'] = $invoice->client->present()->name();

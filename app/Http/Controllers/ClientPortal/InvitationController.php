@@ -11,26 +11,27 @@
 
 namespace App\Http\Controllers\ClientPortal;
 
-use App\Events\Credit\CreditWasViewed;
-use App\Events\Invoice\InvoiceWasViewed;
-use App\Events\Misc\InvitationWasViewed;
+use App\Utils\Ninja;
+use App\Models\Client;
+use App\Models\Payment;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\ClientContact;
+use App\Models\QuoteInvitation;
+use App\Utils\Traits\MakesHash;
+use App\Models\CreditInvitation;
+use App\Utils\Traits\MakesDates;
+use App\Jobs\Entity\CreateRawPdf;
+use App\Models\InvoiceInvitation;
 use App\Events\Quote\QuoteWasViewed;
 use App\Http\Controllers\Controller;
-use App\Jobs\Entity\CreateRawPdf;
-use App\Models\Client;
-use App\Models\ClientContact;
-use App\Models\CreditInvitation;
-use App\Models\InvoiceInvitation;
-use App\Models\Payment;
-use App\Models\PurchaseOrderInvitation;
-use App\Models\QuoteInvitation;
-use App\Services\ClientPortal\InstantPayment;
-use App\Utils\Ninja;
-use App\Utils\Traits\MakesDates;
-use App\Utils\Traits\MakesHash;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use App\Events\Credit\CreditWasViewed;
+use App\Events\Contact\ContactLoggedIn;
+use App\Models\PurchaseOrderInvitation;
+use App\Events\Invoice\InvoiceWasViewed;
+use App\Events\Misc\InvitationWasViewed;
+use App\Services\ClientPortal\InstantPayment;
 
 /**
  * Class InvitationController.
@@ -85,23 +86,22 @@ class InvitationController extends Controller
                                     ->with('contact.client')
                                     ->firstOrFail();
 
-        //09-03-2023 do not show entity if the invitation has been trashed.
         if ($invitation->trashed() || $invitation->{$entity}->is_deleted) {
             return $this->render('generic.not_available', ['account' => $invitation->company->account, 'company' => $invitation->company]);
         }
 
-        /* 12/01/2022 Clean up an edge case where if the contact is trashed, restore if a invitation comes back. */
         if ($invitation->contact->trashed()) {
             $invitation->contact->restore();
         }
 
-        /* Return early if we have the correct client_hash embedded */
         $client_contact = $invitation->contact;
+        event(new ContactLoggedIn($client_contact, $client_contact->company, Ninja::eventVars()));
 
         if (empty($client_contact->email)) {
             $client_contact->email = Str::random(15) . "@example.com";
-        } $client_contact->save();
-
+            $client_contact->save();
+        } 
+        
         if (request()->has('client_hash') && request()->input('client_hash') == $invitation->contact->client->client_hash) {
             request()->session()->invalidate();
             auth()->guard('contact')->loginUsingId($client_contact->id, true);
@@ -136,8 +136,11 @@ class InvitationController extends Controller
         } else {
             $is_silent = 'true';
 
+            return redirect()->route('client.'.$entity.'.show', [$entity => $this->encodePrimaryKey($invitation->{$key}), 'silent' => $is_silent]);
+
             return redirect()->route('client.'.$entity.'.show', [$entity => $this->encodePrimaryKey($invitation->{$key}), 'silent' => $is_silent])->header('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
         }
+        return redirect()->route('client.'.$entity.'.show', [$entity => $this->encodePrimaryKey($invitation->{$key})]);
 
         return redirect()->route('client.'.$entity.'.show', [$entity => $this->encodePrimaryKey($invitation->{$key})])->header('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
     }
@@ -211,7 +214,10 @@ class InvitationController extends Controller
 
     public function paymentRouter(string $contact_key, string $payment_id)
     {
+        /** @var \App\Models\ClientContact $contact **/
         $contact = ClientContact::withTrashed()->where('contact_key', $contact_key)->firstOrFail();
+        
+        /** @var \App\Models\Payment $payment **/
         $payment = Payment::find($this->decodePrimaryKey($payment_id));
 
         if ($payment->client_id != $contact->client_id) {

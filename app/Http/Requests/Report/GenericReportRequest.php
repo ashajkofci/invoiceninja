@@ -22,7 +22,11 @@ class GenericReportRequest extends Request
      */
     public function authorize() : bool
     {
-        return auth()->user()->isAdmin();
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        return $user->isAdmin() || $user->hasPermission('view_reports');
+        
     }
 
     public function rules()
@@ -33,7 +37,7 @@ class GenericReportRequest extends Request
             'start_date' => 'bail|required_if:date_range,custom|nullable|date',
             'report_keys' => 'present|array',
             'send_email' => 'required|bool',
-            'status' => 'sometimes|string|nullable|in:all,draft,sent,viewed,paid,unpaid,overdue',
+            // 'status' => 'sometimes|string|nullable|in:all,draft,sent,viewed,paid,unpaid,overdue',
         ];
     }
 

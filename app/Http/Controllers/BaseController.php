@@ -516,19 +516,11 @@ class BaseController extends Controller
                         $query->where('bank_transactions.user_id', $user->id);
                     }
                 },
-                'company.bank_transaction_rules'=> function ($query) use ($updated_at, $user) {
-                    $query->where('updated_at', '>=', $updated_at);
-
-                    if (! $user->isAdmin()) {
-                        $query->where('bank_transaction_rules.user_id', $user->id);
-                    }
+                'company.bank_transaction_rules'=> function ($query) {
+                    $query->whereNotNull('updated_at');
                 },
-                'company.task_schedulers'=> function ($query) use ($updated_at, $user) {
-                    $query->where('updated_at', '>=', $updated_at);
-
-                    if (! $user->isAdmin()) {
-                        $query->where('schedulers.user_id', $user->id);
-                    }
+                'company.task_schedulers'=> function ($query) {
+                    $query->whereNotNull('updated_at');
                 },
             ]
         );
@@ -538,10 +530,9 @@ class BaseController extends Controller
 
             $paginator = $query->paginate($limit);
 
-            /** @phpstan-ignore-next-line */
-            $query = $paginator->getCollection(); /** @phpstan-ignore-line */
-
-
+            /** @phpstan-ignore-next-line **/
+            $query = $paginator->getCollection(); 
+            
             $resource = new Collection($query, $transformer, $this->entity_type);
 
             $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
@@ -627,7 +618,7 @@ class BaseController extends Controller
                     }
                 },
                 'company.bank_transaction_rules'=> function ($query) use ($user) {
-                    if (! $user->isAdmin()) {
+                    if (! $user->isAdmin() && !$user->hasIntersectPermissions(['create_bank_transaction','edit_bank_transaction','view_bank_transaction'])) {
                         $query->where('bank_transaction_rules.user_id', $user->id);
                     }
                 },
@@ -644,7 +635,7 @@ class BaseController extends Controller
 
             $paginator = $query->paginate($limit);
 
-            /** @phpstan-ignore-next-line */
+            /** @phpstan-ignore-next-line **/
             $query = $paginator->getCollection();
             $resource = new Collection($query, $transformer, $this->entity_type);
             $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
@@ -656,24 +647,6 @@ class BaseController extends Controller
         return $this->response($this->manager->createData($resource)->toArray());
     }
 
-    /**
-     * In case a user is not an admin and is
-     * able to access multiple companies, then we
-     * need to pass back the mini load only
-     *
-     * @deprecated
-     * @return bool
-     */
-    // private function complexPermissionsUser(): bool
-    // {
-    //     //if the user is attached to more than one company AND they are not an admin across all companies
-    //     if (auth()->user()->company_users()->count() > 1 && (auth()->user()->company_users()->where('is_admin', 1)->count() != auth()->user()->company_users()->count())) {
-    //         return true;
-    //     }
-
-    //     return false;
-    // }
-    
     /**
      * Passes back the miniloaded data response
      *
@@ -911,7 +884,7 @@ class BaseController extends Controller
 
             $paginator = $query->paginate($limit);
 
-            /** @phpstan-ignore-next-line */
+            /** @phpstan-ignore-next-line **/
             $query = $paginator->getCollection();
 
             $resource = new Collection($query, $transformer, $this->entity_type);
@@ -951,6 +924,9 @@ class BaseController extends Controller
                 if ($this->entity_type == BankIntegration::class && !$user->isSuperUser() && $user->hasIntersectPermissions(['create_bank_transaction','edit_bank_transaction','view_bank_transaction'])) {
                     $query->exclude(["balance"]);
                 } //allows us to selective display bank integrations back to the user if they can view / create bank transactions but without the bank balance being present in the response
+                elseif($this->entity_type == TaxRate::class && $user->hasIntersectPermissions(['create_invoice','edit_invoice','create_quote','edit_quote','create_purchase_order','edit_purchase_order'])){
+                    // need to show tax rates if the user has the ability to create documents.
+                }
                 else {
                     $query->where('user_id', '=', $user->id);
                 }
@@ -980,9 +956,6 @@ class BaseController extends Controller
             $resource = new Collection($query, $transformer, $this->entity_type);
             $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
         }
-        //  else {
-        //     $resource = new Collection($query, $transformer, $this->entity_type);
-        // }
 
         return $this->response($this->manager->createData($resource)->toArray());
     }

@@ -35,16 +35,22 @@ class HtmlEngine
     use MakesHash;
     use DesignCalculator;
     
+    /** @var  \App\Models\Invoice | \App\Models\Credit | \App\Models\RecurringInvoice | \App\Models\Quote $entity **/
     public $entity;
 
+    /** @var  \App\Models\CreditInvitation | CreditInvitation | \App\Models\RecurringInvoiceInvitation | \App\Models\QuoteInvitation $invitation **/
     public $invitation;
 
+    /** @var \App\Models\Client $client */
     public $client;
 
+    /** @var \App\Models\ClientContact $contact */
     public $contact;
 
+    /** @var \App\Models\Company $company */
     public $company;
 
+    /** @var \App\DataMapper\CompanySettings $settings **/
     public $settings;
 
     public $entity_calc;
@@ -53,6 +59,13 @@ class HtmlEngine
 
     private $helpers;
 
+        
+    /**
+     * __construct
+     *
+     * @param  InvoiceInvitation | CreditInvitation | RecurringInvoiceInvitation | QuoteInvitation $invitation
+     * @return void
+     */
     public function __construct($invitation)
     {
         $this->invitation = $invitation;
@@ -150,7 +163,9 @@ class HtmlEngine
         $data['$payment_link'] = ['value' => $this->invitation->getPaymentLink(), 'label' => ctrans('texts.pay_now')];
         $data['$payment_qrcode'] = ['value' => $this->invitation->getPaymentQrCode(), 'label' => ctrans('texts.pay_now')];
         $data['$exchange_rate'] = ['value' => $this->entity->exchange_rate ?: ' ', 'label' => ctrans('texts.exchange_rate')];
-
+        $data['$triangular_tax'] = ['value' => ctrans('texts.triangular_tax'), 'label' => ''];
+        $data['$tax_info'] = ['value' => $this->taxLabel(), 'label' => ''];
+        
         if ($this->entity_string == 'invoice' || $this->entity_string == 'recurring_invoice') {
             $data['$entity'] = ['value' => ctrans('texts.invoice'), 'label' => ctrans('texts.invoice')];
             $data['$number'] = ['value' => $this->entity->number ?: ' ', 'label' => ctrans('texts.invoice_number')];
@@ -222,10 +237,10 @@ class HtmlEngine
             $data['$view_url'] = ['value' => $this->invitation->getLink(), 'label' => ctrans('texts.view_quote')];
             $data['$date'] = ['value' => $this->translateDate($this->entity->date, $this->client->date_format(), $this->client->locale()) ?: ' ', 'label' => ctrans('texts.quote_date')];
 
-            $data['$quote.custom1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice1', $this->entity->custom_value1, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice1')];
-            $data['$quote.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice2', $this->entity->custom_value2, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice2')];
-            $data['$quote.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice3', $this->entity->custom_value3, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice3')];
-            $data['$quote.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice4', $this->entity->custom_value4, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice4')];
+            $data['$quote.custom1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote1', $this->entity->custom_value1, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote1')];
+            $data['$quote.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote2', $this->entity->custom_value2, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote2')];
+            $data['$quote.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote3', $this->entity->custom_value3, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote3')];
+            $data['$quote.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote4', $this->entity->custom_value4, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote4')];
 
             $data['$custom1'] = &$data['$quote.custom1'];
             $data['$custom2'] = &$data['$quote.custom2'];
@@ -266,10 +281,10 @@ class HtmlEngine
             // $data['$view_link']          = ['value' => $this->invitation->getLink(), 'label' => ctrans('texts.view_credit')];
             $data['$date'] = ['value' => $this->translateDate($this->entity->date, $this->client->date_format(), $this->client->locale()) ?: ' ', 'label' => ctrans('texts.credit_date')];
 
-            $data['$credit.custom1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit1', $this->entity->custom_value1, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice1')];
-            $data['$credit.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit2', $this->entity->custom_value2, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice2')];
-            $data['$credit.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit3', $this->entity->custom_value3, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice3')];
-            $data['$credit.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit4', $this->entity->custom_value4, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice4')];
+            $data['$credit.custom1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit1', $this->entity->custom_value1, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit1')];
+            $data['$credit.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit2', $this->entity->custom_value2, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit2')];
+            $data['$credit.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit3', $this->entity->custom_value3, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit3')];
+            $data['$credit.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit4', $this->entity->custom_value4, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit4')];
 
             $data['$custom1'] = &$data['$credit.custom1'];
             $data['$custom2'] = &$data['$credit.custom2'];
@@ -356,9 +371,8 @@ class HtmlEngine
         $data['$credit.total'] = &$data['$credit.total'];
         $data['$credit.po_number'] = &$data['$invoice.po_number'];
         $data['$credit.date'] = ['value' => $this->translateDate($this->entity->date, $this->client->date_format(), $this->client->locale()), 'label' => ctrans('texts.credit_date')];
-        $data['$balance'] = ['value' => Number::formatMoney($this->entity_calc->getBalance(), $this->client) ?: ' ', 'label' => ctrans('texts.balance')];
+        $data['$balance'] = ['value' => Number::formatMoney($this->getBalance(), $this->client) ?: ' ', 'label' => ctrans('texts.balance')];
         $data['$credit.balance'] = ['value' => Number::formatMoney($this->entity_calc->getBalance(), $this->client) ?: ' ', 'label' => ctrans('texts.credit_balance')];
-
 
         $data['$invoice.balance'] = &$data['$balance'];
         $data['$taxes'] = ['value' => Number::formatMoney($this->entity_calc->getItemTotalTaxes(), $this->client) ?: ' ', 'label' => ctrans('texts.taxes')];
@@ -584,8 +598,11 @@ class HtmlEngine
 
         if ($this->settings->signature_on_pdf) {
             $data['$contact.signature'] = ['value' => $this->invitation->signature_base64, 'label' => ctrans('texts.signature')];
+            $data['$contact.signature_date'] = ['value' => $this->translateDate($this->invitation->signature_date, $this->client->date_format(), $this->client->locale()), 'label' => ctrans('texts.date')];
+            
         } else {
             $data['$contact.signature'] = ['value' => '', 'label' => ''];
+            $data['$contact.signature_date'] = ['value' => '', 'label' => ctrans('texts.date')];
         }
 
         $data['$thanks'] = ['value' => '', 'label' => ctrans('texts.thanks')];
@@ -606,7 +623,7 @@ class HtmlEngine
         $data['$secondary_font_name'] = ['value' => Helpers::resolveFont($this->settings->secondary_font)['name'], 'label' => ''];
         $data['$secondary_font_url'] = ['value' => Helpers::resolveFont($this->settings->secondary_font)['url'], 'label' => ''];
 
-        $data['$invoiceninja.whitelabel'] = ['value' => 'https://raw.githubusercontent.com/invoiceninja/invoiceninja/v5-develop/public/images/new_logo.png', 'label' => ''];
+        $data['$invoiceninja.whitelabel'] = ['value' => 'https://invoicing.co/images/new_logo.png', 'label' => ''];
 
         $data['$primary_color'] = ['value' => $this->settings->primary_color, 'label' => ''];
         $data['$secondary_color'] = ['value' => $this->settings->secondary_color, 'label' => ''];
@@ -673,6 +690,35 @@ class HtmlEngine
         array_multisort($arrKeysLength, SORT_DESC, $data);
 
         return $data;
+    }
+    
+    /**
+     * Returns a localized string for tax compliance purposes
+     *
+     * @return string
+     */
+    private function taxLabel(): string
+    {
+        $tax_label = '';
+
+        if (collect($this->entity->line_items)->contains('tax_id', \App\Models\Product::PRODUCT_TYPE_REVERSE_TAX)) {
+            $tax_label .= ctrans('texts.reverse_tax_info') . "<br>";
+        }
+
+        if((int)$this->client->country_id !== (int)$this->company->settings->country_id){
+            $tax_label .= ctrans('texts.intracommunity_tax_info') . "<br>";
+        }
+
+        return $tax_label;
+    }
+
+    private function getBalance()
+    {
+        if($this->entity->status_id == 1){
+            return $this->entity->amount;
+        }
+
+        return $this->entity->balance;
     }
 
     public function makeValues() :array

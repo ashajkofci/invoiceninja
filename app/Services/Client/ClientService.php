@@ -18,6 +18,7 @@ use App\Services\Email\Email;
 use App\Services\Email\EmailObject;
 use App\Utils\Number;
 use App\Utils\Traits\MakesDates;
+use Carbon\Carbon;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Support\Facades\DB;
 
@@ -77,10 +78,10 @@ class ClientService
 
     public function updatePaymentBalance()
     {
-        $amount = Payment::where('client_id', $this->client->id)
+        $amount = Payment::query()->where('client_id', $this->client->id)
                         ->where('is_deleted', 0)
                         ->whereIn('status_id', [Payment::STATUS_COMPLETED, Payment::STATUS_PENDING, Payment::STATUS_PARTIALLY_REFUNDED, Payment::STATUS_REFUNDED])
-                        ->sum(DB::Raw('amount - refunded - applied'));
+                        ->sum(DB::Raw('amount - applied'));
 
         DB::connection(config('database.default'))->transaction(function () use ($amount) {
             $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
@@ -114,7 +115,7 @@ class ClientService
 
     public function getCredits()
     {
-        return Credit::where('client_id', $this->client->id)
+        return Credit::query()->where('client_id', $this->client->id)
                   ->where('is_deleted', false)
                   ->where('balance', '>', 0)
                   ->where(function ($query) {
@@ -149,7 +150,13 @@ class ClientService
         $pdf = $statement->run();
 
         if ($send_email) {
-            return $this->emailStatement($pdf, $statement->options);
+            // If selected, ignore clients that don't have any invoices to put on the statement.
+            if (!empty($options['only_clients_with_invoices']) && $statement->getInvoices()->count() == 0) {
+                return false;
+            }
+
+            $this->emailStatement($pdf, $statement->options);
+            return;
         }
 
         return $pdf;
@@ -160,7 +167,6 @@ class ClientService
      *
      * @param  mixed $pdf     The pdf blob
      * @param  array  $options The statement options array
-     * @return void
      */
     private function emailStatement($pdf, array $options): void
     {

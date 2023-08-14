@@ -57,7 +57,7 @@ class PaymentIntentProcessingWebhook implements ShouldQueue
     {
         MultiDB::findAndSetDbByCompanyKey($this->company_key);
 
-        $company = Company::where('company_key', $this->company_key)->first();
+        $company = Company::query()->where('company_key', $this->company_key)->first();
 
         foreach ($this->stripe_request as $transaction) {
             if (array_key_exists('payment_intent', $transaction)) {
@@ -80,6 +80,7 @@ class PaymentIntentProcessingWebhook implements ShouldQueue
             }
         
             if (isset($transaction['payment_method'])) {
+                /** @var \App\Models\ClientGatewayToken $cgt **/
                 $cgt = ClientGatewayToken::where('token', $transaction['payment_method'])->first();
 
                 if ($cgt && $cgt->meta?->state == 'unauthorized') {
@@ -94,8 +95,7 @@ class PaymentIntentProcessingWebhook implements ShouldQueue
         if ($this->payment_completed) {
             return;
         }
-
-        $company_gateway = CompanyGateway::find($this->company_gateway_id);
+        $company_gateway = CompanyGateway::query()->find($this->company_gateway_id);
         $stripe_driver = $company_gateway->driver()->init();
 
         $charge_id = false;
@@ -123,8 +123,8 @@ class PaymentIntentProcessingWebhook implements ShouldQueue
             return;
         }
 
-        $company = Company::where('company_key', $this->company_key)->first();
-
+        $company = Company::query()->where('company_key', $this->company_key)->first();
+        
         $payment = Payment::query()
                          ->where('company_id', $company->id)
                          ->where('transaction_reference', $charge['id'])
@@ -184,7 +184,7 @@ class PaymentIntentProcessingWebhook implements ShouldQueue
 
     private function updateAchPayment($payment_hash, $client, $meta)
     {
-        $company_gateway = CompanyGateway::find($this->company_gateway_id);
+        $company_gateway = CompanyGateway::query()->find($this->company_gateway_id);
         $payment_method_type = $meta['gateway_type_id'];
         $driver = $company_gateway->driver($client)->init()->setPaymentMethod($payment_method_type);
 

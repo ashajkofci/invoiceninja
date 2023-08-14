@@ -11,17 +11,20 @@
 
 namespace App\Jobs\Bank;
 
-use App\Helpers\Bank\Yodlee\Yodlee;
+use App\Models\Company;
 use App\Libraries\MultiDB;
+use Illuminate\Bus\Queueable;
 use App\Models\BankIntegration;
 use App\Models\BankTransaction;
-use App\Models\Company;
-use App\Services\Bank\BankMatchingService;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
+use App\Helpers\Bank\Yodlee\Yodlee;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
+use App\Services\Bank\BankMatchingService;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
+use App\Notifications\Ninja\GenericNinjaAdminNotification;
+use App\Helpers\Bank\Yodlee\Transformer\AccountTransformer;
 
 class ProcessBankTransactions implements ShouldQueue
 {
@@ -70,6 +73,14 @@ class ProcessBankTransactions implements ShouldQueue
                 $this->processTransactions();
             } catch(\Exception $e) {
                 nlog("{$this->bank_integration_account_id} - exited abnormally => ". $e->getMessage());
+
+                $content = [
+                    "Processing transactions for account: {$this->bank_integration->account->key} failed",
+                    "Exception Details => ",
+                    $e->getMessage(),
+                ];
+
+                $this->bank_integration->company->notification(new GenericNinjaAdminNotification($content))->ninja();
                 return;
             }
         } while ($this->stop_loop);
@@ -87,6 +98,26 @@ class ProcessBankTransactions implements ShouldQueue
             $this->bank_integration->save();
             $this->stop_loop = false;
             return;
+        }
+
+        try {
+            $account_summary = $yodlee->getAccountSummary($this->bank_integration->bank_account_id);
+
+            if($account_summary) {
+
+                $at = new AccountTransformer();
+                $account = $at->transform($account_summary);
+
+                if($account[0]['current_balance']) {
+                    $this->bank_integration->balance = $account[0]['current_balance'];
+                    $this->bank_integration->currency = $account[0]['account_currency'];
+                    $this->bank_integration->save();
+                }
+                
+            }
+        }
+        catch(\Exception $e) {
+            nlog("YODLEE: unable to update account summary for {$this->bank_integration->bank_account_id} => ". $e->getMessage());
         }
 
         $data = [
@@ -127,7 +158,7 @@ class ProcessBankTransactions implements ShouldQueue
         $now = now();
         
         foreach ($transactions as $transaction) {
-            if (BankTransaction::where('transaction_id', $transaction['transaction_id'])->where('company_id', $this->company->id)->withTrashed()->exists()) {
+            if (BankTransaction::query()->where('transaction_id', $transaction['transaction_id'])->where('company_id', $this->company->id)->withTrashed()->exists()) {
                 continue;
             }
 
@@ -151,5 +182,16 @@ class ProcessBankTransactions implements ShouldQueue
             $this->bank_integration->from_date = now()->subDays(2);
             $this->bank_integration->save();
         }
+    }
+
+
+    public function middleware()
+    {
+        return [new WithoutOverlapping($this->bank_integration_account_id)];
+    }
+    
+    public function backoff()
+    {
+        return [rand(10, 15), rand(30, 40), rand(60, 79), rand(160, 200), rand(3000, 5000)];
     }
 }

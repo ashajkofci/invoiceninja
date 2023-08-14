@@ -16,7 +16,6 @@ use App\Models\Invoice;
 use App\Models\Product;
 use App\DataProviders\USStates;
 use App\DataMapper\Tax\ZipTax\Response;
-use App\Services\Tax\Providers\TaxProvider;
 
 class BaseRule implements RuleInterface
 {
@@ -198,23 +197,14 @@ class BaseRule implements RuleInterface
             }
 
             /** If we are in a Origin based state, force the company tax here */
-            if($company->origin_tax_data?->originDestination == 'O' && ($company->tax_data?->seller_subregion == $this->client_subregion)) {
+            if($company->origin_tax_data->originDestination == 'O' && ($company->tax_data?->seller_subregion == $this->client_subregion)) {
 
                 $tax_data = $company->origin_tax_data;
 
             }
-            else{
-                
-                /** Ensures the client tax data has been updated */
-                // if(!$this->client->tax_data && \DB::transactionLevel() == 0) {
- 
-                    // $tp = new TaxProvider($company, $this->client);
-                    // $tp->updateClientTaxData();
-                    // $this->client->fresh();
-                // }
-                
-                if($this->client->tax_data)
-                    $tax_data = $this->client->tax_data;
+            elseif($this->client->tax_data){
+                               
+                $tax_data = $this->client->tax_data;
 
             }
 
@@ -245,7 +235,7 @@ class BaseRule implements RuleInterface
         $this->client_region = $this->region_codes[$this->client->country->iso_3166_2];
 
         match($this->client_region){
-            'US' => $this->client_subregion = strlen($this->invoice?->client?->tax_data?->geoState) > 1 ? $this->invoice->client->tax_data->geoState : $this->getUSState(),
+            'US' => $this->client_subregion = isset($this->invoice?->client?->tax_data?->geoState) ? $this->invoice->client->tax_data->geoState : $this->getUSState(),
             'EU' => $this->client_subregion = $this->client->country->iso_3166_2,
             'AU' => $this->client_subregion = 'AU',
             default => $this->client_subregion = $this->client->country->iso_3166_2,
@@ -273,7 +263,8 @@ class BaseRule implements RuleInterface
 
     public function isTaxableRegion(): bool
     {
-        return $this->client->company->tax_data->regions->{$this->client_region}->tax_all_subregions || $this->client->company->tax_data->regions->{$this->client_region}->subregions->{$this->client_subregion}->apply_tax;
+        return $this->client->company->tax_data->regions->{$this->client_region}->tax_all_subregions || 
+        (property_exists($this->client->company->tax_data->regions->{$this->client_region}->subregions, $this->client_subregion) && $this->client->company->tax_data->regions->{$this->client_region}->subregions->{$this->client_subregion}->apply_tax);
     }
 
     public function defaultForeign(): self

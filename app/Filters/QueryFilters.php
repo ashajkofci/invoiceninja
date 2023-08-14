@@ -11,7 +11,6 @@
 
 namespace App\Filters;
 
-//use Illuminate\Database\Query\Builder;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -73,8 +72,8 @@ abstract class QueryFilters
     /**
      * Apply the filters to the builder.
      *
-     * @param  Builder $builder
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder $builder
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function apply(Builder $builder)
     {
@@ -138,6 +137,7 @@ abstract class QueryFilters
      */
     public function status(string $filter = ''): Builder
     {
+
         if (strlen($filter) == 0) {
             return $this->builder;
         }
@@ -146,17 +146,17 @@ abstract class QueryFilters
 
         return $this->builder->where(function ($query) use ($filters) {
             if (in_array(self::STATUS_ACTIVE, $filters)) {
-                $query->orWhereNull('deleted_at');
+                $query = $query->orWhereNull('deleted_at');
             }
 
             if (in_array(self::STATUS_ARCHIVED, $filters)) {
-                $query->orWhere(function ($query) {
-                    $query->whereNotNull('deleted_at')->where('is_deleted', 0);
+                $query = $query->orWhere(function ($q) {
+                    $q->whereNotNull('deleted_at')->where('is_deleted', 0);
                 });
             }
 
             if (in_array(self::STATUS_DELETED, $filters)) {
-                $query->orWhere('is_deleted', 1);
+                $query = $query->orWhere('is_deleted', 1);
             }
         });
     }
@@ -239,7 +239,11 @@ abstract class QueryFilters
         }
     }
 
-
+    /**
+     *
+     * @param string $value
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function is_deleted($value = 'true')
     {
         if ($value == 'true') {
@@ -286,6 +290,31 @@ abstract class QueryFilters
 
         return $this->builder;
     }
+
+    /**
+     * @return Builder
+     */
+    public function without_deleted_clients(): Builder
+    {
+        return $this->builder->where(function ($query) {
+            $query->whereHas('client', function ($sub_query) {
+                $sub_query->where('is_deleted', 0);
+            })->orWhere('client_id', null);
+        });
+    }
+
+    /**
+     * @return Builder
+     */
+    public function without_deleted_vendors(): Builder
+    {
+        return $this->builder->where(function ($query) {
+            $query->whereHas('vendor', function ($sub_query) {
+                $sub_query->where('is_deleted', 0);
+            })->orWhere('vendor_id', null);
+        });
+    }
+
 
     public function with(string $value = ''): Builder
     {

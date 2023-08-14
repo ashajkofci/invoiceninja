@@ -11,12 +11,14 @@
 
 namespace App\Filters;
 
+use RuntimeException;
+use App\Models\Client;
 use App\Models\Invoice;
+use App\Filters\QueryFilters;
+use InvalidArgumentException;
+use Illuminate\Support\Carbon;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
-use InvalidArgumentException;
-use RuntimeException;
 
 /**
  * InvoiceFilters.
@@ -52,6 +54,10 @@ class InvoiceFilters extends QueryFilters
 
         $this->builder->where(function ($query) use ($status_parameters) {
             $invoice_filters = [];
+
+            if (in_array('draft', $status_parameters)) {
+                $invoice_filters[] = Invoice::STATUS_DRAFT;
+            }
 
             if (in_array('paid', $status_parameters)) {
                 $invoice_filters[] = Invoice::STATUS_PAID;
@@ -129,19 +135,6 @@ class InvoiceFilters extends QueryFilters
 
     }
 
-
-
-    /**
-     * @return Builder
-     * @throws RuntimeException
-     */
-    public function without_deleted_clients(): Builder
-    {
-        return $this->builder->whereHas('client', function ($query) {
-            $query->where('is_deleted', 0);
-        });
-    }
-
     /**
      * @return Builder
      * @return Builder
@@ -190,6 +183,48 @@ class InvoiceFilters extends QueryFilters
                              ->where('client_id', $this->decodePrimaryKey($client_id));
     }
 
+
+    /**
+     * @param string $date
+     * @return Builder
+     * @throws InvalidArgumentException
+     */
+    public function date(string $date = ''): Builder
+    {
+        if (strlen($date) == 0) {
+            return $this->builder;
+        }
+
+        if (is_numeric($date)) {
+            $date = Carbon::createFromTimestamp((int)$date);
+        } else {
+            $date = Carbon::parse($date);
+        }
+
+        return $this->builder->where('date', '>=', $date);
+    }
+
+    /**
+     * @param string $date
+     * @return Builder
+     * @throws InvalidArgumentException
+     */
+    public function due_date(string $date = ''): Builder
+    {
+        if (strlen($date) == 0) {
+            return $this->builder;
+        }
+
+        if (is_numeric($date)) {
+            $date = Carbon::createFromTimestamp((int)$date);
+        } else {
+            $date = Carbon::parse($date);
+        }
+
+        return $this->builder->where('due_date', '>=', $date);
+    }
+
+
     /**
      * Sorts the list based on $sort.
      *
@@ -202,6 +237,13 @@ class InvoiceFilters extends QueryFilters
 
         if (!is_array($sort_col) || count($sort_col) != 2) {
             return $this->builder;
+        }
+
+        if ($sort_col[0] == 'client_id') {
+
+            return $this->builder->orderBy(\App\Models\Client::select('name')
+                             ->whereColumn('clients.id', 'invoices.client_id'), $sort_col[1]);
+            
         }
 
         return $this->builder->orderBy($sort_col[0], $sort_col[1]);

@@ -56,9 +56,10 @@ class DocumentController extends Controller
     {
         MultiDB::documentFindAndSetDb($document_hash);
 
+        /** @var \App\Models\Document $document **/
         $document = Document::where('hash', $document_hash)->firstOrFail();
 
-        $headers = [];
+        $headers = ['Cache-Control:' => 'no-cache'];
 
         if (request()->input('inline') == 'true') {
             $headers = array_merge($headers, ['Content-Disposition' => 'inline']);
@@ -69,7 +70,8 @@ class DocumentController extends Controller
 
     public function downloadMultiple(DownloadMultipleDocumentsRequest $request)
     {
-        $documents = Document::whereIn('id', $this->transformKeys($request->file_hash))
+        /** @var \Illuminate\Database\Eloquent\Collection<Document> $documents **/
+        $documents = Document::query()->whereIn('id', $this->transformKeys($request->file_hash))
             ->where('company_id', auth()->guard('contact')->user()->company_id)
             ->get();
 

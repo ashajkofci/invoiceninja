@@ -133,7 +133,7 @@ class CompanyTransformer extends EntityTransformer
             'show_product_details' => (bool) $company->show_product_details,
             'enable_product_quantity' => (bool) $company->enable_product_quantity,
             'default_quantity' => (bool) $company->default_quantity,
-            'custom_fields' => $company->custom_fields ?? $std,
+            'custom_fields' =>  (object) $company->custom_fields ?? $std,
             'size_id' => (string) $company->size_id ?: '',
             'industry_id' => (string) $company->industry_id ?: '',
             'first_month_of_year' => (string) $company->first_month_of_year ?: '',
@@ -201,6 +201,9 @@ class CompanyTransformer extends EntityTransformer
             'tax_data' => $company->tax_data ?: new \stdClass,
             'has_e_invoice_certificate' => $company->e_invoice_certificate ? true : false,
             'has_e_invoice_certificate_passphrase' => $company->e_invoice_certificate_passphrase ? true : false,
+            'invoice_task_project_header' => (bool) $company->invoice_task_project_header,
+            'invoice_task_item_description' => (bool) $company->invoice_task_item_description,
+            'origin_tax_data' => $company->origin_tax_data ?: new \stdClass,
         ];
     }
 

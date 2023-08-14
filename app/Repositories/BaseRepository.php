@@ -11,18 +11,19 @@
 
 namespace App\Repositories;
 
-use App\Jobs\Product\UpdateOrCreateProduct;
-use App\Models\Client;
-use App\Models\ClientContact;
-use App\Models\Company;
-use App\Models\Credit;
-use App\Models\Invoice;
-use App\Models\Quote;
-use App\Models\RecurringInvoice;
-use App\Utils\Helpers;
 use App\Utils\Ninja;
+use App\Models\Quote;
+use App\Models\Client;
+use App\Models\Credit;
+use App\Utils\Helpers;
+use App\Models\Company;
+use App\Models\Invoice;
+use App\Models\ClientContact;
 use App\Utils\Traits\MakesHash;
+use App\Models\RecurringInvoice;
+use App\Jobs\Client\UpdateTaxData;
 use App\Utils\Traits\SavesDocuments;
+use App\Jobs\Product\UpdateOrCreateProduct;
 
 class BaseRepository
 {
@@ -164,6 +165,7 @@ class BaseRepository
 
         if (! $model->id) {
             $company_defaults = $client->setCompanyDefaults($data, lcfirst($resource));
+            $data['exchange_rate'] = $company_defaults['exchange_rate'];
             $model->uses_inclusive_taxes = $client->getSetting('inclusive_taxes');
             $data = array_merge($company_defaults, $data);
         }
@@ -222,7 +224,7 @@ class BaseRepository
             /* Get array of Keys which have been removed from the invitations array and soft delete each invitation */
             $model->invitations->pluck('key')->diff($invitations->pluck('key'))->each(function ($invitation) use ($resource) {
                 $invitation_class = sprintf('App\\Models\\%sInvitation', $resource);
-                $invitation = $invitation_class::where('key', $invitation)->first();
+                $invitation = $invitation_class::query()->where('key', $invitation)->first();
 
                 if ($invitation) {
                     $invitation->delete();
@@ -308,6 +310,11 @@ class BaseRepository
             } else {
                 event('eloquent.updated: App\Models\Invoice', $model);
             }
+
+            /** If the client does not have tax_data - then populate this now */
+            if($client->country_id == 840 && !$client->tax_data && $model->company->calculate_taxes && !$model->company->account->isFreeHostedClient())
+                UpdateTaxData::dispatch($client, $client->company);
+
         }
 
         if ($model instanceof Credit) {

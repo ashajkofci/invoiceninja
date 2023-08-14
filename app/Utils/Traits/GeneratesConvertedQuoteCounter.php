@@ -69,7 +69,7 @@ trait GeneratesConvertedQuoteCounter
 
         $number = $this->applyNumberPattern($invoice, $number, $pattern);
 
-        $check = Invoice::whereCompanyId($client->company_id)->whereNumber($number)->withTrashed()->exists();
+        $check = Invoice::query()->whereCompanyId($client->company_id)->whereNumber($number)->withTrashed()->exists();
 
         if ($check) {
             return false;
@@ -650,7 +650,7 @@ trait GeneratesConvertedQuoteCounter
             $replace[] = str_pad(($user_id), 2, '0', STR_PAD_LEFT);
         }
 
-        $matches = false;
+        $matches = [];
         preg_match('/{\$date:(.*?)}/', $pattern, $matches);
         if (count($matches) > 1) {
             $format = $matches[1];

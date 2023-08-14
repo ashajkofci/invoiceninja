@@ -48,7 +48,7 @@ class InvoiceService
 
         return $this;
     }
-    
+
     /**
      * applyPaymentAmount
      *
@@ -78,9 +78,9 @@ class InvoiceService
      * Sets the exchange rate on the invoice if the client currency
      * is different to the company currency.
      */
-    public function setExchangeRate()
+    public function setExchangeRate($force = false)
     {
-        if ($this->invoice->exchange_rate != 1) {
+        if ($this->invoice->exchange_rate != 1 || $force) {
             return $this;
         }
 
@@ -115,7 +115,6 @@ class InvoiceService
      */
     public function applyPayment(Payment $payment, float $payment_amount)
     {
-        // $this->deletePdf();
         $this->invoice = $this->markSent()->save();
 
         $this->invoice = (new ApplyPayment($this->invoice, $payment, $payment_amount))->run();
@@ -195,9 +194,13 @@ class InvoiceService
 
     public function getEInvoice($contact = null)
     {
-        return (new GetInvoiceXInvoice($this->invoice, $contact))->run();
+        return (new GetInvoiceEInvoice($this->invoice, $contact))->run();
     }
 
+    public function mergeEInvoice($contact = null): void
+    {
+        (new MergeEInvoice($this->invoice, $contact))->run();
+    }
     public function sendEmail($contact = null)
     {
         $send_email = new SendEmail($this->invoice, null, $contact);
@@ -339,7 +342,7 @@ class InvoiceService
                                          return $item;
                                      })->toArray();
 
-        $this->touchPdf();
+        $this->deletePdf();
 
         return $this;
     }
@@ -348,13 +351,15 @@ class InvoiceService
     {
         $this->invoice->load('invitations');
 
+        //30-06-2023
         $this->invoice->invitations->each(function ($invitation) {
             try {
-                if (Storage::disk(config('filesystems.default'))->exists($this->invoice->client->invoice_filepath($invitation).$this->invoice->numberFormatter().'.pdf')) {
+                // if (Storage::disk(config('filesystems.default'))->exists($this->invoice->client->invoice_filepath($invitation).$this->invoice->numberFormatter().'.pdf')) {
                     Storage::disk(config('filesystems.default'))->delete($this->invoice->client->invoice_filepath($invitation).$this->invoice->numberFormatter().'.pdf');
-                }
+                // }
 
-                if (Ninja::isHosted() && Storage::disk('public')->exists($this->invoice->client->invoice_filepath($invitation).$this->invoice->numberFormatter().'.pdf')) {
+                // if (Ninja::isHosted() && Storage::disk('public')->exists($this->invoice->client->invoice_filepath($invitation).$this->invoice->numberFormatter().'.pdf')) {
+                if (Ninja::isHosted()) {
                     Storage::disk('public')->delete($this->invoice->client->invoice_filepath($invitation).$this->invoice->numberFormatter().'.pdf');
                 }
             } catch (\Exception $e) {
@@ -371,11 +376,12 @@ class InvoiceService
 
         $this->invoice->invitations->each(function ($invitation) {
             try {
-                if (Storage::disk(config('filesystems.default'))->exists($this->invoice->client->e_invoice_filepath($invitation).$this->invoice->getFileName("xml"))) {
+                // if (Storage::disk(config('filesystems.default'))->exists($this->invoice->client->e_invoice_filepath($invitation).$this->invoice->getFileName("xml"))) {
                     Storage::disk(config('filesystems.default'))->delete($this->invoice->client->e_invoice_filepath($invitation).$this->invoice->getFileName("xml"));
-                }
+                // }
 
-                if (Ninja::isHosted() && Storage::disk('public')->exists($this->invoice->client->e_invoice_filepath($invitation).$this->invoice->getFileName("xml"))) {
+                // if (Ninja::isHosted() && Storage::disk('public')->exists($this->invoice->client->e_invoice_filepath($invitation).$this->invoice->getFileName("xml"))) {
+                if (Ninja::isHosted()) {
                     Storage::disk('public')->delete($this->invoice->client->e_invoice_filepath($invitation).$this->invoice->getFileName("xml"));
                 }
             } catch (\Exception $e) {
@@ -403,7 +409,7 @@ class InvoiceService
                                      })->toArray();
 
         $this->invoice = $this->invoice->calc()->getInvoice();
-        $this->touchPdf();
+        $this->deletePdf();
 
         /* 24-03-2022 */
         $new_balance = $this->invoice->balance;
@@ -535,8 +541,8 @@ class InvoiceService
             return $item;
         });
 
-        Task::whereIn('id', $tasks->pluck('task_id'))->update(['invoice_id' => $this->invoice->id]);
-        Expense::whereIn('id', $tasks->pluck('expense_id'))->update(['invoice_id' => $this->invoice->id]);
+        Task::query()->whereIn('id', $tasks->pluck('task_id'))->update(['invoice_id' => $this->invoice->id]);
+        Expense::query()->whereIn('id', $tasks->pluck('expense_id'))->update(['invoice_id' => $this->invoice->id]);
 
         return $this;
     }

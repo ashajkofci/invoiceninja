@@ -52,7 +52,7 @@ class RequiredClientInfo extends Component
     public $contact;
 
     /**
-     * @var Client
+     * @var \App\Models\Client
      */
     public $client;
 
@@ -227,6 +227,7 @@ class RequiredClientInfo extends Component
             ->push();
 
         if ($contact_update && $client_update) {
+            /** @var \App\Models\CompanyGateway $cg */
             $cg = CompanyGateway::find($this->company_gateway_id);
 
             if ($cg && $cg->update_details) {
@@ -257,7 +258,8 @@ class RequiredClientInfo extends Component
             }
 
             if (Str::startsWith($field['name'], 'contact_')) {
-                if (empty($this->contact->{$_field}) || is_null($this->contact->{$_field})) {
+                
+                if (empty($this->contact->{$_field}) || is_null($this->contact->{$_field}) || str_contains($this->contact->{$_field}, '@example.com')) {
                     $this->show_form = true;
                 } else {
                     $this->fields[$index]['filled'] = true;

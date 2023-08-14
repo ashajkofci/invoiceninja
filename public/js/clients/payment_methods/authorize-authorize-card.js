@@ -29,6 +29,14 @@ var AuthorizeAuthorizeCard = /*#__PURE__*/function () {
   _createClass(AuthorizeAuthorizeCard, [{
     key: "handleAuthorization",
     value: function handleAuthorization() {
+      if (cvvRequired == "1" && document.getElementById("cvv").value.length < 3) {
+        var $errors = $('#errors');
+        $errors.show().html("<p>CVV is required</p>");
+        document.getElementById('card_button').disabled = false;
+        document.querySelector('#card_button > svg').classList.add('hidden');
+        document.querySelector('#card_button > span').classList.remove('hidden');
+        return;
+      }
       var myCard = $('#my-card');
       var authData = {};
       authData.clientKey = this.publicKey;
@@ -80,6 +88,7 @@ var AuthorizeAuthorizeCard = /*#__PURE__*/function () {
 }();
 var publicKey = document.querySelector('meta[name="authorize-public-key"]').content;
 var loginId = document.querySelector('meta[name="authorize-login-id"]').content;
+var cvvRequired = document.querySelector('meta[name="authnet-require-cvv"]').content;
 
 /** @handle */
 new AuthorizeAuthorizeCard(publicKey, loginId).handle();

@@ -21,14 +21,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $company_id
  * @property int $user_id
  * @property string $gateway_key
- * @property int $accepted_credit_cards
- * @property int $require_cvv
- * @property int|null $require_billing_address
- * @property int|null $require_shipping_address
- * @property int|null $update_details
- * @property int $is_deleted
+ * @property bool $accepted_credit_cards
+ * @property bool $require_cvv
+ * @property bool $require_billing_address
+ * @property bool $require_shipping_address
+ * @property bool $update_details
+ * @property bool $is_deleted
  * @property string $config
- * @property object $fees_and_limits
+ * @property mixed $fees_and_limits
  * @property string|null $custom_value1
  * @property string|null $custom_value2
  * @property string|null $custom_value3
@@ -38,73 +38,31 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $deleted_at
  * @property string $token_billing
  * @property string|null $label
- * @property int $require_client_name
- * @property int $require_postal_code
- * @property int $require_client_phone
- * @property int $require_contact_name
- * @property int $require_contact_email
- * @property int $require_custom_value1
- * @property int $require_custom_value2
- * @property int $require_custom_value3
- * @property int $require_custom_value4
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
+ * @property bool $require_client_name
+ * @property bool $require_postal_code
+ * @property bool $require_client_phone
+ * @property bool $require_contact_name
+ * @property bool $require_contact_email
+ * @property bool $require_custom_value1
+ * @property bool $require_custom_value2
+ * @property bool $require_custom_value3
+ * @property bool $require_custom_value4
  * @property-read int|null $client_gateway_tokens_count
  * @property-read \App\Models\Company $company
  * @property-read \App\Models\Gateway $gateway
  * @property-read mixed $hashed_id
+ * @method getConfigField(string $field)
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel company()
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel exclude($columns)
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway filter(\App\Filters\QueryFilters $filters)
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway query()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel scope()
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereAcceptedCreditCards($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereCompanyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereConfig($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereCustomValue1($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereCustomValue2($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereCustomValue3($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereCustomValue4($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereFeesAndLimits($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereGatewayKey($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereIsDeleted($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereLabel($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireBillingAddress($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireClientName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireClientPhone($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireContactEmail($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireContactName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireCustomValue1($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireCustomValue2($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireCustomValue3($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireCustomValue4($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireCvv($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequirePostalCode($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereRequireShippingAddress($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereTokenBilling($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereUpdateDetails($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway withoutTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway find()
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientGatewayToken> $client_gateway_tokens
+ * @method static CompanyGateway find($value) 
  * @mixin \Eloquent
  */
 class CompanyGateway extends BaseModel
@@ -209,17 +167,17 @@ class CompanyGateway extends BaseModel
                     ->take(50);
     }
 
-    public function company()
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
 
-    public function client_gateway_tokens()
+    public function client_gateway_tokens(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ClientGatewayToken::class);
     }
 
-    public function gateway()
+    public function gateway(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Gateway::class, 'gateway_key', 'key');
     }
@@ -232,7 +190,8 @@ class CompanyGateway extends BaseModel
     /* This is the public entry point into the payment superclass */
     public function driver(Client $client = null)
     {
-        $class = static::driver_class();
+        // $class = static::driver_class();
+        $class = self::driver_class();
 
         if (!$class) {
             return false;
@@ -343,10 +302,10 @@ class CompanyGateway extends BaseModel
         return ! empty($this->getConfigField('enable_pay_pal'));
     }
 
-    public function feesEnabled()
-    {
-        return floatval($this->fee_amount) || floatval($this->fee_percent);
-    }
+    // public function feesEnabled()
+    // {
+    //     return floatval($this->fee_amount) || floatval($this->fee_percent);
+    // }
 
     /**
      * Returns the current test mode of the gateway.

@@ -11,22 +11,29 @@
 
 namespace App\Http\Controllers\ClientPortal;
 
-use App\Events\Invoice\InvoiceWasViewed;
-use App\Events\Misc\InvitationWasViewed;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\ClientPortal\Invoices\ProcessInvoicesInBulkRequest;
-use App\Http\Requests\ClientPortal\Invoices\ShowInvoiceRequest;
-use App\Http\Requests\ClientPortal\Invoices\ShowInvoicesRequest;
-use App\Models\Invoice;
 use App\Utils\Ninja;
 use App\Utils\Number;
-use App\Utils\Traits\MakesDates;
-use App\Utils\Traits\MakesHash;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use App\Models\Invoice;
 use Illuminate\View\View;
+use Illuminate\Http\Request;
+use App\Models\QuoteInvitation;
+use App\Utils\Traits\MakesHash;
+use App\Models\CreditInvitation;
+use App\Utils\Traits\MakesDates;
+use App\Models\InvoiceInvitation;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Contracts\View\Factory;
+use App\Models\PurchaseOrderInvitation;
+use Illuminate\Support\Facades\Storage;
+use App\Events\Invoice\InvoiceWasViewed;
+use App\Events\Misc\InvitationWasViewed;
+use App\Models\RecurringInvoiceInvitation;
+use App\Jobs\Vendor\CreatePurchaseOrderPdf;
+use App\Http\Requests\ClientPortal\Invoices\ShowInvoiceRequest;
+use App\Http\Requests\ClientPortal\Invoices\ShowInvoicesRequest;
+use App\Http\Requests\ClientPortal\Invoices\ProcessInvoicesInBulkRequest;
 
 class InvoiceController extends Controller
 {
@@ -77,6 +84,29 @@ class InvoiceController extends Controller
         return $this->render('invoices.show', $data);
     }
 
+    public function showBlob($hash)
+    {
+        $data = Cache::get($hash);
+        $invitation = false;
+        
+        match($data['entity_type']){
+            'invoice' => $invitation = InvoiceInvitation::withTrashed()->find($data['invitation_id']),
+            'quote' => $invitation = QuoteInvitation::withTrashed()->find($data['invitation_id']),
+            'credit' => $invitation = CreditInvitation::withTrashed()->find($data['invitation_id']),
+            'recurring_invoice' => $invitation = RecurringInvoiceInvitation::withTrashed()->find($data['invitation_id']),
+        };
+
+        if (! $invitation) {
+            return redirect('/');
+        }
+
+        $file = (new \App\Jobs\Entity\CreateRawPdf($invitation, $invitation->company->db))->handle();
+        
+        $headers = ['Content-Type' => 'application/pdf'];
+        return response()->make($file, 200, $headers);
+
+    }
+
     /**
      * Pay one or more invoices.
      *
@@ -103,7 +133,8 @@ class InvoiceController extends Controller
 
     public function downloadInvoices($ids)
     {
-        $data['invoices'] = Invoice::whereIn('id', $ids)
+        $data['invoices'] = Invoice::query()
+                            ->whereIn('id', $ids)
                             ->whereClientId(auth()->guard('contact')->user()->client->id)
                             ->withTrashed()
                             ->get();
@@ -128,7 +159,8 @@ class InvoiceController extends Controller
      */
     private function makePayment(array $ids)
     {
-        $invoices = Invoice::whereIn('id', $ids)
+        $invoices = Invoice::query()
+                            ->whereIn('id', $ids)
                             ->whereClientId(auth()->guard('contact')->user()->client->id)
                             ->withTrashed()
                             ->get();
@@ -190,7 +222,8 @@ class InvoiceController extends Controller
      */
     private function downloadInvoicePDF(array $ids)
     {
-        $invoices = Invoice::whereIn('id', $ids)
+        $invoices = Invoice::query()
+                            ->whereIn('id', $ids)
                             ->withTrashed()
                             ->whereClientId(auth()->guard('contact')->user()->client->id)
                             ->get();
@@ -205,8 +238,6 @@ class InvoiceController extends Controller
             $invoice = $invoices->first();
 
             $file = $invoice->service()->getInvoicePdf(auth()->guard('contact')->user());
-
-            // return response()->download(file_get_contents(public_path($file)));
 
             return response()->streamDownload(function () use ($file) {
                 echo Storage::get($file);

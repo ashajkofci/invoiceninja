@@ -19,7 +19,6 @@ use App\Models\Invoice;
 use App\Utils\Ninja;
 use App\Utils\Number;
 use App\Utils\Traits\MakesDates;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\App;
 use League\Csv\Writer;
 
@@ -32,6 +31,8 @@ class ARSummaryReport extends BaseExport
     public string $date_key = 'created_at';
 
     public Client $client;
+
+    private float $total = 0;
 
     public array $report_keys = [
         'client_name',
@@ -101,7 +102,7 @@ class ARSummaryReport extends BaseExport
     {
         $this->client = $client;
 
-        return [
+        $row = [
             $this->client->present()->name(),
             $this->client->number,
             $this->client->id_number,
@@ -111,7 +112,12 @@ class ARSummaryReport extends BaseExport
             $this->getAgingAmount('90'),
             $this->getAgingAmount('120'),
             $this->getAgingAmount('120+'),
+            Number::formatMoney($this->total, $this->client),
         ];
+        
+        $this->total = 0;
+
+        return $row;
     }
 
     private function getCurrent(): string
@@ -123,10 +129,12 @@ class ARSummaryReport extends BaseExport
             ->where('balance', '>', 0)
             ->where('is_deleted', 0)
             ->where(function ($query){
-                $query->where('due_date', '<', now()->startOfDay())
+                $query->where('due_date', '>', now()->startOfDay())
                     ->orWhereNull('due_date');
             })
             ->sum('balance');
+
+        $this->total += $amount;
 
         return Number::formatMoney($amount, $this->client);
 
@@ -153,6 +161,8 @@ class ARSummaryReport extends BaseExport
             ->whereBetween('due_date', [$to, $from])
             ->sum('balance');
 
+            $this->total += $amount;
+
         return Number::formatMoney($amount, $this->client);
     }
 
@@ -173,22 +183,22 @@ class ARSummaryReport extends BaseExport
 
                 return $ranges;
             case '60':
-                $ranges[0] = now()->startOfDay()->subDays(30);
+                $ranges[0] = now()->startOfDay()->subDays(31);
                 $ranges[1] = now()->startOfDay()->subDays(60);
 
                 return $ranges;
             case '90':
-                $ranges[0] = now()->startOfDay()->subDays(60);
+                $ranges[0] = now()->startOfDay()->subDays(61);
                 $ranges[1] = now()->startOfDay()->subDays(90);
 
                 return $ranges;
             case '120':
-                $ranges[0] = now()->startOfDay()->subDays(90);
+                $ranges[0] = now()->startOfDay()->subDays(91);
                 $ranges[1] = now()->startOfDay()->subDays(120);
 
                 return $ranges;
             case '120+':
-                $ranges[0] = now()->startOfDay()->subDays(120);
+                $ranges[0] = now()->startOfDay()->subDays(121);
                 $ranges[1] = now()->startOfDay()->subYears(20);
 
                 return $ranges;
