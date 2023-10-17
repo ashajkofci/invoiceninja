@@ -424,7 +424,7 @@ class CompanyController extends BaseController
         $company = $this->company_repo->save($request->all(), $company);
 
         if ($request->has('documents')) {
-            $this->saveDocuments($request->input('documents'), $company, false);
+            $this->saveDocuments($request->input('documents'), $company, $request->input('is_public', true));
         }
 
         if($request->has('e_invoice_certificate') && !is_null($request->file("e_invoice_certificate"))){
@@ -616,7 +616,7 @@ class CompanyController extends BaseController
         }
 
         if ($request->has('documents')) {
-            $this->saveDocuments($request->file('documents'), $company);
+            $this->saveDocuments($request->file('documents'), $company, $request->input('is_public', true));
         }
 
         return $this->itemResponse($company->fresh());
@@ -696,5 +696,20 @@ class CompanyController extends BaseController
             return response()->json(['message' => 'Tax configuration not available due to settings / plan restriction.'], 400);
 
         return $this->itemResponse($company->fresh());
+    }
+
+    public function logo()
+    {
+
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $company = $user->company();
+        $logo = strlen($company->settings->company_logo) > 5 ? $company->settings->company_logo : 'https://pdf.invoicing.co/favicon-v2.png';
+        $headers = ['Content-Disposition' => 'inline'];
+     
+        return response()->streamDownload(function () use ($logo){
+            echo @file_get_contents($logo);
+        }, 'logo.png', $headers);
+
     }
 }

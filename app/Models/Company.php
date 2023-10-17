@@ -707,6 +707,7 @@ class Company extends BaseModel
     
     public function getSetting($setting)
     {
+        //todo $this->setting ?? false
         if (property_exists($this->settings, $setting) != false) {
             return $this->settings->{$setting};
         }
@@ -877,6 +878,13 @@ class Company extends BaseModel
         }
 
         return $data;
+    }
+
+    public function utc_offset(): int
+    {
+        $timezone = $this->timezone();
+
+        return $timezone->utc_offset ?? 0;
     }
 
     public function timezone_offset(): int

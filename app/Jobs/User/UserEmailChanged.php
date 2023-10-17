@@ -36,10 +36,10 @@ class UserEmailChanged implements ShouldQueue
      * Create a new job instance.
      *
      * @param \App\Models\User $new_user
-     * @param \App\Models\User $old_user
+     * @param \stdClass $old_user
      * @param \App\Models\Company $company
      */
-    public function __construct(protected User $new_user, protected User $old_user, protected Company $company)
+    public function __construct(protected User $new_user, protected \stdClass $old_user, protected Company $company, protected bool $is_react = false)
     {
         $this->settings = $this->company->settings;
     }
@@ -72,7 +72,7 @@ class UserEmailChanged implements ShouldQueue
 
         NinjaMailerJob::dispatch($nmo, true);
 
-        $this->new_user->service()->invite($this->company);
+        $this->new_user->service()->invite($this->company, $this->is_react);
     }
 
     private function getData()
