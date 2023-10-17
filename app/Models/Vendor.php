@@ -113,6 +113,7 @@ class Vendor extends BaseModel
         'custom_value4',
         'number',
         'language_id',
+        'classification',
     ];
 
     protected $casts = [
@@ -230,9 +231,9 @@ class Vendor extends BaseModel
      * Returns a vendor settings proxying company setting
      *
      * @param string $setting
-     * @return string
+     * @return mixed
      */
-    public function getSetting($setting): string
+    public function getSetting($setting): mixed
     {
         if ((property_exists($this->company->settings, $setting) != false) && (isset($this->company->settings->{$setting}) !== false)) {
             return $this->company->settings->{$setting};
@@ -273,5 +274,10 @@ class Vendor extends BaseModel
     public function date_format(): string
     {
         return $this->company->date_format();
+    }
+
+    public function backup_path() :string
+    {
+        return $this->company->company_key.'/'.$this->vendor_hash.'/backups';
     }
 }

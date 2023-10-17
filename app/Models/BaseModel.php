@@ -105,22 +105,22 @@ class BaseModel extends Model
         return $value;
     }
 
-    public function __call($method, $params)
-    {
-        $entity = strtolower(class_basename($this));
+    // public function __call($method, $params)
+    // {
+    //     $entity = strtolower(class_basename($this));
 
-        if ($entity) {
-            $configPath = "modules.relations.$entity.$method";
+    //     if ($entity) {
+    //         $configPath = "modules.relations.$entity.$method";
 
-            if (config()->has($configPath)) {
-                $function = config()->get($configPath);
+    //         if (config()->has($configPath)) {
+    //             $function = config()->get($configPath);
 
-                return call_user_func_array([$this, $function[0]], $function[1]);
-            }
-        }
+    //             return call_user_func_array([$this, $function[0]], $function[1]);
+    //         }
+    //     }
 
-        return parent::__call($method, $params);
-    }
+    //     return parent::__call($method, $params);
+    // }
 
     /**
     * @param  \Illuminate\Database\Eloquent\Builder  $query
@@ -237,6 +237,15 @@ class BaseModel extends Model
         return $this->numberFormatter().'.'.$extension;
     }
 
+     /**
+     * @param string $extension
+     * @return string
+     */
+    public function getEFileName($extension = 'pdf')
+    {
+        return ctrans("texts.e_invoice"). "_" . $this->numberFormatter().'.'.$extension;
+    }
+
     public function numberFormatter()
     {
         $number = strlen($this->number) >= 1 ? $this->translate_entity() . "_" . $this->number : class_basename($this) . "_" . Str::random(5);
@@ -276,6 +285,7 @@ class BaseModel extends Model
 
     /**
      * Returns the base64 encoded PDF string of the entity
+     * @deprecated - unused implementation
      */
     public function fullscreenPdfViewer($invitation = null): string
     {

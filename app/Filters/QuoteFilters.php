@@ -40,7 +40,12 @@ class QuoteFilters extends QueryFilters
                   ->orWhere('custom_value4', 'like', '%'.$filter.'%')
                   ->orWhereHas('client', function ($q) use ($filter) {
                       $q->where('name', 'like', '%'.$filter.'%');
-                  });
+                  })
+                  ->orWhereHas('client.contacts', function ($q) use ($filter) {
+                              $q->where('first_name', 'like', '%'.$filter.'%')
+                                ->orWhere('last_name', 'like', '%'.$filter.'%')
+                                ->orWhere('email', 'like', '%'.$filter.'%');
+                          });
         });
     }
 
@@ -105,6 +110,12 @@ class QuoteFilters extends QueryFilters
                     $q->where('status_id', Quote::STATUS_SENT)
                       ->where('due_date', '>=', now()->toDateString())
                       ->orderBy('due_date', 'DESC');
+                });
+            }
+
+            if(in_array('converted', $status_parameters)) {
+                $query->orWhere(function ($q) {
+                    $q->whereNotNull('invoice_id');
                 });
             }
         });

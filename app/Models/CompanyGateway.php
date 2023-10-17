@@ -221,6 +221,22 @@ class CompanyGateway extends BaseModel
     {
         $this->config = encrypt(json_encode($config));
     }
+    
+    /**
+     * setConfigField
+     *
+     * @param  mixed $field
+     * @param  mixed $value
+     * @return void
+     */
+    public function setConfigField($field, $value): void
+    {
+        $config = $this->getConfig();
+        $config->{$field} = $value;
+
+        $this->setConfig($config);
+        $this->save();
+    }
 
     /**
      * @return mixed
@@ -395,7 +411,7 @@ class CompanyGateway extends BaseModel
         $fee = 0;
 
 
-        if ($fees_and_limits->adjust_fee_percent) {
+        if ($fees_and_limits->adjust_fee_percent ?? false) {
             $adjusted_fee = 0;
 
             if ($fees_and_limits->fee_amount) {

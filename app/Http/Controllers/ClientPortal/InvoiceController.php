@@ -87,13 +87,20 @@ class InvoiceController extends Controller
     public function showBlob($hash)
     {
         $data = Cache::get($hash);
+
+        if(!$data){
+            usleep(200000);
+            $data = Cache::get($hash);
+        }
+
         $invitation = false;
         
-        match($data['entity_type']){
+        match($data['entity_type'] ?? false){
             'invoice' => $invitation = InvoiceInvitation::withTrashed()->find($data['invitation_id']),
             'quote' => $invitation = QuoteInvitation::withTrashed()->find($data['invitation_id']),
             'credit' => $invitation = CreditInvitation::withTrashed()->find($data['invitation_id']),
             'recurring_invoice' => $invitation = RecurringInvoiceInvitation::withTrashed()->find($data['invitation_id']),
+            false => $invitation = false,
         };
 
         if (! $invitation) {
@@ -188,7 +195,7 @@ class InvoiceController extends Controller
 
         //format data
         $invoices->map(function ($invoice) {
-            $invoice->service()->removeUnpaidGatewayFees();
+            // $invoice->service()->removeUnpaidGatewayFees();
             $invoice->balance = $invoice->balance > 0 ? Number::formatValue($invoice->balance, $invoice->client->currency()) : 0;
             $invoice->partial = $invoice->partial > 0 ? Number::formatValue($invoice->partial, $invoice->client->currency()) : 0;
 
@@ -252,10 +259,19 @@ class InvoiceController extends Controller
         // create new archive
         $zipFile = new \PhpZip\ZipFile();
         try {
+
             foreach ($invoices as $invoice) {
-                //add it to the zip
-                $zipFile->addFromString(basename($invoice->pdf_file_path()), file_get_contents($invoice->pdf_file_path(null, 'url', true)));
+                            
+                if ($invoice->client->getSetting('enable_e_invoice')) {
+                    $xml = $invoice->service()->getEInvoice();
+                    $zipFile->addFromString($invoice->getFileName("xml"), $xml);
+                }
+
+                $file = $invoice->service()->getRawInvoicePdf();
+                $zip_file_name = $invoice->getFileName();
+                $zipFile->addFromString($zip_file_name, $file);
             }
+
 
             $filename = date('Y-m-d').'_'.str_replace(' ', '_', trans('texts.invoices')).'.zip';
             $filepath = sys_get_temp_dir().'/'.$filename;
