@@ -48,6 +48,8 @@ class RecurringInvoiceExport extends BaseExport
             $this->input['report_keys'] = array_values($this->recurring_invoice_report_keys);
         }
 
+        $this->input['report_keys'] = array_merge($this->input['report_keys'], array_diff($this->forced_client_fields, $this->input['report_keys']));
+
         $query = RecurringInvoice::query()
                         ->withTrashed()
                         ->with('client')
@@ -86,9 +88,9 @@ class RecurringInvoiceExport extends BaseExport
 
         $headerdisplay = $this->buildHeader();
 
-        $header = collect($this->input['report_keys'])->map(function ($key, $value) use($headerdisplay){
-                return ['identifier' => $key, 'display_value' => $headerdisplay[$value]];
-            })->toArray();
+        $header = collect($this->input['report_keys'])->map(function ($key, $value) use ($headerdisplay) {
+            return ['identifier' => $key, 'display_value' => $headerdisplay[$value]];
+        })->toArray();
 
         $report = $query->cursor()
                 ->map(function ($resource) {
@@ -135,8 +137,8 @@ class RecurringInvoiceExport extends BaseExport
             $entity['client'] = $invoice->client->present()->name();
         }
 
-        if (in_array('status_id', $this->input['report_keys'])) {
-            $entity['status'] = $invoice->stringStatus($invoice->status_id);
+        if (in_array('recurring_invoice.status', $this->input['report_keys'])) {
+            $entity['recurring_invoice.status'] = $invoice->stringStatus($invoice->status_id);
         }
 
         if (in_array('project_id', $this->input['report_keys'])) {
@@ -149,6 +151,10 @@ class RecurringInvoiceExport extends BaseExport
 
         if (in_array('recurring_invoice.frequency_id', $this->input['report_keys']) || in_array('frequency_id', $this->input['report_keys'])) {
             $entity['recurring_invoice.frequency_id'] = $invoice->frequencyForKey($invoice->frequency_id);
+        }
+
+        if (in_array('recurring_invoice.auto_bill_enabled', $this->input['report_keys'])) {
+            $entity['recurring_invoice.auto_bill_enabled'] = $invoice->auto_bill_enabled ? ctrans('texts.yes') : ctrans('texts.no');
         }
 
         return $entity;

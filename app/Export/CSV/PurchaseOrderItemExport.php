@@ -11,14 +11,14 @@
 
 namespace App\Export\CSV;
 
-use App\Utils\Ninja;
-use League\Csv\Writer;
-use App\Models\Company;
 use App\Libraries\MultiDB;
+use App\Models\Company;
 use App\Models\PurchaseOrder;
-use Illuminate\Support\Facades\App;
-use Illuminate\Database\Eloquent\Builder;
 use App\Transformers\PurchaseOrderTransformer;
+use App\Utils\Ninja;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\App;
+use League\Csv\Writer;
 
 class PurchaseOrderItemExport extends BaseExport
 {
@@ -55,6 +55,8 @@ class PurchaseOrderItemExport extends BaseExport
             $this->input['report_keys'] = array_values($this->mergeItemsKeys('purchase_order_report_keys'));
         }
 
+        $this->input['report_keys'] = array_merge($this->input['report_keys'], array_diff($this->forced_vendor_fields, $this->input['report_keys']));
+
         $query = PurchaseOrder::query()
                         ->withTrashed()
                         ->with('vendor')->where('company_id', $this->company->id)
@@ -72,21 +74,21 @@ class PurchaseOrderItemExport extends BaseExport
 
         $headerdisplay = $this->buildHeader();
 
-        $header = collect($this->input['report_keys'])->map(function ($key, $value) use($headerdisplay){
-                return ['identifier' => $key, 'display_value' => $headerdisplay[$value]];
-            })->toArray();
+        $header = collect($this->input['report_keys'])->map(function ($key, $value) use ($headerdisplay) {
+            return ['identifier' => $key, 'display_value' => $headerdisplay[$value]];
+        })->toArray();
 
         $query->cursor()
               ->each(function ($resource) {
-                $this->iterateItems($resource);
+                  $this->iterateItems($resource);
                 
-                foreach($this->storage_array as $row) {
-                    $this->storage_item_array[] = $this->processItemMetaData($row, $resource);
-                }
+                  foreach($this->storage_array as $row) {
+                      $this->storage_item_array[] = $this->processItemMetaData($row, $resource);
+                  }
 
-                $this->storage_array = [];
+                  $this->storage_array = [];
                 
-               });
+              });
         
         return array_merge(['columns' => $header], $this->storage_item_array);
     }
@@ -125,18 +127,18 @@ class PurchaseOrderItemExport extends BaseExport
                 
                 if (str_contains($key, "item.")) {
 
-                    $key = str_replace("item.", "", $key);
+                    $tmp_key = str_replace("item.", "", $key);
                     
-                    if($key == 'type_id') {
-                        $keyval = 'type';
+                    if($tmp_key == 'type_id') {
+                        $tmp_key = 'type';
                     }
 
-                    if($key == 'tax_id') {
-                        $keyval = 'tax_category';
+                    if($tmp_key == 'tax_id') {
+                        $tmp_key = 'tax_category';
                     }
 
-                    if (property_exists($item, $key)) {
-                        $item_array[$key] = $item->{$key};
+                    if (property_exists($item, $tmp_key)) {
+                        $item_array[$key] = $item->{$tmp_key};
                     } else {
                         $item_array[$key] = '';
                     }
@@ -145,6 +147,7 @@ class PurchaseOrderItemExport extends BaseExport
 
             $transformed_items = array_merge($transformed_purchase_order, $item_array);
             $entity = $this->decorateAdvancedFields($purchase_order, $transformed_items);
+            $entity = array_merge(array_flip(array_values($this->input['report_keys'])), $entity);
 
             $this->storage_array[] = $entity;
         }

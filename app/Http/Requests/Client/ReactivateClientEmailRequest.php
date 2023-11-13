@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Invoice Ninja (https://invoiceninja.com).
  *
@@ -10,21 +9,20 @@
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
-namespace App\Helpers\Document;
+namespace App\Http\Requests\Client;
 
-trait WithTypeHelpers
+use App\Http\Requests\Request;
+
+class ReactivateClientEmailRequest extends Request
 {
     /**
-     * Returns boolean based on checks for image.
+     * Determine if the user is authorized to make this request.
      *
      * @return bool
      */
-    public function isImage(): bool
+    public function authorize(): bool
     {
-        if (in_array($this->type, ['png', 'jpeg', 'jpg', 'tiff', 'gif'])) {
-            return true;
-        }
-
-        return false;
+        return true;
     }
+
 }

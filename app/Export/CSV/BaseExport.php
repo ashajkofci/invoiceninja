@@ -11,30 +11,28 @@
 
 namespace App\Export\CSV;
 
-use App\Models\Activity;
-use App\Models\Quote;
-use App\Utils\Number;
 use App\Models\Client;
-use App\Models\Credit;
-use App\Utils\Helpers;
+use App\Models\ClientContact;
 use App\Models\Company;
+use App\Models\Credit;
+use App\Models\Document;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Models\Document;
-use League\Fractal\Manager;
-use App\Models\ClientContact;
-use App\Models\PurchaseOrder;
-use App\Models\RecurringInvoice;
-use Illuminate\Support\Carbon;
-use App\Utils\Traits\MakesHash;
-use App\Transformers\TaskTransformer;
-use App\Transformers\PaymentTransformer;
-use Illuminate\Database\Eloquent\Builder;
-use League\Fractal\Serializer\ArraySerializer;
 use App\Models\Product;
+use App\Models\PurchaseOrder;
+use App\Models\Quote;
+use App\Models\RecurringInvoice;
 use App\Models\Task;
 use App\Models\Vendor;
+use App\Transformers\PaymentTransformer;
+use App\Transformers\TaskTransformer;
+use App\Utils\Helpers;
+use App\Utils\Traits\MakesHash;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
+use League\Fractal\Manager;
+use League\Fractal\Serializer\ArraySerializer;
 
 class BaseExport
 {
@@ -88,6 +86,7 @@ class BaseExport
 
     protected array $client_report_keys = [
         "name" => "client.name",
+        "number" => "client.number",
         "user" => "client.user",
         "assigned_user" => "client.assigned_user",
         "balance" => "client.balance",
@@ -168,9 +167,11 @@ class BaseExport
         'tax_rate1' => 'invoice.tax_rate1',
         'tax_rate2' => 'invoice.tax_rate2',
         'tax_rate3' => 'invoice.tax_rate3',
+        'recurring_invoice' => 'invoice.recurring_id',
+        'auto_bill' => 'invoice.auto_bill_enabled',
     ];
 
-    protected array $recurring_invoice_report_keys = [    
+    protected array $recurring_invoice_report_keys = [
         "invoice_number" => "recurring_invoice.number",
         "amount" => "recurring_invoice.amount",
         "balance" => "recurring_invoice.balance",
@@ -208,6 +209,9 @@ class BaseExport
         'tax_rate1' => 'recurring_invoice.tax_rate1',
         'tax_rate2' => 'recurring_invoice.tax_rate2',
         'tax_rate3' => 'recurring_invoice.tax_rate3',
+        'auto_bill' => 'recurring_invoice.auto_bill',
+        'auto_bill_enabled' => 'recurring_invoice.auto_bill_enabled',
+
     ];
 
     protected array $purchase_order_report_keys = [
@@ -230,7 +234,7 @@ class BaseExport
         'po_number' => 'purchase_order.po_number',
         'private_notes' => 'purchase_order.private_notes',
         'public_notes' => 'purchase_order.public_notes',
-        'status' => 'purchase_order.status_id',
+        'status' => 'purchase_order.status',
         'tax_name1' => 'purchase_order.tax_name1',
         'tax_name2' => 'purchase_order.tax_name2',
         'tax_name3' => 'purchase_order.tax_name3',
@@ -287,6 +291,7 @@ class BaseExport
         'is_amount_discount' => 'item.is_amount_discount',
         'line_total' => 'item.line_total',
         'gross_line_total' => 'item.gross_line_total',
+        'tax_amount' => 'item.tax_amount',
     ];
 
     protected array $quote_report_keys = [
@@ -377,6 +382,7 @@ class BaseExport
         "custom_value4" => "payment.custom_value4",
         "user" => "payment.user_id",
         "assigned_user" => "payment.assigned_user_id",
+        
   ];
 
     protected array $expense_report_keys = [
@@ -429,14 +435,21 @@ class BaseExport
         'project' => 'task.project_id',
     ];
 
+    protected array $forced_client_fields = [
+        "client.name",
+    ];
+
+    protected array $forced_vendor_fields = [
+        "vendor.name",
+    ];
+
     protected function filterByClients($query)
     {
         if (isset($this->input['client_id']) && $this->input['client_id'] != 'all') {
             $client = Client::withTrashed()->find($this->input['client_id']);
             $this->client_description = $client->present()->name;
             return $query->where('client_id', $this->input['client_id']);
-        }
-        elseif(isset($this->input['clients']) && count($this->input['clients']) > 0) {
+        } elseif(isset($this->input['clients']) && count($this->input['clients']) > 0) {
 
             $this->client_description = 'Multiple Clients';
             return $query->whereIn('client_id', $this->input['clients']);
@@ -448,8 +461,9 @@ class BaseExport
     {
         $parts = explode(".", $key);
 
-        if(!is_array($parts) || count($parts) < 2)
+        if(!is_array($parts) || count($parts) < 2) {
             return '';
+        }
 
         $value = '';
 
@@ -486,8 +500,9 @@ class BaseExport
 
     private function resolveVendorContactKey($column, $entity, $transformer)
     {
-        if(!$entity->vendor)
+        if(!$entity->vendor) {
             return "";
+        }
 
         $primary_contact = $entity->vendor->primary_contact()->first() ?? $entity->vendor->contacts()->first();
 
@@ -499,18 +514,21 @@ class BaseExport
     private function resolveExpenseKey($column, $entity, $transformer)
     {
      
-        if($column == 'user' && $entity?->expense?->user)
+        if($column == 'user' && $entity?->expense?->user) {
             return $entity->expense->user->present()->name() ?? ' ';
+        }
 
-        if($column == 'assigned_user' && $entity?->expense?->assigned_user) 
+        if($column == 'assigned_user' && $entity?->expense?->assigned_user) {
             return $entity->expense->assigned_user->present()->name() ?? ' ';
+        }
 
         if($column == 'category' && $entity->expense) {
             return $entity->expense->category?->name ?? ' ';
         }
 
-        if($entity instanceof Expense)
+        if($entity instanceof Expense) {
             return '';
+        }
 
         $transformed_entity = $transformer->includeExpense($entity);
 
@@ -518,11 +536,13 @@ class BaseExport
         $manager->setSerializer(new ArraySerializer());
         $transformed_entity = $manager->createData($transformed_entity)->toArray();
 
-        if(array_key_exists($column, $transformed_entity)) 
-            return $transformed_entity[$column];    
+        if(array_key_exists($column, $transformed_entity)) {
+            return $transformed_entity[$column];
+        }
 
-        if(property_exists($entity, $column))
+        if(property_exists($entity, $column)) {
             return $entity?->{$column} ?? '';
+        }
 
         nlog("export: Could not resolve expense key: {$column}");
 
@@ -549,8 +569,9 @@ class BaseExport
     private function resolveVendorKey($column, $entity, $transformer)
     {
 
-        if(!$entity->vendor)
+        if(!$entity->vendor) {
             return '';
+        }
 
         $transformed_entity = $transformer->includeVendor($entity);
 
@@ -558,24 +579,29 @@ class BaseExport
         $manager->setSerializer(new ArraySerializer());
         $transformed_entity = $manager->createData($transformed_entity)->toArray();
 
-        if($column == 'name')
+        if($column == 'name') {
             return $entity->vendor->present()->name() ?: '';
+        }
         
-        if($column == 'user_id')
+        if($column == 'user_id') {
             return $entity->vendor->user->present()->name()  ?: '';
+        }
 
-        if($column == 'country_id')
+        if($column == 'country_id') {
             return $entity->vendor->country ? ctrans("texts.country_{$entity->vendor->country->name}") : '';
+        }
 
         if ($column == 'currency_id') {
             return $entity->vendor->currency() ? $entity->vendor->currency()->code : $entity->company->currency()->code;
         }
 
-        if($column == 'status')
+        if($column == 'status') {
             return $entity->stringStatus($entity->status_id) ?: '';
+        }
 
-        if(array_key_exists($column, $transformed_entity))
+        if(array_key_exists($column, $transformed_entity)) {
             return $transformed_entity[$column];
+        }
 
         // nlog("export: Could not resolve vendor key: {$column}");
 
@@ -587,8 +613,9 @@ class BaseExport
     private function resolveClientKey($column, $entity, $transformer)
     {
 
-        if(!$entity->client)
+        if(!$entity->client) {
             return '';
+        }
 
         $transformed_client = $transformer->includeClient($entity);
 
@@ -596,36 +623,46 @@ class BaseExport
         $manager->setSerializer(new ArraySerializer());
         $transformed_client = $manager->createData($transformed_client)->toArray();
 
-        if(in_array($column, ['client.name', 'name']))
+        if(in_array($column, ['client.name', 'name'])) {
             return $transformed_client['display_name'];
+        }
         
-        if(in_array($column, ['client.user_id', 'user_id']))
+        if(in_array($column, ['client.user_id', 'user_id'])) {
             return $entity->client->user->present()->name();
+        }
 
-        if(in_array($column, ['client.assigned_user_id', 'assigned_user_id'])) 
+        if(in_array($column, ['client.assigned_user_id', 'assigned_user_id'])) {
             return $entity->client->assigned_user->present()->name();
+        }
 
-        if(in_array($column, ['client.country_id', 'country_id']))
+        if(in_array($column, ['client.country_id', 'country_id'])) {
             return $entity->client->country ? ctrans("texts.country_{$entity->client->country->name}") : '';
+        }
         
-        if(in_array($column, ['client.shipping_country_id', 'shipping_country_id']))
+        if(in_array($column, ['client.shipping_country_id', 'shipping_country_id'])) {
             return $entity->client->shipping_country ? ctrans("texts.country_{$entity->client->shipping_country->name}") : '';
+        }
         
-        if(in_array($column, ['client.size_id', 'size_id']))
+        if(in_array($column, ['client.size_id', 'size_id'])) {
             return $entity->client->size?->name ?? '';
+        }
 
-        if(in_array($column, ['client.industry_id', 'industry_id']))
+        if(in_array($column, ['client.industry_id', 'industry_id'])) {
             return $entity->client->industry?->name ?? '';
+        }
 
-        if (in_array($column, ['client.currency_id', 'currency_id']))
+        if (in_array($column, ['client.currency_id', 'currency_id'])) {
             return $entity->client->currency() ? $entity->client->currency()->code : $entity->company->currency()->code;
+        }
         
-        if(in_array($column, ['payment_terms', 'client.payment_terms']))
+        if(in_array($column, ['payment_terms', 'client.payment_terms'])) {
             return $entity->client->getSetting('payment_terms');
+        }
         
 
-        if(array_key_exists($column, $transformed_client))
+        if(array_key_exists($column, $transformed_client)) {
             return $transformed_client[$column];
+        }
 
         // nlog("export: Could not resolve client key: {$column}");
 
@@ -639,8 +676,9 @@ class BaseExport
 
         $transformed_entity = $transformer->transform($entity);
 
-        if($column == 'status')
+        if($column == 'status') {
             return $entity->stringStatus($entity->status_id);
+        }
     
         return '';
     }
@@ -671,16 +709,19 @@ class BaseExport
             $manager->setSerializer(new ArraySerializer());
             $transformed_invoices = $manager->createData($transformed_invoices)->toArray();
 
-            if(!isset($transformed_invoices['App\\Models\\Invoice']))
+            if(!isset($transformed_invoices['App\\Models\\Invoice'])) {
                 return '';
+            }
            
             $transformed_invoices = $transformed_invoices['App\\Models\\Invoice'];
 
-            if(count($transformed_invoices) == 1 && array_key_exists($column, $transformed_invoices[0]))
+            if(count($transformed_invoices) == 1 && array_key_exists($column, $transformed_invoices[0])) {
                 return $transformed_invoices[0][$column];
+            }
 
-            if(count($transformed_invoices) > 1 && array_key_exists($column, $transformed_invoices[0]))
+            if(count($transformed_invoices) > 1 && array_key_exists($column, $transformed_invoices[0])) {
                 return implode(', ', array_column($transformed_invoices, $column));
+            }
 
             return "";
 
@@ -689,8 +730,9 @@ class BaseExport
         if($transformer instanceof TaskTransformer && ($entity->invoice ?? false)) {
             $transformed_invoice = $transformer->includeInvoice($entity);
 
-            if(!$transformed_invoice)
+            if(!$transformed_invoice) {
                 return '';
+            }
 
             $manager = new Manager();
             $manager->setSerializer(new ArraySerializer());
@@ -710,7 +752,7 @@ class BaseExport
     private function resolvePaymentKey($column, $entity, $transformer)
     {
 
-        if($entity instanceof Payment){
+        if($entity instanceof Payment) {
 
             $transformed_payment = $transformer->transform($entity);
 
@@ -726,8 +768,9 @@ class BaseExport
 
         }
 
-        if($column == 'amount')
+        if($column == 'amount') {
             return $entity->payments()->exists() ? $entity->payments()->withoutTrashed()->sum('paymentables.amount') : ctrans('texts.unpaid');
+        }
 
         if($column == 'refunded') {
             return $entity->payments()->exists() ? $entity->payments()->withoutTrashed()->sum('paymentables.refunded') : '';
@@ -742,27 +785,49 @@ class BaseExport
 
         $payment = $entity->payments()->withoutTrashed()->first();
 
-        if(!$payment)
+        if(!$payment) {
             return '';
+        }
 
-        if($column == 'method')
+        if($column == 'method') {
             return $payment->translatedType();
+        }
 
-        if($column == 'currency')
+        if($column == 'currency') {
             return $payment?->currency?->code ?? '';
+        }
 
         $payment_transformer = new PaymentTransformer();
         $transformed_payment = $payment_transformer->transform($payment);
 
-        if($column == 'status'){
+        if($column == 'status') {
             return $payment->stringStatus($transformed_payment['status_id']);
         }
 
-        if(array_key_exists($column, $transformed_payment))
+        if(array_key_exists($column, $transformed_payment)) {
             return $transformed_payment[$column];
+        }
 
         return '';
 
+    }
+
+    public function applyFilters(Builder $query): Builder
+    {
+
+        if(isset($this->input['product_key'])) {
+        
+            $products = explode(",", $this->input['product_key']);
+
+            $query->where(function ($q) use ($products) {
+                foreach($products as $product) {
+                    $q->orWhereJsonContains('line_items', ['product_key' => $product]);
+                }
+            });
+
+        }
+        
+        return $query;
     }
 
     protected function addInvoiceStatusFilter($query, $status): Builder
@@ -771,8 +836,9 @@ class BaseExport
         $status_parameters = explode(',', $status);
         
 
-        if(in_array('all', $status_parameters))
+        if(in_array('all', $status_parameters)) {
             return $query;
+        }
 
         $query->where(function ($nested) use ($status_parameters) {
 
@@ -805,9 +871,9 @@ class BaseExport
                                 ->orWhere('partial_due_date', '<', Carbon::now());
             }
 
-            if(in_array('viewed', $status_parameters)){
+            if(in_array('viewed', $status_parameters)) {
                 
-                $nested->whereHas('invitations', function ($q){
+                $nested->whereHas('invitations', function ($q) {
                     $q->whereNotNull('viewed_date')->whereNotNull('deleted_at');
                 });
 
@@ -821,6 +887,8 @@ class BaseExport
 
     protected function addDateRange($query)
     {
+        $query = $this->applyFilters($query);
+
         $date_range = $this->input['date_range'];
 
         if (array_key_exists('date_key', $this->input) && strlen($this->input['date_key']) > 1) {
@@ -873,8 +941,9 @@ class BaseExport
                 $first_month_of_year = $this->company->getSetting('first_month_of_year') ?? 1;
                 $fin_year_start = now()->createFromDate(now()->year, $first_month_of_year, 1);
 
-                if(now()->lt($fin_year_start))
+                if(now()->lt($fin_year_start)) {
                     $fin_year_start->subYearNoOverflow();
+                }
 
                 $this->start_date = $fin_year_start->format('Y-m-d');
                 $this->end_date = $fin_year_start->copy()->addYear()->subDay()->format('Y-m-d');
@@ -885,8 +954,9 @@ class BaseExport
                 $fin_year_start = now()->createFromDate(now()->year, $first_month_of_year, 1);
                 $fin_year_start->subYearNoOverflow();
 
-                if(now()->subYear()->lt($fin_year_start)) 
+                if(now()->subYear()->lt($fin_year_start)) {
                     $fin_year_start->subYearNoOverflow();
+                }
 
                 $this->start_date = $fin_year_start->format('Y-m-d');
                 $this->end_date = $fin_year_start->copy()->addYear()->subDay()->format('Y-m-d');
@@ -903,7 +973,7 @@ class BaseExport
     }
     
     /**
-     * Returns the merged array of 
+     * Returns the merged array of
      * the entity with the matching
      * item report keys
      *
@@ -968,8 +1038,9 @@ class BaseExport
                 $prefix = ctrans('texts.expense')." ";
                 $key = array_search($value, $this->expense_report_keys);
                 
-                    if(!$key && $value == 'expense.category')
-                        $key = 'category';
+                if(!$key && $value == 'expense.category') {
+                    $key = 'category';
+                }
             }
 
             if(!$key) {
@@ -1013,42 +1084,36 @@ class BaseExport
             $key = str_replace('product.', '', $key);
             $key = str_replace('task.', '', $key);
 
-            if(stripos($value, 'custom_value') !== false)
-            {
+            if(stripos($value, 'custom_value') !== false) {
                 $parts = explode(".", $value);
 
-                if(count($parts) == 2 && in_array($parts[0], ['credit','quote','invoice','purchase_order','recurring_invoice'])){
+                if(count($parts) == 2 && in_array($parts[0], ['credit','quote','invoice','purchase_order','recurring_invoice'])) {
                     $entity = "invoice".substr($parts[1], -1);
                     $prefix = ctrans("texts.".$parts[0]);
                     $fallback = "custom_value".substr($parts[1], -1);
                     $custom_field_label = $helper->makeCustomField($this->company->custom_fields, $entity);
 
-                    if(strlen($custom_field_label) > 1)
+                    if(strlen($custom_field_label) > 1) {
                         $header[] = $custom_field_label;
-                    else {
+                    } else {
                         $header[] = $prefix . " ". ctrans("texts.{$fallback}");
                     }
 
-                }
-                elseif(count($parts) == 2 && (stripos($parts[0], 'vendor_contact') !== false || stripos($parts[0], 'contact') !== false)) {
+                } elseif(count($parts) == 2 && (stripos($parts[0], 'vendor_contact') !== false || stripos($parts[0], 'contact') !== false)) {
                     $parts[0] = str_replace('vendor_contact', 'contact', $parts[0]);
 
                     $entity = "contact".substr($parts[1], -1);
                     $custom_field_string = strlen($helper->makeCustomField($this->company->custom_fields, $entity)) > 1 ? $helper->makeCustomField($this->company->custom_fields, $entity) : ctrans("texts.{$parts[1]}");
                     $header[] = ctrans("texts.{$parts[0]}") . " " . $custom_field_string;
                     
-                }
-                elseif(count($parts) == 2 && in_array(substr($original_key, 0, -1), ['credit','quote','invoice','purchase_order','recurring_invoice','task'])){
-                    $custom_field_string = strlen($helper->makeCustomField($this->company->custom_fields, "product".substr($original_key,-1))) > 1 ? $helper->makeCustomField($this->company->custom_fields, "product".substr($original_key,-1)) : ctrans("texts.{$parts[1]}");
+                } elseif(count($parts) == 2 && in_array(substr($original_key, 0, -1), ['credit','quote','invoice','purchase_order','recurring_invoice','task'])) {
+                    $custom_field_string = strlen($helper->makeCustomField($this->company->custom_fields, "product".substr($original_key, -1))) > 1 ? $helper->makeCustomField($this->company->custom_fields, "product".substr($original_key, -1)) : ctrans("texts.{$parts[1]}");
                     $header[] = ctrans("texts.{$parts[0]}") . " " . $custom_field_string;
-                }
-                else{
+                } else {
                     $header[] = "{$prefix}" . ctrans("texts.{$key}");
                 }
 
-            }
-            else
-            {
+            } else {
                 $header[] = "{$prefix}" . ctrans("texts.{$key}");
             }
         }
@@ -1093,7 +1158,7 @@ class BaseExport
                 $value = 'image';
             }
 
-            if($value == 'tax_id') {         
+            if($value == 'tax_id') {
                 $column_key = 'tax_category';
                 $value = 'tax_category';
             }
@@ -1108,7 +1173,7 @@ class BaseExport
         }
 
         return $clean_row;
-    }   
+    }
 
     public function processItemMetaData(array $row, $resource): array
     {
@@ -1135,22 +1200,24 @@ class BaseExport
             
             $column_key = $value;
 
-            if($value == 'type_id' || $value == 'item.type_id')
+            if($value == 'type_id' || $value == 'item.type_id') {
                 $column_key = 'type';
+            }
 
-            if($value == 'tax_id' || $value == 'item.tax_id')
+            if($value == 'tax_id' || $value == 'item.tax_id') {
                 $column_key = 'tax_category';
+            }
                 
             $clean_row[$key]['entity'] = $report_keys[0];
             $clean_row[$key]['id'] = $report_keys[1] ?? $report_keys[0];
             $clean_row[$key]['hashed_id'] = $report_keys[0] == $entity ? null : $resource->{$report_keys[0]}->hashed_id ?? null;
-            $clean_row[$key]['value'] = isset($row[$column_key]) ? $row[$column_key] : $row[$report_keys[1]];
+            $clean_row[$key]['value'] = isset($row[$column_key]) ? $row[$column_key] : $row[$value];
             $clean_row[$key]['identifier'] = $value;
-            $clean_row[$key]['display_value'] = isset($row[$column_key]) ? $row[$column_key] : $row[$report_keys[1]];
+            $clean_row[$key]['display_value'] = isset($row[$column_key]) ? $row[$column_key] : $row[$value];
 
         }
 
         return $clean_row;
-    }   
+    }
 
 }

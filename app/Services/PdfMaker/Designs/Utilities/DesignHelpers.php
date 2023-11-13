@@ -17,8 +17,6 @@ use DOMDocument;
 use DOMXPath;
 use Exception;
 use League\CommonMark\CommonMarkConverter;
-use Mpdf\Tag\Q;
-use Sprain\SwissQrBill as QrBill;
 
 trait DesignHelpers
 {
@@ -243,47 +241,18 @@ trait DesignHelpers
     {
         // We want to show headers for statements, no exceptions.
         $statements = "
-            document.querySelectorAll('#statement-invoice-table > thead > tr > th, #statement-payment-table > thead > tr > th, #statement-aging-table > thead > tr > th').forEach(t => {
+            document.querySelectorAll('#statement-credit-table > thead > tr > th, #statement-invoice-table > thead > tr > th, #statement-payment-table > thead > tr > th, #statement-aging-table > thead > tr > th').forEach(t => {
                 t.hidden = false;
             });
         ";
 
-        // Unminified version, just for the reference.
-        // By default all table headers are hidden with HTML `hidden` property.
-        // This will check for table data values & if they're not empty it will remove hidden from the column itself.
-
-        /*
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll("#product-table > tbody > tr > td, #task-table > tbody > tr > td, #delivery-note-table > tbody > tr > td").forEach(e => {
-        if ("" !== e.innerText) {
-            let t = e.getAttribute("data-ref").slice(0, -3);
-            document.querySelector(`th[data-ref="${t}-th"]`).removeAttribute("hidden");
-        }
-    });
-
-    document.querySelectorAll("#product-table > tbody > tr > td, #task-table > tbody > tr > td, #delivery-note-table > tbody > tr > td").forEach(e => {
-        let t = e.getAttribute("data-ref").slice(0, -3);
-        t = document.querySelector(`th[data-ref="${t}-th"]`);
-
-        if (!t.hasAttribute('hidden')) {
-            return;
-        }
-
-        if ("" == e.innerText) {
-            e.setAttribute('hidden', 'true');
-        }
-    });
-}, false);
-        */
-
-        $javascript = 'document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("#product-table > tbody > tr > td, #task-table > tbody > tr > td, #delivery-note-table > tbody > tr > td").forEach(t=>{if(""!==t.innerText){let e=t.getAttribute("data-ref").slice(0,-3);document.querySelector(`th[data-ref="${e}-th"]`).removeAttribute("hidden")}}),document.querySelectorAll("#product-table > tbody > tr > td, #task-table > tbody > tr > td, #delivery-note-table > tbody > tr > td").forEach(t=>{let e=t.getAttribute("data-ref").slice(0,-3);(e=document.querySelector(`th[data-ref="${e}-th"]`)).hasAttribute("hidden")&&""==t.innerText&&t.setAttribute("hidden","true")})},!1);';
+        // $javascript = 'document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("#product-table > tbody > tr > td, #task-table > tbody > tr > td, #delivery-note-table > tbody > tr > td").forEach(t=>{if(""!==t.innerText){let e=t.getAttribute("data-ref").slice(0,-3);document.querySelector(`th[data-ref="${e}-th"]`).removeAttribute("hidden")}}),document.querySelectorAll("#product-table > tbody > tr > td, #task-table > tbody > tr > td, #delivery-note-table > tbody > tr > td").forEach(t=>{let e=t.getAttribute("data-ref").slice(0,-3);(e=document.querySelector(`th[data-ref="${e}-th"]`)).hasAttribute("hidden")&&""==t.innerText&&t.setAttribute("hidden","true")})},!1);';
+        $javascript = 'document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("#custom-table > tbody > tr >td, #product-table > tbody > tr > td, #task-table > tbody > tr > td, #delivery-note-table > tbody > tr > td").forEach(t=>{if(""!==t.innerText){let e=t.getAttribute("data-ref").slice(0,-3);document.querySelector(`th[data-ref="${e}-th"]`).removeAttribute("hidden")}}),document.querySelectorAll("#custom-table > tbody > tr > td, #product-table > tbody > tr > td, #task-table > tbody > tr > td, #delivery-note-table > tbody > tr > td").forEach(t=>{let e=t.getAttribute("data-ref").slice(0,-3);(e=document.querySelector(`th[data-ref="${e}-th"]`)).hasAttribute("hidden")&&""==t.innerText&&t.setAttribute("hidden","true")})},!1);';
 
         // Previously we've been decoding the HTML on the backend and XML parsing isn't good options because it requires,
         // strict & valid HTML to even output/decode. Decoding is now done on the frontend with this piece of Javascript.
 
         $html_decode = 'document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll(`[data-state="encoded-html"]`).forEach(e=>e.innerHTML=e.innerText)},!1);';
-
-
 
         return ['element' => 'div', 'elements' => [
             ['element' => 'script', 'content' => $statements],
