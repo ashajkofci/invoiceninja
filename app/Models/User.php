@@ -11,26 +11,25 @@
 
 namespace App\Models;
 
-use App\Models\Company;
-use App\Utils\TruthSource;
 use App\Jobs\Mail\NinjaMailer;
-use Illuminate\Support\Carbon;
-use App\Utils\Traits\MakesHash;
 use App\Jobs\Mail\NinjaMailerJob;
-use App\Services\User\UserService;
-use App\Utils\Traits\UserSettings;
-use Illuminate\Support\Facades\App;
 use App\Jobs\Mail\NinjaMailerObject;
 use App\Mail\Admin\ResetPasswordObject;
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Presenters\UserPresenter;
-use Illuminate\Notifications\Notifiable;
-use Laracasts\Presenter\PresentableTrait;
+use App\Services\User\UserService;
+use App\Utils\Traits\MakesHash;
 use App\Utils\Traits\UserSessionAttributes;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Utils\Traits\UserSettings;
+use App\Utils\TruthSource;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\App;
+use Laracasts\Presenter\PresentableTrait;
 
 /**
  * App\Models\User
@@ -73,7 +72,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property int|null $deleted_at
  * @property string|null $oauth_user_refresh_token
  * @property string|null $last_confirmed_email_address
- * @property int $has_password
+ * @property bool $has_password
+ * @property bool $user_logged_in_notification
  * @property Carbon|null $oauth_user_token_expiry
  * @property string|null $sms_verification_code
  * @property bool $verified_phone_number
@@ -140,6 +140,7 @@ class User extends Authenticatable implements MustVerifyEmail
      *
      */
     protected $fillable = [
+        'user_logged_in_notification',
         'first_name',
         'last_name',
         'email',
@@ -662,8 +663,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $locale = $this->language->locale ?? null;
     
-        if($locale)
+        if($locale) {
             App::setLocale($locale);
+        }
 
         return $locale;
     }

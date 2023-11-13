@@ -60,6 +60,8 @@ class TaskExport extends BaseExport
             $this->input['report_keys'] = array_values($this->task_report_keys);
         }
 
+        $this->input['report_keys'] = array_merge($this->input['report_keys'], array_diff($this->forced_client_fields, $this->input['report_keys']));
+
         $query = Task::query()
                         ->withTrashed()
                         ->where('company_id', $this->company->id)
@@ -99,17 +101,16 @@ class TaskExport extends BaseExport
 
         $headerdisplay = $this->buildHeader();
 
-        $header = collect($this->input['report_keys'])->map(function ($key, $value) use($headerdisplay){
-                return ['identifier' => $key, 'display_value' => $headerdisplay[$value]];
-            })->toArray();
+        $header = collect($this->input['report_keys'])->map(function ($key, $value) use ($headerdisplay) {
+            return ['identifier' => $key, 'display_value' => $headerdisplay[$value]];
+        })->toArray();
 
         $query->cursor()
                 ->each(function ($resource) {
         
                     $this->buildRow($resource);
         
-                    foreach($this->storage_array as $row)
-                    {
+                    foreach($this->storage_array as $row) {
                         $this->storage_item_array[] = $this->processMetaData($row, $resource);
                     }
 
