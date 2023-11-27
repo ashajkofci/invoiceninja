@@ -144,8 +144,7 @@
         }
     },
     "scripts": {
-        "post-install-cmd": [
-        ],
+        "post-install-cmd": [],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
