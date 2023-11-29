@@ -11,32 +11,32 @@
 
 namespace App\Services\Template;
 
-use App\Models\User;
-use App\Models\Quote;
-use App\Utils\Number;
-use Twig\Error\Error;
 use App\Models\Client;
+use App\Models\Company;
 use App\Models\Credit;
 use App\Models\Design;
-use App\Models\Vendor;
-use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Project;
-use App\Utils\HtmlEngine;
-use Twig\Error\LoaderError;
-use Twig\Error\SyntaxError;
-use Twig\Error\RuntimeError;
 use App\Models\PurchaseOrder;
-use App\Utils\VendorHtmlEngine;
-use Twig\Sandbox\SecurityError;
+use App\Models\Quote;
 use App\Models\RecurringInvoice;
+use App\Models\User;
+use App\Models\Vendor;
+use App\Utils\HostedPDF\NinjaPdf;
+use App\Utils\HtmlEngine;
+use App\Utils\Number;
 use App\Utils\PaymentHtmlEngine;
 use App\Utils\Traits\MakesDates;
-use App\Utils\HostedPDF\NinjaPdf;
 use App\Utils\Traits\Pdf\PdfMaker;
-use Twig\Extra\Intl\IntlExtension;
+use App\Utils\VendorHtmlEngine;
 use League\CommonMark\CommonMarkConverter;
+use Twig\Error\Error;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
+use Twig\Extra\Intl\IntlExtension;
+use Twig\Sandbox\SecurityError;
 
 class TemplateService
 {
@@ -55,17 +55,19 @@ class TemplateService
 
     private array $global_vars = [];
 
-    public ?Company $company;
+    public ?Company $company = null;
 
-    private ?Client $client;
+    private ?Client $client = null;
 
-    private ?Vendor $vendor;
+    private ?Vendor $vendor = null;
 
     private Invoice | Quote | Credit | PurchaseOrder | RecurringInvoice $entity;
 
     private Payment $payment;
 
     private CommonMarkConverter $commonmark;
+
+    private ?object $settings = null;
 
     public function __construct(public ?Design $template = null)
     {
@@ -102,10 +104,17 @@ class TemplateService
         });
         $this->twig->addFunction($function);
 
+        $function = new \Twig\TwigFunction('t', function ($string) {
+            return ctrans("texts.{$string}");
+        });
+
+        $this->twig->addFunction($function);
+
         $filter = new \Twig\TwigFilter('sum', function (?array $array, ?string $column) {
 
-            if(!is_array($array))
+            if(!is_array($array)) {
                 return 0;
+            }
             
             return array_sum(array_column($array, $column));
         });
@@ -160,8 +169,27 @@ class TemplateService
         return $this;
     }
 
+    public function setSettings($settings): self
+    {
+        $this->settings = $settings;
+
+        return $this;
+
+    }
+
+    private function getSettings(): object
+    {
+        if($this->settings)
+            return $this->settings;
+
+        if($this->client)
+            return $this->client->getMergedSettings();
+
+        return $this->company->settings;
+    }
+
     public function addGlobal(array $var): self
-    {   
+    {
         $this->global_vars = array_merge($this->global_vars, $var);
         
         return $this;
@@ -175,7 +203,7 @@ class TemplateService
     public function mock(): self
     {
         $tm = new TemplateMock($this->company);
-        $tm->init();
+        $tm->setSettings($this->getSettings())->init();
 
         $this->entity = $this->company->invoices()->first();
 
@@ -210,6 +238,8 @@ class TemplateService
      */
     public function getPdf(): string
     {
+
+        // nlog($this->getHtml());
 
         if (config('ninja.invoiceninja_hosted_pdf_generation') || config('ninja.pdf_generator') == 'hosted_ninja') {
             $pdf = (new NinjaPdf())->build($this->compiled_html);
@@ -338,7 +368,7 @@ class TemplateService
      *
      * @return self
      */
-    private function compose(): self
+    public function compose(): self
     {
         if(!$this->template) {
             return $this;
@@ -396,17 +426,20 @@ class TemplateService
 
             match ($key) {
                 'variables' => $processed = $value->first() ?? [],
-                'invoices' => $processed = (new HtmlEngine($value->first()->invitations()->first()))->generateLabelsAndValues() ?? [],
-                'quotes' => $processed = (new HtmlEngine($value->first()->invitations()->first()))->generateLabelsAndValues() ?? [],
-                'credits' => $processed = (new HtmlEngine($value->first()->invitations()->first()))->generateLabelsAndValues() ?? [],
-                'payments' => $processed = (new PaymentHtmlEngine($value->first(), $value->first()->client->contacts()->first()))->generateLabelsAndValues() ?? [],
+                'invoices' => $processed = (new HtmlEngine($value->first()->invitations()->first()))->setSettings($this->getSettings())->generateLabelsAndValues() ?? [],
+                'quotes' => $processed = (new HtmlEngine($value->first()->invitations()->first()))->setSettings($this->getSettings())->generateLabelsAndValues() ?? [],
+                'credits' => $processed = (new HtmlEngine($value->first()->invitations()->first()))->setSettings($this->getSettings())->generateLabelsAndValues() ?? [],
+                'payments' => $processed = (new PaymentHtmlEngine($value->first(), $value->first()->client->contacts()->first()))->setSettings($this->getSettings())->generateLabelsAndValues() ?? [],
                 'tasks' => $processed = [],
                 'projects' => $processed = [],
-                'purchase_orders' => (new VendorHtmlEngine($value->first()->invitations()->first()))->generateLabelsAndValues() ?? [],
+                'purchase_orders' => (new VendorHtmlEngine($value->first()->invitations()->first()))->setSettings($this->getSettings())->generateLabelsAndValues() ?? [],
                 'aging' => $processed = [],
                 default => $processed = [],
             };
 
+            // nlog($key);
+            // nlog($processed);
+            
             return $processed;
 
         })->toArray();
@@ -518,6 +551,7 @@ class TemplateService
                             'balance' => $invoice->client->balance,
                             'payment_balance' => $invoice->client->payment_balance,
                             'credit_balance' => $invoice->client->credit_balance,
+                            'vat_number' => $invoice->client->vat_number ?? '',
                         ],
                         'payments' => $payments,
                         'total_tax_map' => $invoice->calc()->getTotalTaxMap(),
@@ -642,6 +676,7 @@ class TemplateService
                 'balance' => $payment->client->balance,
                 'payment_balance' => $payment->client->payment_balance,
                 'credit_balance' => $payment->client->credit_balance,
+                'vat_number' => $payment->client->vat_number ?? '',
             ],
             'paymentables' => $pivot,
             'refund_activity' => $this->getPaymentRefundActivity($payment),
@@ -718,6 +753,7 @@ class TemplateService
                             'balance' => $quote->client->balance,
                             'payment_balance' => $quote->client->payment_balance,
                             'credit_balance' => $quote->client->credit_balance,
+                            'vat_number' => $quote->client->vat_number ?? '',
                         ],
                 'status_id' =>$quote->status_id,
                 'status' => Quote::stringStatus($quote->status_id),
@@ -836,6 +872,7 @@ class TemplateService
                             'balance' => $credit->client->balance,
                             'payment_balance' => $credit->client->payment_balance,
                             'credit_balance' => $credit->client->credit_balance,
+                            'vat_number' => $credit->client->vat_number ?? '',
                         ],
                         'payments' => [],
                         'total_tax_map' => $credit->calc()->getTotalTaxMap(),
@@ -899,6 +936,7 @@ class TemplateService
                             'balance' => $task->client->balance,
                             'payment_balance' => $task->client->payment_balance,
                             'credit_balance' => $task->client->credit_balance,
+                            'vat_number' => $task->client->vat_number ?? '',
                         ] : [],
             ];
 
@@ -959,6 +997,7 @@ class TemplateService
                     'balance' => $project->client->balance,
                     'payment_balance' => $project->client->payment_balance,
                     'credit_balance' => $project->client->credit_balance,
+                    'vat_number' => $project->client->vat_number ?? '',
                 ] : [],
             'user' => $this->userInfo($project->user)
         ];
@@ -978,6 +1017,7 @@ class TemplateService
             return [
                 'vendor' => $purchase_order->vendor ? [
                     'name' => $purchase_order->vendor->present()->name(),
+                    'vat_number' => $purchase_order->vendor->vat_number ?? '',
                 ] : [],
                 'amount' => (float)$purchase_order->amount,
                 'balance' => (float)$purchase_order->balance,
@@ -986,6 +1026,7 @@ class TemplateService
                     'balance' => $purchase_order->client->balance,
                     'payment_balance' => $purchase_order->client->payment_balance,
                     'credit_balance' => $purchase_order->client->credit_balance,
+                    'vat_number' => $purchase_order->client->vat_number ?? '',
                 ] : [],
                 'status_id' => (string)($purchase_order->status_id ?: 1),
                 'status' => PurchaseOrder::stringStatus($purchase_order->status_id ?? 1),
@@ -1141,7 +1182,7 @@ class TemplateService
         $var_set = $this->getVarSet();
 
         $company_details =
-        collect($this->company->settings->pdf_variables->company_details)
+        collect($this->getSettings()->pdf_variables->company_details)
             ->filter(function ($variable) use ($var_set) {
                 return isset($var_set['values'][$variable]) && !empty($var_set['values'][$variable]);
             })
@@ -1168,7 +1209,7 @@ class TemplateService
         $var_set = $this->getVarSet();
 
         $company_address =
-        collect($this->company->settings->pdf_variables->company_address)
+        collect($this->getSettings()->pdf_variables->company_address)
             ->filter(function ($variable) use ($var_set) {
                 return isset($var_set['values'][$variable]) && !empty($var_set['values'][$variable]);
             })
@@ -1200,7 +1241,7 @@ class TemplateService
         $this->client = $this->entity->client;
 
         $shipping_address = [
-            ['element' => 'p', 'content' => ctrans('texts.shipping_address'), 'properties' => ['data-ref' => 'shipping_address-label', 'style' => 'font-weight: bold; text-transform: uppercase']],
+            // ['element' => 'p', 'content' => ctrans('texts.shipping_address'), 'properties' => ['data-ref' => 'shipping_address-label', 'style' => 'font-weight: bold; text-transform: uppercase']],
             ['element' => 'p', 'content' => $this->client->name, 'show_empty' => false, 'properties' => ['data-ref' => 'shipping_address-client.name']],
             ['element' => 'p', 'content' => $this->client->shipping_address1, 'show_empty' => false, 'properties' => ['data-ref' => 'shipping_address-client.shipping_address1']],
             ['element' => 'p', 'content' => $this->client->shipping_address2, 'show_empty' => false, 'properties' => ['data-ref' => 'shipping_address-client.shipping_address2']],
@@ -1233,7 +1274,7 @@ class TemplateService
         $var_set = $this->getVarSet();
 
         $client_details =
-        collect($this->company->settings->pdf_variables->client_details)
+        collect($this->getSettings()->pdf_variables->client_details)
             ->filter(function ($variable) use ($var_set) {
                 return isset($var_set['values'][$variable]) && !empty($var_set['values'][$variable]);
             })
@@ -1296,7 +1337,7 @@ class TemplateService
         $var_set = $this->getVarSet();
 
         $entity_details =
-        collect($this->company->settings->pdf_variables->{$entity_string_prop})
+        collect($this->getSettings()->pdf_variables->{$entity_string_prop})
             ->filter(function ($variable) use ($var_set) {
                 return isset($var_set['values'][$variable]) && !empty($var_set['values'][$variable]);
             })->toArray();
@@ -1354,7 +1395,7 @@ class TemplateService
         $var_set = $this->getVarSet();
 
         $vendor_details =
-        collect($this->company->settings->pdf_variables->vendor_details)
+        collect($this->getSettings()->pdf_variables->vendor_details)
             ->filter(function ($variable) use ($var_set) {
                 return isset($var_set['values'][$variable]) && !empty($var_set['values'][$variable]);
             })->when(!$include_labels, function ($collection) {
