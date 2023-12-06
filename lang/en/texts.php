@@ -1933,6 +1933,7 @@ $lang = array(
     'require_quote_signature_help' => 'Require client to provide their signature.',
     'i_agree' => 'I Agree To The Terms',
     'sign_here' => 'Please sign here:',
+    'sign_here_ux_tip' => 'Use the mouse or your touchpad to trace your signature.',
     'authorization' => 'Authorization',
     'signed' => 'Signed',
 
@@ -5218,6 +5219,7 @@ $lang = array(
     'vendor_notification_body' => 'Payment processed for :amount dated :payment_date. <br>[Transaction Reference: :transaction_reference]',
     'receipt' => 'Receipt',
     'charges' => 'Charges',
+    'email_report' => 'Email Report',
 );
 
 return $lang;
