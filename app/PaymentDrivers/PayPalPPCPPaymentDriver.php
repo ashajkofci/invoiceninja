@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Invoice Ninja (https://invoiceninja.com).
  *
@@ -12,16 +11,18 @@
 
 namespace App\PaymentDrivers;
 
-use App\Exceptions\PaymentFailed;
-use App\Jobs\Util\SystemLogger;
-use App\Models\GatewayType;
-use App\Models\Invoice;
-use App\Models\PaymentType;
-use App\Models\SystemLog;
-use App\Utils\Traits\MakesHash;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Http;
 use Str;
+use Carbon\Carbon;
+use App\Models\Invoice;
+use App\Models\SystemLog;
+use App\Models\GatewayType;
+use App\Models\PaymentType;
+use Illuminate\Http\Request;
+use App\Jobs\Util\SystemLogger;
+use App\Utils\Traits\MakesHash;
+use App\Exceptions\PaymentFailed;
+use Illuminate\Support\Facades\Http;
+use App\PaymentDrivers\PayPal\PayPalWebhook;
 
 class PayPalPPCPPaymentDriver extends BaseDriver
 {
@@ -78,7 +79,7 @@ class PayPalPPCPPaymentDriver extends BaseDriver
                 })->map(function ($fee, $key) {
                     return (int)$key;
                 })->toArray();
-        
+
     }
 
     private function getPaymentMethod($gateway_type_id): int
@@ -95,7 +96,7 @@ class PayPalPPCPPaymentDriver extends BaseDriver
         return $method;
     }
 
-    private function getFundingOptions():string
+    private function getFundingOptions(): string
     {
 
         $enums = [
@@ -121,7 +122,7 @@ class PayPalPPCPPaymentDriver extends BaseDriver
 
             if($value->is_enabled) {
 
-                $funding_options .=$enums[$key].',';
+                $funding_options .= $enums[$key].',';
 
             }
 
@@ -166,7 +167,13 @@ class PayPalPPCPPaymentDriver extends BaseDriver
 
     }
 
-    public function setPaymentMethod($payment_method_id)
+    /**
+     * Payment method setter
+     *
+     * @param  mixed $payment_method_id
+     * @return self
+     */
+    public function setPaymentMethod($payment_method_id): self
     {
         if(!$payment_method_id) {
             return $this;
@@ -193,6 +200,11 @@ class PayPalPPCPPaymentDriver extends BaseDriver
         return $this;
     }
 
+    /**
+     * Checks whether payments are enabled on the account
+     *
+     * @return self
+     */
     private function checkPaymentsReceivable(): self
     {
 
@@ -213,11 +225,17 @@ class PayPalPPCPPaymentDriver extends BaseDriver
 
             throw new PaymentFailed('Unable to accept payments at this time, please contact PayPal for more information.', 401);
         }
-        
+
         return $this;
-        
+
     }
 
+    /**
+     * Presents the Payment View to the client
+     *
+     * @param  mixed $data
+     * @return void
+     */
     public function processPaymentView($data)
     {
         $this->init()->checkPaymentsReceivable();
@@ -234,11 +252,17 @@ class PayPalPPCPPaymentDriver extends BaseDriver
         $data['merchantId'] = $this->company_gateway->getConfigField('merchantId');
         $data['currency'] = $this->client->currency()->code;
         // nlog($data['merchantId']);
-        
+
         return render('gateways.paypal.ppcp.pay', $data);
 
     }
 
+    /**
+     * Processes the payment response
+     *
+     * @param  mixed $request
+     * @return void
+     */
     public function processPaymentResponse($request)
     {
 
@@ -247,6 +271,28 @@ class PayPalPPCPPaymentDriver extends BaseDriver
 
         //capture
         $orderID = $response['orderID'];
+
+        if($this->company_gateway->require_shipping_address)
+        {
+
+            $shipping_data = 
+            [[
+                "op" => "replace",
+                "path" => "/purchase_units/@reference_id=='default'/shipping/address",
+                "value" => [
+                    "address_line_1" => strlen($this->client->shipping_address1) > 1 ? $this->client->shipping_address1 : $this->client->address1,
+                    "address_line_2" => $this->client->shipping_address2,
+                    "admin_area_2" => strlen($this->client->shipping_city) > 1 ? $this->client->shipping_city : $this->client->city,
+                    "admin_area_1" => strlen($this->client->shipping_state) > 1 ? $this->client->shipping_state : $this->client->state,
+                    "postal_code" => strlen($this->client->shipping_postal_code) > 1 ? $this->client->shipping_postal_code : $this->client->postal_code,
+                    "country_code" => $this->client->present()->shipping_country_code(),
+                ],
+            ]];
+        
+            $r = $this->gatewayRequest("/v2/checkout/orders/{$orderID}", 'patch', $shipping_data);
+
+        }
+
         $r = $this->gatewayRequest("/v2/checkout/orders/{$orderID}/capture", 'post', ['body' => '']);
 
         $response = $r;
@@ -278,7 +324,7 @@ class PayPalPPCPPaymentDriver extends BaseDriver
             if(isset($response['headers']) ?? false) {
                 unset($response['headers']);
             }
-            
+
             SystemLogger::dispatch(
                 ['response' => $response],
                 SystemLog::CATEGORY_GATEWAY_RESPONSE,
@@ -289,13 +335,25 @@ class PayPalPPCPPaymentDriver extends BaseDriver
             );
 
             $message = $response['body']['details'][0]['description'] ?? 'Payment failed. Please try again.';
-            
+
             throw new PaymentFailed($message, 400);
         }
     }
 
+    public function getOrder(string $order_id)
+    {
+        $this->init();
 
+        $r = $this->gatewayRequest("/v2/checkout/orders/{$order_id}", 'get', ['body' => '']);
 
+        return $r->json();
+    }
+
+    /**
+     * Generates a client token for the payment form.
+     *
+     * @return string
+     */
     private function getClientToken(): string
     {
 
@@ -304,16 +362,21 @@ class PayPalPPCPPaymentDriver extends BaseDriver
         if($r->successful()) {
             return $r->json()['client_token'];
         }
-        
+
         throw new PaymentFailed('Unable to gain client token from Paypal. Check your configuration', 401);
 
     }
 
+    /**
+     * Builds the payment request.
+     *
+     * @return array
+     */
     private function paymentSource(): array
     {
         /** we only need to support paypal as payment source until as we are only using hosted payment buttons */
         return $this->injectPayPalPaymentSource();
-        
+
     }
 
     private function injectPayPalPaymentSource(): array
@@ -328,7 +391,7 @@ class PayPalPPCPPaymentDriver extends BaseDriver
                 ],
                 "email_address" => $this->client->present()->email(),
                 "address" => $this->getBillingAddress(),
-                "experience_context"=> [
+                "experience_context" => [
                     "user_action" => "PAY_NOW"
                 ],
             ],
@@ -336,6 +399,12 @@ class PayPalPPCPPaymentDriver extends BaseDriver
 
     }
 
+    /**
+     * Creates the PayPal Order object
+     *
+     * @param  array $data
+     * @return string
+     */
     private function createOrder(array $data): string
     {
 
@@ -348,12 +417,13 @@ class PayPalPPCPPaymentDriver extends BaseDriver
         })->implode("\n");
 
         $order = [
-                
+
                 "intent" => "CAPTURE",
                 "payment_source" => $this->paymentSource(),
                 "purchase_units" => [
                     [
-                    "description" =>ctrans('texts.invoice_number').'# '.$invoice->number,
+                    "custom_id" => $this->payment_hash->hash,
+                    "description" => ctrans('texts.invoice_number').'# '.$invoice->number,
                     "invoice_id" => $invoice->number,
                     "payee" => [
                         "merchant_id" => $this->company_gateway->getConfigField('merchantId'),
@@ -364,7 +434,7 @@ class PayPalPPCPPaymentDriver extends BaseDriver
                     $this->getShippingAddress(),
                     "amount" => [
                         "value" => (string)$data['amount_with_fee'],
-                        "currency_code"=> $this->client->currency()->code,
+                        "currency_code" => $this->client->currency()->code,
                         "breakdown" => [
                             "item_total" => [
                                 "currency_code" => $this->client->currency()->code,
@@ -372,10 +442,10 @@ class PayPalPPCPPaymentDriver extends BaseDriver
                             ]
                         ]
                     ],
-                    "items"=> [
+                    "items" => [
                         [
                             "name" => ctrans('texts.invoice_number').'# '.$invoice->number,
-                            "description" => substr($description, 0, 127),
+                            "description" => mb_substr($description, 0, 127),
                             "quantity" => "1",
                             "unit_amount" => [
                                 "currency_code" => $this->client->currency()->code,
@@ -387,14 +457,14 @@ class PayPalPPCPPaymentDriver extends BaseDriver
                 ]
             ];
 
-            
+
         if($shipping = $this->getShippingAddress()) {
-            $order['purchase_units'][0] = $shipping;
+            $order['purchase_units'][0]["shipping"] = $shipping;
         }
 
         $r = $this->gatewayRequest('/v2/checkout/orders', 'post', $order);
 
-        nlog($r->json());
+        // nlog($r->json());
 
         return $r->json()['id'];
 
@@ -417,37 +487,41 @@ class PayPalPPCPPaymentDriver extends BaseDriver
     {
         return $this->company_gateway->require_shipping_address ?
         [
-            "shipping" =>  [
-                "address" =>
+            "address" =>
                 [
-                    "address_line_1" => $this->client->shipping_address1,
+                    "address_line_1" => strlen($this->client->shipping_address1) > 1 ? $this->client->shipping_address1 : $this->client->address1,
                     "address_line_2" => $this->client->shipping_address2,
-                    "admin_area_2" => $this->client->shipping_city,
-                    "admin_area_1" => $this->client->shipping_state,
-                    "postal_code" => $this->client->shipping_postal_code,
+                    "admin_area_2" => strlen($this->client->shipping_city) > 1 ? $this->client->shipping_city : $this->client->city,
+                    "admin_area_1" => strlen($this->client->shipping_state) > 1 ? $this->client->shipping_state : $this->client->state,
+                    "postal_code" => strlen($this->client->shipping_postal_code) > 1 ? $this->client->shipping_postal_code : $this->client->postal_code,
                     "country_code" => $this->client->present()->shipping_country_code(),
                 ],
-            ]
         ]
+        
         : null;
 
     }
 
+    /**
+     * Generates the gateway request
+     *
+     * @param  string $uri
+     * @param  string $verb
+     * @param  array $data
+     * @param  ?array $headers
+     * @return \Illuminate\Http\Client\Response
+     */
     public function gatewayRequest(string $uri, string $verb, array $data, ?array $headers = [])
     {
         $this->init();
-        
+
         $r = Http::withToken($this->access_token)
                 ->withHeaders($this->getHeaders($headers))
                 ->{$verb}("{$this->api_endpoint_url}{$uri}", $data);
 
-        nlog($r);
-        nlog($r->json());
-
         if($r->successful()) {
             return $r;
         }
-
 
         SystemLogger::dispatch(
             ['response' => $r->body()],
@@ -462,6 +536,12 @@ class PayPalPPCPPaymentDriver extends BaseDriver
 
     }
 
+    /**
+     * Generates the request headers
+     *
+     * @param  array $headers
+     * @return array
+     */
     private function getHeaders(array $headers = []): array
     {
         return array_merge([
@@ -473,8 +553,13 @@ class PayPalPPCPPaymentDriver extends BaseDriver
         ], $headers);
     }
 
-    private function feeCalc($invoice, $invoice_total)
+    public function processWebhookRequest(Request $request)
     {
 
+        // nlog(json_encode($request->all()));
+        $this->init();
+
+        PayPalWebhook::dispatch($request->all(), $request->headers->all(), $this->access_token);
     }
+
 }

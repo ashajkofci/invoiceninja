@@ -8,6 +8,7 @@
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
+
 namespace App\Http\Requests\TaskScheduler;
 
 use App\Http\Requests\Request;
@@ -44,7 +45,7 @@ class UpdateSchedulerRequest extends Request
             'parameters.end_date' => ['bail', 'sometimes', 'date:Y-m-d', 'required_if:parameters.date_rate,custom', 'after_or_equal:parameters.start_date'],
             'parameters.entity' => ['bail', 'sometimes', 'string', 'in:invoice,credit,quote,purchase_order'],
             'parameters.entity_id' => ['bail', 'sometimes', 'string'],
-            'parameters.report_name' => ['bail','sometimes', 'string', 'required_if:template,email_report', 'in:ar_detailed,ar_summary,client_balance,tax_summary,profitloss,client_sales,user_sales,product_sales,client,client_contact,credit,document,expense,invoice,invoice_item,quote,quote_item,recurring_invoice,payment,product,task'],
+            'parameters.report_name' => ['bail','sometimes', 'string', 'required_if:template,email_report','in:vendor,purchase_order_item,purchase_order,ar_detailed,ar_summary,client_balance,tax_summary,profitloss,client_sales,user_sales,product_sales,activity,client,contact,client_contact,credit,document,expense,invoice,invoice_item,quote,quote_item,recurring_invoice,payment,product,task'],
             'parameters.date_key' => ['bail','sometimes', 'string'],
             'parameters.status' => ['bail','sometimes', 'string'],
         ];
@@ -59,7 +60,7 @@ class UpdateSchedulerRequest extends Request
         if (array_key_exists('next_run', $input) && is_string($input['next_run'])) {
             $input['next_run_client'] = $input['next_run'];
         }
-        
+
         if($input['template'] == 'email_record') {
             $input['frequency_id'] = 0;
         }
@@ -76,8 +77,8 @@ class UpdateSchedulerRequest extends Request
                                                     })->implode(",") ?? '';
         }
 
-
         $this->replace($input);
+
 
 
     }

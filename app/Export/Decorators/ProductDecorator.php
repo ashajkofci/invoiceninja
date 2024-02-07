@@ -27,7 +27,7 @@ class ProductDecorator implements DecoratorInterface
 
         if($product && method_exists($this, $key)) {
             return $this->{$key}($product);
-        } elseif($product->{$key}) {
+        } elseif($product->{$key} ?? false) {
             return $product->{$key} ?? '';
         }
 
@@ -50,7 +50,7 @@ class ProductDecorator implements DecoratorInterface
     {
 
         $category = ctrans('texts.physical_goods');
-        
+
         match($product->tax_id) {
             1 => $category =  ctrans('texts.physical_goods'),
             2 => $category = ctrans('texts.services'),

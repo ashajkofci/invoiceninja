@@ -115,7 +115,7 @@ class SwissQrGenerator
         } else {
             $tempInvoiceNumber = $this->invoice->number;
             $tempInvoiceNumber = preg_replace('/[^A-Za-z0-9]/', '', $tempInvoiceNumber);
-            $tempInvoiceNumber = substr($tempInvoiceNumber, 1);
+            // $tempInvoiceNumber = substr($tempInvoiceNumber, 1);
 
             $calcInvoiceNumber = "";
             $array = str_split($tempInvoiceNumber);
@@ -176,7 +176,7 @@ class SwissQrGenerator
         } catch (\Exception $e) {
 
             if(is_iterable($qrBill->getViolations())) {
-           
+
                 foreach ($qrBill->getViolations() as $key => $violation) {
                     nlog("qr");
                     nlog($violation);
@@ -207,7 +207,7 @@ class SwissQrGenerator
             case 'fr_CA':
             case 'fr_CH':
                 return 'fr';
-            
+
             default:
                 return 'en';
         }

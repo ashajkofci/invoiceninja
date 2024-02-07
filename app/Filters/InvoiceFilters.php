@@ -67,10 +67,10 @@ class InvoiceFilters extends QueryFilters
                 $invoice_filters[] = Invoice::STATUS_PARTIAL;
             }
 
-            if (count($invoice_filters) >0) {
+            if (count($invoice_filters) > 0) {
                 $query->whereIn('status_id', $invoice_filters);
             }
-            
+
             if (in_array('overdue', $status_parameters)) {
                 $query->orWhereIn('status_id', [Invoice::STATUS_SENT, Invoice::STATUS_PARTIAL])
                                 ->where('due_date', '<', Carbon::now())
@@ -86,7 +86,7 @@ class InvoiceFilters extends QueryFilters
         if (strlen($number) == 0) {
             return $this->builder;
         }
-        
+
         return $this->builder->where('number', $number);
     }
 
@@ -247,30 +247,58 @@ class InvoiceFilters extends QueryFilters
         return $this->builder->where('due_date', '>=', $date);
     }
 
+    /**
+     * Filter by date range
+     *
+     * @param string $date_range
+     * @return Builder
+     */
     public function date_range(string $date_range = ''): Builder
     {
         $parts = explode(",", $date_range);
 
-        if (count($parts) != 3) {
+        if (count($parts) != 2) {
             return $this->builder;
         }
-
-        if(!in_array($parts[0], ['date','due_date'])) {
-            return $this->builder;
-        }
-
         try {
 
-            $start_date = Carbon::parse($parts[1]);
-            $end_date = Carbon::parse($parts[2]);
+            $start_date = Carbon::parse($parts[0]);
+            $end_date = Carbon::parse($parts[1]);
 
-            return $this->builder->whereBetween($parts[0], [$start_date, $end_date]);
+            return $this->builder->whereBetween('date', [$start_date, $end_date]);
         } catch(\Exception $e) {
             return $this->builder;
         }
 
         return $this->builder;
     }
+
+    /**
+     * Filter by due date range
+     *
+     * @param string $date_range
+     * @return Builder
+     */
+    public function due_date_range(string $date_range = ''): Builder
+    {
+        $parts = explode(",", $date_range);
+
+        if (count($parts) != 2) {
+            return $this->builder;
+        }
+        try {
+
+            $start_date = Carbon::parse($parts[0]);
+            $end_date = Carbon::parse($parts[1]);
+
+            return $this->builder->whereBetween('due_date', [$start_date, $end_date]);
+        } catch(\Exception $e) {
+            return $this->builder;
+        }
+
+        return $this->builder;
+    }
+
 
     /**
      * Sorts the list based on $sort.
@@ -286,14 +314,16 @@ class InvoiceFilters extends QueryFilters
             return $this->builder;
         }
 
+        $dir = ($sort_col[1] == 'asc') ? 'asc' : 'desc';
+
         if ($sort_col[0] == 'client_id') {
 
             return $this->builder->orderBy(\App\Models\Client::select('name')
-                             ->whereColumn('clients.id', 'invoices.client_id'), $sort_col[1]);
-            
+                             ->whereColumn('clients.id', 'invoices.client_id'), $dir);
+
         }
 
-        return $this->builder->orderBy($sort_col[0], $sort_col[1]);
+        return $this->builder->orderBy($sort_col[0], $dir);
     }
 
     /**

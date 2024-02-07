@@ -57,22 +57,14 @@ class EmailReport
 
     public function run()
     {
-        
+
         $start_end_dates = $this->calculateStartAndEndDates($this->scheduler->parameters);
-        
-        $data = [];
+        $data = $this->scheduler->parameters;
 
-        $data = [
-            'start_date' => $start_end_dates[0],
-            'end_date' => $start_end_dates[1],
-            'date_range' => 'custom',
-            'client_id' => null,
-            'report_keys' => []
-        ];
-
-        if (isset($this->scheduler->parameters['clients']) && count($this->scheduler->parameters['clients']) >= 1) {
-            $data['clients'] = $this->transformKeys($this->scheduler->parameters['clients']);
-        }
+        $data['start_date'] = $start_end_dates[0];
+        $data['end_date'] = $start_end_dates[1];
+        $data['date_range'] = $data['date_range'] ?? 'all';
+        $data['report_keys'] = $data['report_keys'] ?? [];
         
         $export = false;
 
@@ -100,7 +92,7 @@ class EmailReport
             'task' => $export = (new TaskExport($this->scheduler->company, $data)),
             default => $export = false,
         };
-        
+
         if(!$export) {
             $this->cancelSchedule();
             return;
@@ -110,7 +102,7 @@ class EmailReport
 
         //todo - potentially we send this to more than one user.
 
-        $nmo = new NinjaMailerObject;
+        $nmo = new NinjaMailerObject();
         $nmo->mailable = new DownloadReport($this->scheduler->company, $csv, $this->file_name);
         $nmo->company = $this->scheduler->company;
         $nmo->settings = $this->scheduler->company->settings;
@@ -120,14 +112,14 @@ class EmailReport
 
         //calculate next run dates;
         $this->scheduler->calculateNextRun();
-        
+
     }
 
     private function cancelSchedule()
     {
         $this->scheduler->forceDelete();
     }
-    
-   
+
+
 
 }
