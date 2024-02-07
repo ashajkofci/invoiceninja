@@ -27,7 +27,7 @@ class QuoteDecorator extends Decorator implements DecoratorInterface
 
         if($quote && method_exists($this, $key)) {
             return $this->{$key}($quote);
-        } elseif($quote->{$key}) {
+        } elseif($quote->{$key} ?? false) {
             return $quote->{$key} ?? '';
         }
 
@@ -39,7 +39,7 @@ class QuoteDecorator extends Decorator implements DecoratorInterface
     {
         return $quote->stringStatus($quote->status_id);
     }
-    
+
     public function uses_inclusive_taxes(Quote $quote)
     {
         return $quote->uses_inclusive_taxes ? ctrans('texts.yes') : ctrans('texts.no');

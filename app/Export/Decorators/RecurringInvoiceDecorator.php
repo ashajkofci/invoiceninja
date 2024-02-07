@@ -27,7 +27,7 @@ class RecurringInvoiceDecorator extends Decorator implements DecoratorInterface
 
         if($recurring_invoice && method_exists($this, $key)) {
             return $this->{$key}($recurring_invoice);
-        } elseif($recurring_invoice->{$key}) {
+        } elseif($recurring_invoice->{$key} ?? false) {
             return $recurring_invoice->{$key} ?? '';
         }
 
@@ -39,7 +39,7 @@ class RecurringInvoiceDecorator extends Decorator implements DecoratorInterface
     {
         return $recurring_invoice->stringStatus($recurring_invoice->status_id);
     }
-    
+
     public function uses_inclusive_taxes(RecurringInvoice $recurring_invoice)
     {
         return $recurring_invoice->uses_inclusive_taxes ? ctrans('texts.yes') : ctrans('texts.no');

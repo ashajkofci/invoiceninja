@@ -47,9 +47,9 @@ class StoreSchedulerRequest extends Request
             'parameters.end_date' => ['bail', 'sometimes', 'date:Y-m-d', 'required_if:parameters.date_rate,custom', 'after_or_equal:parameters.start_date'],
             'parameters.entity' => ['bail', 'sometimes', 'string', 'in:invoice,credit,quote,purchase_order'],
             'parameters.entity_id' => ['bail', 'sometimes', 'string'],
-            'parameters.report_name' => ['bail','sometimes', 'string', 'required_if:template,email_report','in:ar_detailed,ar_summary,client_balance,tax_summary,profitloss,client_sales,user_sales,product_sales,activity,client,contact,client_contact,credit,document,expense,invoice,invoice_item,quote,quote_item,recurring_invoice,payment,product,task'],
+            'parameters.report_name' => ['bail','sometimes', 'string', 'required_if:template,email_report','in:vendor,purchase_order_item,purchase_order,ar_detailed,ar_summary,client_balance,tax_summary,profitloss,client_sales,user_sales,product_sales,activity,client,contact,client_contact,credit,document,expense,invoice,invoice_item,quote,quote_item,recurring_invoice,payment,product,task'],
             'parameters.date_key' => ['bail','sometimes', 'string'],
-            'parameters.status' => ['bail','sometimes', 'string'],
+            'parameters.status' => ['bail','sometimes', 'nullable', 'string'],
         ];
 
         return $rules;
@@ -62,7 +62,7 @@ class StoreSchedulerRequest extends Request
         if (array_key_exists('next_run', $input) && is_string($input['next_run'])) {
             $input['next_run_client'] = $input['next_run'];
         }
-     
+
         if($input['template'] == 'email_record') {
             $input['frequency_id'] = 0;
         }
@@ -70,11 +70,11 @@ class StoreSchedulerRequest extends Request
         if(isset($input['parameters']) && !isset($input['parameters']['clients'])) {
             $input['parameters']['clients'] = [];
         }
-        
+
         if(isset($input['parameters']['status'])) {
 
             $input['parameters']['status'] = collect(explode(",", $input['parameters']['status']))
-                                                    ->filter(function($status) {
+                                                    ->filter(function ($status) {
                                                         return in_array($status, ['all','draft','paid','unpaid','overdue']);
                                                     })->implode(",") ?? '';
         }
