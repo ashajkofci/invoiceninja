@@ -705,7 +705,7 @@ class PdfBuilder
             $data[$key][$table_type.".{$_table_type}3"] = strlen($item->custom_value3) >= 1 ? $helpers->formatCustomFieldValue($this->service->company->custom_fields, "{$_table_type}3", $item->custom_value3, $this->service->config->currency_entity) : '';
             $data[$key][$table_type.".{$_table_type}4"] = strlen($item->custom_value4) >= 1 ? $helpers->formatCustomFieldValue($this->service->company->custom_fields, "{$_table_type}4", $item->custom_value4, $this->service->config->currency_entity) : '';
 
-            if ($item->quantity > 0 || $item->cost > 0) {
+            if ($item->cost > 0) {
                 $data[$key][$table_type.'.quantity'] = $this->service->config->formatValueNoTrailingZeroes($item->quantity);
 
                 $data[$key][$table_type.'.unit_cost'] = $this->service->config->formatMoneyNoRounding($item->cost);
@@ -749,17 +749,17 @@ class PdfBuilder
             // but that's no longer necessary.
 
             if (isset($item->tax_rate1)) {
-                $data[$key][$table_type.'.tax_rate1'] = floatval($item->tax_rate1).'%';
+                $data[$key][$table_type.'.tax_rate1'] = $item->tax_name1;
                 $data[$key][$table_type.'.tax1'] = &$data[$key][$table_type.'.tax_rate1'];
             }
 
             if (isset($item->tax_rate2)) {
-                $data[$key][$table_type.'.tax_rate2'] = floatval($item->tax_rate2).'%';
+                $data[$key][$table_type.'.tax_rate2'] = $item->tax_name2;
                 $data[$key][$table_type.'.tax2'] = &$data[$key][$table_type.'.tax_rate2'];
             }
 
             if (isset($item->tax_rate3)) {
-                $data[$key][$table_type.'.tax_rate3'] = floatval($item->tax_rate3).'%';
+                $data[$key][$table_type.'.tax_rate3'] = $item->tax_name3;
                 $data[$key][$table_type.'.tax3'] = &$data[$key][$table_type.'.tax_rate3'];
             }
 
@@ -1149,6 +1149,7 @@ class PdfBuilder
                 }
 
                 foreach ($taxes as $i => $tax) {
+                    continue;
                     $elements[1]['elements'][] = ['element' => 'div', 'elements' => [
                         ['element' => 'span', 'content', 'content' => $tax['name'], 'properties' => ['data-ref' => 'totals-table-line_tax_' . $i . '-label']],
                         ['element' => 'span', 'content', 'content' => $this->service->config->formatMoney($tax['total']), 'properties' => ['data-ref' => 'totals-table-line_tax_' . $i]],

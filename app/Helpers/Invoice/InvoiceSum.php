@@ -330,6 +330,7 @@ class InvoiceSum
 
             $this->tax_map[] = ['name' => $tax_name, 'total' => $total_line_tax];
 
+            $this->sub_total += $total_line_tax;
             $this->total_taxes += $total_line_tax;
         }
 
