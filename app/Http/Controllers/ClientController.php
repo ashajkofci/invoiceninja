@@ -49,6 +49,9 @@ use App\Http\Requests\Client\ClientDocumentsRequest;
 use App\Http\Requests\Client\ReactivateClientEmailRequest;
 use App\Models\Expense;
 use App\Models\Payment;
+use App\Models\Project;
+use App\Models\RecurringExpense;
+use App\Models\RecurringInvoice;
 use App\Models\Task;
 use App\Transformers\DocumentTransformer;
 
@@ -325,9 +328,12 @@ class ClientController extends BaseController
                             ->first();
 
         if (!$m_client) {
-            return response()->json(['message' => "Client not found"]);
+            return response()->json(['message' => "Client not found"], 400);
         }
 
+        if($m_client->id == $client->id) 
+            return response()->json(['message' => "Attempting to merge the same client is not possible."], 400);
+        
         $merged_client = $client->service()->merge($m_client)->save();
 
         return $this->itemResponse($merged_client);
@@ -412,19 +418,19 @@ class ClientController extends BaseController
 
     }
 
-    public function documents(ClientDocumentsRequest $request, Client $client) 
+    public function documents(ClientDocumentsRequest $request, Client $client)
     {
-     
+
         $this->entity_type = Document::class;
 
         $this->entity_transformer = DocumentTransformer::class;
-        
+
         $documents = Document::query()
             ->company()
-            ->whereHasMorph('documentable', [Invoice::class, Quote::class, Credit::class, Expense::class, Payment::class, Task::class], function ($query) use($client) {
+            ->whereHasMorph('documentable', [Invoice::class, Quote::class, Credit::class, Expense::class, Payment::class, Task::class, RecurringInvoice::class, RecurringExpense::class, Project::class], function ($query) use ($client) {
                 $query->where('client_id', $client->id);
             })
-            ->orWhereHasMorph('documentable', [Client::class], function ($query) use ($client){
+            ->orWhereHasMorph('documentable', [Client::class], function ($query) use ($client) {
                 $query->where('id', $client->id);
             });
 

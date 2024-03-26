@@ -23,7 +23,7 @@ class InvoiceDecorator extends Decorator implements DecoratorInterface
             $invoice = $entity;
         } elseif($entity->invoice) {
             $invoice = $entity->invoice;
-        } elseif($entity->invoices()->exists()) {
+        } elseif(method_exists($entity, 'invoices') && $entity->invoices()->exists()) {
             $invoice = $entity->invoices()->first();
         }
 
@@ -78,7 +78,6 @@ class InvoiceDecorator extends Decorator implements DecoratorInterface
     {
         return $invoice->partial_due_date ?? '';
     }
-
 
     public function assigned_user_id(Invoice $invoice)
     {

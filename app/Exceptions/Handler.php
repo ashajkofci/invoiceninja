@@ -55,14 +55,12 @@ class Handler extends ExceptionHandler
 
     protected $selfHostDontReport = [
         FilePermissionsFailure::class,
-        PDOException::class,
         MaxAttemptsExceededException::class,
         CommandNotFoundException::class,
         ValidationException::class,
         ModelNotFoundException::class,
         NotFoundHttpException::class,
         UnableToCreateDirectory::class,
-        ConnectException::class,
         RuntimeException::class,
         InvalidArgumentException::class,
         CredentialsException::class,
@@ -105,8 +103,8 @@ class Handler extends ExceptionHandler
         if (Ninja::isHosted()) {
 
             // if($exception instanceof ThrottleRequestsException && class_exists(\Modules\Admin\Events\ThrottledExceptionRaised::class)) {
-                // $uri = urldecode(request()->getRequestUri());
-                // event(new \Modules\Admin\Events\ThrottledExceptionRaised(auth()->user()?->account?->key, $uri, request()->ip()));
+            // $uri = urldecode(request()->getRequestUri());
+            // event(new \Modules\Admin\Events\ThrottledExceptionRaised(auth()->user()?->account?->key, $uri, request()->ip()));
             // }
 
             Integration::configureScope(function (Scope $scope): void {
@@ -140,7 +138,7 @@ class Handler extends ExceptionHandler
                         'email' => 'anonymous@example.com',
                         'name'  => 'Anonymous User',
                     ]);
-                } elseif (auth()->guard('user') && auth()->guard('user')->user() && auth()->user()->company() && auth()->user()->company()->account->report_errors) {
+                } elseif (auth()->guard('user') && auth()->guard('user')->user() && auth()->user()->companyIsSet() && auth()->user()->company()->account->report_errors) {
                     $scope->setUser([
                         'id'    => auth()->user()->account->key,
                         'email' => 'anonymous@example.com',

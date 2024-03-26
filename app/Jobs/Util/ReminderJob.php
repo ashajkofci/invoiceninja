@@ -26,7 +26,6 @@ use App\Utils\Traits\MakesReminders;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
-use Spatie\OpenTelemetry\Jobs\TraceAware;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 
@@ -38,7 +37,7 @@ class ReminderJob implements ShouldQueue
     use SerializesModels;
     use MakesReminders;
     use MakesDates;
-    
+
     public $tries = 1;
 
     public function __construct()

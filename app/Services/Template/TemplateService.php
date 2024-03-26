@@ -157,9 +157,9 @@ class TemplateService
         return $this;
     }
 
-    private function setGlobals(): self
+    public function setGlobals(): self
     {
-
+        
         foreach($this->global_vars as $key => $value) {
             $this->twig->addGlobal($key, $value);
         }
@@ -240,8 +240,6 @@ class TemplateService
      */
     public function getPdf(): string
     {
-
-        // nlog($this->getHtml());
 
         if (config('ninja.invoiceninja_hosted_pdf_generation') || config('ninja.pdf_generator') == 'hosted_ninja') {
             $pdf = (new NinjaPdf())->build($this->compiled_html);
@@ -613,8 +611,6 @@ class TemplateService
 
         $this->payment = $payment;
 
-        $this->addGlobal(['currency_code' => $payment->currency->code ?? $this->company->currency()->code]);
-
         $credits = $payment->credits->map(function ($credit) use ($payment) {
             return [
                 'credit' => $credit->number,
@@ -711,10 +707,13 @@ class TemplateService
     private function getPaymentRefundActivity(Payment $payment): array
     {
 
-        return collect($payment->refund_meta ?? [])
+        if(!is_array($payment->refund_meta))
+            return [];
+        
+        return collect($payment->refund_meta)
         ->map(function ($refund) use ($payment) {
 
-            $date = \Carbon\Carbon::parse($refund['date'])->addSeconds($payment->client->timezone_offset());
+            $date = \Carbon\Carbon::parse($refund['date'] ?? $payment->date)->addSeconds($payment->client->timezone_offset());
             $date = $this->translateDate($date, $payment->client->date_format(), $payment->client->locale());
             $entity = ctrans('texts.invoice');
 
@@ -1029,6 +1028,8 @@ class TemplateService
                     'payment_balance' => $purchase_order->client->payment_balance,
                     'credit_balance' => $purchase_order->client->credit_balance,
                     'vat_number' => $purchase_order->client->vat_number ?? '',
+                    'address' => $purchase_order->client->present()->address(),
+                    'shipping_address' => $purchase_order->client->present()->shipping_address(),
                 ] : [],
                 'status_id' => (string)($purchase_order->status_id ?: 1),
                 'status' => PurchaseOrder::stringStatus($purchase_order->status_id ?? 1),

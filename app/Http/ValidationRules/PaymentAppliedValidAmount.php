@@ -61,7 +61,10 @@ class PaymentAppliedValidAmount implements Rule
         $payment_amounts = 0;
         $invoice_amounts = 0;
 
-        $payment_amounts = $payment->amount - $payment->refunded - $payment->applied;
+        // $payment_amounts = $payment->amount - $payment->refunded - $payment->applied;
+
+        //20-03-2024 - applied amounts are never tainted by refunded amount.
+        $payment_amounts = $payment->amount - $payment->applied;
 
         if (request()->has('credits')
             && is_array(request()->input('credits'))
@@ -84,14 +87,9 @@ class PaymentAppliedValidAmount implements Rule
 
                 $inv = $inv_collection->firstWhere('id', $invoice['invoice_id']);
 
-                nlog($inv->status_id);
-                nlog($inv->amount);
-                nlog($invoice['amount']);
+                if($inv->status_id == Invoice::STATUS_DRAFT && $inv->amount >= $invoice['amount']) {
 
-                if($inv->status_id == Invoice::STATUS_DRAFT && $inv->amount >= $invoice['amount']){
-
-                }
-                elseif ($inv->balance < $invoice['amount']) {
+                } elseif ($inv->balance < $invoice['amount']) {
                     $this->message = 'Amount cannot be greater than invoice balance';
 
                     return false;

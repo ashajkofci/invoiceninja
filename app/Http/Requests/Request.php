@@ -20,7 +20,7 @@ class Request extends FormRequest
     use MakesHash;
     use RuntimeFormRequest;
 
-    protected $file_validation = 'sometimes|file|mimes:png,ai,jpeg,tiff,pdf,gif,psd,txt,doc,xls,ppt,xlsx,docx,pptx,webp,xml,zip,csv,ods,odt,odp|max:100000';
+    protected $file_validation = 'sometimes|file|max:100000|mimes:png,ai,jpeg,tiff,pdf,gif,psd,txt,doc,xls,ppt,xlsx,docx,pptx,webp,xml,zip,csv,ods,odt,odp';
     /**
      * Get the validation rules that apply to the request.
      *
@@ -29,6 +29,15 @@ class Request extends FormRequest
     public function rules()
     {
         return [];
+    }
+
+    public function fileValidation()
+    {
+        if(config('ninja.upload_extensions'))
+            return $this->file_validation. ",".config('ninja.upload_extensions');
+
+        return $this->file_validation;
+        
     }
 
     public function globalRules($rules)
@@ -198,18 +207,22 @@ class Request extends FormRequest
             }
         }
 
-        if(isset($input['public_notes']))
-            $input['public_notes'] = str_replace("</sc","<-", $input['public_notes']);
+        if(isset($input['public_notes'])) {
+            $input['public_notes'] = str_replace("</sc", "<-", $input['public_notes']);
+        }
 
-        if(isset($input['footer'])) 
+        if(isset($input['footer'])) {
             $input['footer'] = str_replace("</sc", "<-", $input['footer']);
-        
-        if(isset($input['terms'])) 
+        }
+
+        if(isset($input['terms'])) {
             $input['terms'] = str_replace("</sc", "<-", $input['terms']);
-        
-        if(isset($input['private_notes'])) 
+        }
+
+        if(isset($input['private_notes'])) {
             $input['private_notes'] = str_replace("</sc", "<-", $input['private_notes']);
-        
+        }
+
         return $input;
     }
 

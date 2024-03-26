@@ -23,7 +23,6 @@ use League\Csv\Writer;
 
 class ExpenseExport extends BaseExport
 {
-
     private $expense_transformer;
 
     private Decorator $decorator;
@@ -84,9 +83,13 @@ class ExpenseExport extends BaseExport
                         ->with('client')
                         ->withTrashed()
                         ->where('company_id', $this->company->id)
-                        ->where('is_deleted', 0);
+                        ->where('is_deleted', $this->input['include_deleted'] ?? false);
 
         $query = $this->addDateRange($query);
+
+        if($this->input['status'] ?? false) {
+            $query = $this->addExpenseStatusFilter($query, $this->input['status']);
+        }
 
         if(isset($this->input['clients'])) {
             $query = $this->addClientFilter($query, $this->input['clients']);
@@ -103,7 +106,7 @@ class ExpenseExport extends BaseExport
         if(isset($this->input['categories'])) {
             $query = $this->addCategoryFilter($query, $this->input['categories']);
         }
-        
+
         if($this->input['document_email_attachment'] ?? false) {
             $this->queueDocuments($query);
         }
@@ -151,6 +154,55 @@ class ExpenseExport extends BaseExport
         }
 
         return $this->decorateAdvancedFields($expense, $entity);
+    }
+
+    protected function addExpenseStatusFilter($query, $status): Builder
+    {
+
+        $status_parameters = explode(',', $status);
+
+        if (in_array('all', $status_parameters)) {
+            return $query;
+        }
+
+        $query->where(function ($query) use ($status_parameters) {
+            if (in_array('logged', $status_parameters)) {
+                $query->orWhere(function ($query) {
+                    $query->where('amount', '>', 0)
+                          ->whereNull('invoice_id')
+                          ->whereNull('payment_date')
+                          ->where('should_be_invoiced', false);
+                });
+            }
+
+            if (in_array('pending', $status_parameters)) {
+                $query->orWhere(function ($query) {
+                    $query->where('should_be_invoiced', true)
+                          ->whereNull('invoice_id');
+                });
+            }
+
+            if (in_array('invoiced', $status_parameters)) {
+                $query->orWhere(function ($query) {
+                    $query->whereNotNull('invoice_id');
+                });
+            }
+
+            if (in_array('paid', $status_parameters)) {
+                $query->orWhere(function ($query) {
+                    $query->whereNotNull('payment_date');
+                });
+            }
+
+            if (in_array('unpaid', $status_parameters)) {
+                $query->orWhere(function ($query) {
+                    $query->whereNull('payment_date');
+                });
+            }
+
+        });
+
+        return $query;
     }
 
     private function decorateAdvancedFields(Expense $expense, array $entity): array
@@ -206,23 +258,21 @@ class ExpenseExport extends BaseExport
 
         if($expense->calculate_tax_by_amount) {
             $total_tax_amount = round($expense->tax_amount1 + $expense->tax_amount2 + $expense->tax_amount3, $precision);
-        }
-        else {
-            
-            if($expense->uses_inclusive_taxes){
-                $total_tax_amount = ($this->calcInclusiveLineTax($expense->tax_rate1 ?? 0, $expense->amount,$precision)) + ($this->calcInclusiveLineTax($expense->tax_rate2 ?? 0, $expense->amount,$precision)) + ($this->calcInclusiveLineTax($expense->tax_rate3 ?? 0, $expense->amount,$precision));
+        } else {
+
+            if($expense->uses_inclusive_taxes) {
+                $total_tax_amount = ($this->calcInclusiveLineTax($expense->tax_rate1 ?? 0, $expense->amount, $precision)) + ($this->calcInclusiveLineTax($expense->tax_rate2 ?? 0, $expense->amount, $precision)) + ($this->calcInclusiveLineTax($expense->tax_rate3 ?? 0, $expense->amount, $precision));
                 $entity['expense.net_amount'] = round(($expense->amount - round($total_tax_amount, $precision)), $precision);
-            }
-            else{
-                $total_tax_amount = ($expense->amount * (($expense->tax_rate1 ?? 0)/100)) + ($expense->amount * (($expense->tax_rate2 ?? 0)/100)) + ($expense->amount * (($expense->tax_rate3 ?? 0)/100));
+            } else {
+                $total_tax_amount = ($expense->amount * (($expense->tax_rate1 ?? 0) / 100)) + ($expense->amount * (($expense->tax_rate2 ?? 0) / 100)) + ($expense->amount * (($expense->tax_rate3 ?? 0) / 100));
                 $entity['expense.net_amount'] = round(($expense->amount + round($total_tax_amount, $precision)), $precision);
             }
         }
 
         $entity['expense.tax_amount'] = round($total_tax_amount, $precision);
-        
+
         return $entity;
-        
+
     }
 
     private function calcInclusiveLineTax($tax_rate, $amount, $precision): float

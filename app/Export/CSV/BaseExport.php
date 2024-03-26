@@ -294,6 +294,7 @@ class BaseExport
         'line_total' => 'item.line_total',
         'gross_line_total' => 'item.gross_line_total',
         'tax_amount' => 'item.tax_amount',
+        'product_cost' => 'item.product_cost'
     ];
 
     protected array $quote_report_keys = [
@@ -426,8 +427,11 @@ class BaseExport
 
     protected array $task_report_keys = [
         'start_date' => 'task.start_date',
+        'start_time' => 'task.start_time',
         'end_date' => 'task.end_date',
+        'end_time' => 'task.end_time',
         'duration' => 'task.duration',
+        'duration_words' => 'task.duration_words',
         'rate' => 'task.rate',
         'number' => 'task.number',
         'description' => 'task.description',
@@ -451,17 +455,19 @@ class BaseExport
     {
         if (isset($this->input['client_id']) && $this->input['client_id'] != 'all') {
 
-            if(!is_int($this->input['client_id'])) 
+            if(!is_int($this->input['client_id'])) {
                 $this->input['client_id'] = $this->decodePrimaryKey($this->input['client_id']);
+            }
 
             $client = Client::withTrashed()->find($this->input['client_id']);
 
-            if(!$client)
+            if(!$client) {
                 return $query;
+            }
 
             $this->client_description = $client->present()->name;
             return $query->where('client_id', $this->input['client_id']);
-            
+
         } elseif(isset($this->input['clients']) && count($this->input['clients']) > 0) {
 
             $this->client_description = 'Multiple Clients';
@@ -824,8 +830,15 @@ class BaseExport
         return '';
 
     }
-
-    public function applyFilters(Builder $query): Builder
+    
+    /**
+     * Apply Product Filters
+     *
+     * @param  Builder $query
+     * 
+     * @return Builder
+     */
+    public function applyProductFilters(Builder $query): Builder
     {
 
         if(isset($this->input['product_key'])) {
@@ -842,75 +855,329 @@ class BaseExport
 
         return $query;
     }
-
-    protected function addClientFilter($query, $clients): Builder
-    {   
-        if(is_string($clients))
-           $clients =  explode(',', $clients);
+    
+    /**
+     * Add Client Filter
+     *
+     * @param  Builder $query
+     * @param  mixed $clients
+     * 
+     * @return Builder
+     */
+    protected function addClientFilter(Builder $query, $clients): Builder
+    {
+        if(is_string($clients)) {
+            $clients =  explode(',', $clients);
+        }
 
         $transformed_clients = $this->transformKeys($clients);
 
         nlog($clients);
         nlog($transformed_clients);
 
-        if(count($transformed_clients) > 0)
+        if(count($transformed_clients) > 0) {
             $query->whereIn('client_id', $transformed_clients);
-        
+        }
+
         return $query;
     }
+    
+    /**
+     * Add Vendor Filter
+     *
+     * @param  Builder $query
+     * @param  string $vendors
+     * 
+     * @return Builder
+     */
+    protected function addVendorFilter(Builder$query, string $vendors): Builder
+    {
 
-    protected function addVendorFilter($query, $vendors): Builder
-    {   
-        
         if(is_string($vendors)) {
             $vendors =  explode(',', $vendors);
         }
-        
+
         $transformed_vendors = $this->transformKeys($vendors);
 
-        if(count($transformed_vendors) > 0)
+        if(count($transformed_vendors) > 0) {
             $query->whereIn('vendor_id', $transformed_vendors);
-        
+        }
+
         return $query;
     }
+    
+    /**
+     * AddProjectFilter
+     *
+     * @param  Builder $query
+     * @param  string $projects
+     * 
+     * @return Builder
+     */
+    protected function addProjectFilter(Builder $query, string $projects): Builder
+    {
 
-    protected function addProjectFilter($query, $projects): Builder
-    {   
-        
         if(is_string($projects)) {
             $projects =  explode(',', $projects);
         }
 
         $transformed_projects = $this->transformKeys($projects);
-        
-        if(count($transformed_projects) > 0)
+
+        if(count($transformed_projects) > 0) {
             $query->whereIn('project_id', $transformed_projects);
-        
+        }
+
         return $query;
     }
+    
+    /**
+     * Add Category Filter
+     *
+     * @param  Builder $query
+     * @param  string $expense_categories
+     * 
+     * @return Builder
+     */
+    protected function addCategoryFilter(Builder $query, string $expense_categories): Builder
+    {
 
-    protected function addCategoryFilter($query, $expense_categories): Builder
-    {   
-        
         if(is_string($expense_categories)) {
             $expense_categories =  explode(',', $expense_categories);
         }
 
         $transformed_expense_categories = $this->transformKeys($expense_categories);
-        
 
-        if(count($transformed_expense_categories) > 0)
+
+        if(count($transformed_expense_categories) > 0) {
             $query->whereIn('category_id', $transformed_expense_categories);
-        
+        }
+
         return $query;
     }
-
-    protected function addInvoiceStatusFilter($query, $status): Builder
+    
+    /**
+     * Add Payment Status Filters
+     *
+     * @param  Builder $query
+     * @param  string $status
+     * 
+     * @return Builder
+     */
+    protected function addPaymentStatusFilters(Builder $query, string $status): Builder
     {
 
         $status_parameters = explode(',', $status);
 
-        if(in_array('all', $status_parameters)) {
+        if(in_array('all', $status_parameters) || count($status_parameters) == 0) {
+            return $query;
+        }
+        
+        $query->where(function ($query) use ($status_parameters) {
+            $payment_filters = [];
+
+            if (in_array('pending', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_PENDING;
+            }
+
+            if (in_array('cancelled', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_CANCELLED;
+            }
+
+            if (in_array('failed', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_FAILED;
+            }
+
+            if (in_array('completed', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_COMPLETED;
+            }
+
+            if (in_array('partially_refunded', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_PARTIALLY_REFUNDED;
+            }
+
+            if (in_array('refunded', $status_parameters)) {
+                $payment_filters[] = Payment::STATUS_REFUNDED;
+            }
+
+            if (count($payment_filters) > 0) {
+                $query->whereIn('status_id', $payment_filters);
+            }
+
+            if(in_array('partially_unapplied', $status_parameters)) {
+                $query->whereColumn('amount', '>', 'applied')->where('refunded', 0);
+            }
+        });
+
+        return $query;
+
+    }
+            
+    /**
+     * Add RecurringInvoice Status Filter
+     *
+     * @param  Builder $query
+     * @param  string $status
+     * 
+     * @return Builder
+     */
+    protected function addRecurringInvoiceStatusFilter(Builder $query, string $status): Builder
+    {
+
+        $status_parameters = explode(',', $status);
+
+        if (in_array('all', $status_parameters) || count($status_parameters) == 0){
+            return $query;
+        }
+
+        $recurring_filters = [];
+
+        if (in_array('active', $status_parameters)) {
+            $recurring_filters[] = RecurringInvoice::STATUS_ACTIVE;
+        }
+
+        if (in_array('paused', $status_parameters)) {
+            $recurring_filters[] = RecurringInvoice::STATUS_PAUSED;
+        }
+
+        if (in_array('completed', $status_parameters)) {
+            $recurring_filters[] = RecurringInvoice::STATUS_COMPLETED;
+        }
+
+        if (count($recurring_filters) >= 1) {
+            return $query->whereIn('status_id', $recurring_filters);
+        }
+
+        return $query;
+
+    }
+    /**
+     * Add QuoteStatus Filter
+     *
+     * @param  Builder $query
+     * @param  string $status
+     * 
+     * @return Builder
+     */
+    protected function addQuoteStatusFilter(Builder $query, string $status): Builder
+    {
+
+        $status_parameters = explode(',', $status);
+
+        if (in_array('all', $status_parameters)) {
+            return $query;
+        }
+
+        $query->where(function ($query) use ($status_parameters) {
+            if (in_array('sent', $status_parameters)) {
+                $query->orWhere(function ($q) {
+                    $q->where('status_id', Quote::STATUS_SENT)
+                    ->whereNull('due_date')
+                    ->orWhere('due_date', '>=', now()->toDateString());
+                });
+            }
+
+            $quote_filters = [];
+
+            if (in_array('draft', $status_parameters)) {
+                $quote_filters[] = Quote::STATUS_DRAFT;
+            }
+
+            if (in_array('approved', $status_parameters)) {
+                $quote_filters[] = Quote::STATUS_APPROVED;
+            }
+
+            if (count($quote_filters) > 0) {
+                $query->orWhereIn('status_id', $quote_filters);
+            }
+
+            if (in_array('expired', $status_parameters)) {
+                $query->orWhere(function ($q) {
+                    $q->where('status_id', Quote::STATUS_SENT)
+                    ->whereNotNull('due_date')
+                    ->where('due_date', '<=', now()->toDateString());
+                });
+            }
+
+            if (in_array('upcoming', $status_parameters)) {
+                $query->orWhere(function ($q) {
+                    $q->where('status_id', Quote::STATUS_SENT)
+                    ->where('due_date', '>=', now()->toDateString())
+                    ->orderBy('due_date', 'DESC');
+                });
+            }
+
+            if(in_array('converted', $status_parameters)) {
+                $query->orWhere(function ($q) {
+                    $q->whereNotNull('invoice_id');
+                });
+            }
+        });
+
+        return $query;
+    }
+
+    /**
+     * Add PurchaseOrder Status Filter
+     *
+     * @param  Builder $query
+     * @param  string $status
+     * 
+     * @return Builder
+     */
+    protected function addPurchaseOrderStatusFilter(Builder $query, string $status): Builder
+    {
+        
+        $status_parameters = explode(',', $status);
+
+        if (in_array('all', $status_parameters) || count($status_parameters) == 0) {
+            return $query;
+        }
+
+        $query->where(function ($query) use ($status_parameters) {
+            $po_status = [];
+
+            if (in_array('draft', $status_parameters)) {
+                $po_status[] = PurchaseOrder::STATUS_DRAFT;
+            }
+
+            if (in_array('sent', $status_parameters)) {
+                $query->orWhere(function ($q) {
+                    $q->where('status_id', PurchaseOrder::STATUS_SENT)
+                    ->whereNull('due_date')
+                    ->orWhere('due_date', '>=', now()->toDateString());
+                });
+            }
+
+            if (in_array('accepted', $status_parameters)) {
+                $po_status[] = PurchaseOrder::STATUS_ACCEPTED;
+            }
+
+            if (in_array('cancelled', $status_parameters)) {
+                $po_status[] = PurchaseOrder::STATUS_CANCELLED;
+            }
+
+            if (count($po_status) >= 1) {
+                $query->whereIn('status_id', $po_status);
+            }
+        });
+
+        return $query;
+
+    }
+
+    /**
+     * Add Invoice Status Filter
+     *
+     * @param  Builder $query
+     * @param  string $status
+     * @return Builder
+     */
+    protected function addInvoiceStatusFilter(Builder $query, string $status): Builder
+    {
+
+        $status_parameters = explode(',', $status);
+
+        if(in_array('all', $status_parameters) || count($status_parameters) == 0) {
             return $query;
         }
 
@@ -933,6 +1200,10 @@ class BaseExport
             if (in_array('unpaid', $status_parameters)) {
                 $invoice_filters[] = Invoice::STATUS_SENT;
                 $invoice_filters[] = Invoice::STATUS_PARTIAL;
+            }
+
+            if (in_array('cancelled', $status_parameters)) {
+                $invoice_filters[] = Invoice::STATUS_CANCELLED;
             }
 
             if (count($invoice_filters) > 0) {
@@ -958,14 +1229,18 @@ class BaseExport
 
         return $query;
     }
-
-    protected function addDateRange($query)
+    
+    /**
+     * Add Date Range
+     *
+     * @param  Builder $query
+     * @return Builder
+     */
+    protected function addDateRange(Builder $query): Builder
     {
-        $query = $this->applyFilters($query);
+        $query = $this->applyProductFilters($query);
 
         $date_range = $this->input['date_range'];
-
-        nlog($date_range);
 
         if (array_key_exists('date_key', $this->input) && strlen($this->input['date_key']) > 1) {
             $this->date_key = $this->input['date_key'];
@@ -1299,12 +1574,12 @@ class BaseExport
     public function queueDocuments(Builder $query)
     {
         nlog("queue docs pls");
-        if($query->getModel() instanceof Document)
+        if($query->getModel() instanceof Document) {
             $documents = $query->pluck('id')->toArray();
-        else{
+        } else {
             $documents = $query->cursor()
-                               ->map(function ($entity){
-                                      return $entity->documents()->pluck('id')->toArray();
+                               ->map(function ($entity) {
+                                   return $entity->documents()->pluck('id')->toArray();
                                })->flatten()
                                ->toArray();
         }
@@ -1315,11 +1590,13 @@ class BaseExport
 
             $user = $this->company->owner();
 
-            if(auth()->user() && auth()->user()->account_id == $this->company->account_id)
+            if(auth()->user() && auth()->user()->account_id == $this->company->account_id) {
                 $user = auth()->user();
+            }
 
-            if($this->input['user_id'] ?? false)
+            if($this->input['user_id'] ?? false) {
                 $user = User::where('id', $this->input['user_id'])->where('account_id', $this->company->account_id)->first();
+            }
 
             ZipDocuments::dispatch($documents, $this->company, $user);
         }

@@ -12,6 +12,9 @@
 
 namespace App\DataProviders;
 
+/**
+ * Class Domain.
+ */
 class Domains
 {
     private static array $verify_domains = [
@@ -59391,7 +59394,7 @@ class Domains
             'wireconnected.com'
         ];
 
-    public static function getDomains()
+    public static function getDomains(): array
     {
         return self::$verify_domains;
     }
