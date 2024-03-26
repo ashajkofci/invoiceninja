@@ -12,7 +12,7 @@
 
 namespace App\Livewire;
 
-use App\Jobs\Invoice\CreateEInvoice;
+use App\Jobs\EDocument\CreateEDocument;
 use App\Libraries\MultiDB;
 use App\Models\CreditInvitation;
 use App\Models\InvoiceInvitation;
@@ -113,7 +113,7 @@ class PdfSlot extends Component
 
         $file_name = $this->entity->numberFormatter().'.xml';
 
-        $file = (new CreateEInvoice($this->entity))->handle();
+        $file = (new CreateEDocument($this->entity))->handle();
 
         $headers = ['Content-Type' => 'application/xml'];
 
@@ -131,7 +131,7 @@ class PdfSlot extends Component
 
         $this->settings = $this->entity->client ? $this->entity->client->getMergedSettings() : $this->entity->company->settings;
         $this->html_entity_option = $this->entity->client ? $this->entity->client->getSetting('show_pdfhtml_on_mobile') : $this->entity->company->getSetting('show_pdfhtml_on_mobile');
-        
+
         $this->show_cost = in_array('$product.unit_cost', $this->settings->pdf_variables->product_columns);
         $this->show_line_total = in_array('$product.line_total', $this->settings->pdf_variables->product_columns);
         $this->show_quantity = in_array('$product.quantity', $this->settings->pdf_variables->product_columns);
@@ -149,6 +149,7 @@ class PdfSlot extends Component
         return render('components.livewire.pdf-slot', [
             'invitation' => $this->invitation,
             'entity' => $this->entity,
+            'settings' => $this->settings,
             'data' => $this->invitation->company->settings,
             'entity_type' => $this->entity_type,
             'products' => $this->getProducts(),

@@ -169,26 +169,21 @@ class CheckData extends Command
 
     private function checkCompanyTokens()
     {
-        // CompanyUser::whereDoesntHave('token', function ($query){
-        //   return $query->where('is_system', 1);
-        // })->cursor()->each(function ($cu){
-        //     if ($cu->user) {
-        //         $this->logMessage("Creating missing company token for user # {$cu->user->id} for company id # {$cu->company->id}");
-        //         (new CreateCompanyToken($cu->company, $cu->user, 'System'))->handle();
-        //     } else {
-        //         $this->logMessage("Dangling User ID # {$cu->id}");
-        //     }
-        // });
-
         CompanyUser::query()->cursor()->each(function ($cu) {
+
             if (CompanyToken::where('user_id', $cu->user_id)->where('company_id', $cu->company_id)->where('is_system', 1)->doesntExist()) {
-                $this->logMessage("Creating missing company token for user # {$cu->user_id} for company id # {$cu->company_id}");
+                
 
                 if ($cu->company && $cu->user) {
+                    $this->logMessage("Creating missing company token for user # {$cu->user_id} for company id # {$cu->company_id}");
                     (new CreateCompanyToken($cu->company, $cu->user, 'System'))->handle();
-                } else {
-                    // $cu->forceDelete();
+                } 
+                
+                if (!$cu->user) {
+                    $this->logMessage("No user found for company user - removing company user");
+                    $cu->forceDelete();
                 }
+                    
             }
         });
     }
@@ -482,6 +477,14 @@ class CheckData extends Command
                         }
                     } else {
                         $this->logMessage("No contact present, so cannot add invitation for {$entity_key} - {$entity->id}");
+                        
+                        try{
+                        $entity->service()->createInvitations()->save();
+                        }
+                        catch(\Exception $e){
+
+                        }
+                        
                     }
 
                     try {
@@ -884,14 +887,14 @@ class CheckData extends Command
     public function checkClientSettings()
     {
         if ($this->option('fix') == 'true') {
-            Client::query()->whereNull('country_id')->cursor()->each(function ($client) {
+            Client::query()->whereNull('country_id')->orWhere('country_id', 0)->cursor()->each(function ($client) {
                 $client->country_id = $client->company->settings->country_id;
                 $client->saveQuietly();
 
                 $this->logMessage("Fixing country for # {$client->id}");
             });
 
-            Client::query()->whereNull("settings->currency_id")->cursor()->each(function ($client){
+            Client::query()->whereNull("settings->currency_id")->orWhereJsonContains('settings', ['currency_id' => ''])->cursor()->each(function ($client) {
                 $settings = $client->settings;
                 $settings->currency_id = (string)$client->company->settings->currency_id;
                 $client->settings = $settings;
@@ -901,7 +904,7 @@ class CheckData extends Command
 
             });
 
-            Payment::withTrashed()->where('exchange_rate', 0)->cursor()->each(function ($payment){
+            Payment::withTrashed()->where('exchange_rate', 0)->cursor()->each(function ($payment) {
                 $payment->exchange_rate = 1;
                 $payment->saveQuietly();
 
@@ -917,11 +920,11 @@ class CheckData extends Command
                 $p->currency_id = $p->client->settings->currency_id;
                 $p->saveQuietly();
 
-                
+
                 $this->logMessage("Fixing currency for # {$p->id}");
 
             });
-            
+
             Company::whereNull("subdomain")
             ->cursor()
             ->when(Ninja::isHosted())
@@ -933,7 +936,6 @@ class CheckData extends Command
 
             });
 
-
             Invoice::withTrashed()
             ->where("partial", 0)
             ->whereNotNull("partial_due_date")
@@ -942,12 +944,47 @@ class CheckData extends Command
                 $i->partial_due_date = null;
                 $i->saveQuietly();
 
-                
+
                 $this->logMessage("Fixing partial due date for # {$i->id}");
 
             });
 
+            Company::whereDoesntHave('company_users', function ($query){
+            $query->where('is_owner', 1);
+            })
+            ->cursor()
+            ->when(Ninja::isHosted())
+            ->each(function ($c){
 
+                $this->logMessage("Orphan Account # {$c->account_id}");
+
+            });
+
+            CompanyUser::whereDoesntHave('tokens')
+            ->cursor()
+            ->when(Ninja::isHosted())
+            ->each(function ($cu){
+                
+                $this->logMessage("Missing tokens for Company User # {$cu->id}");
+
+            });
+
+            CompanyUser::whereDoesntHave('user')
+            ->cursor()
+            ->when(Ninja::isHosted())
+            ->each(function ($cu) {
+
+                $this->logMessage("Missing user for Company User # {$cu->id}");
+
+            });
+
+            $cus = CompanyUser::withTrashed()
+            ->whereHas("user", function ($query) {
+                $query->whereColumn("users.account_id", "!=", "company_user.account_id");
+            })->pluck('id')->implode(",");
+
+
+            $this->logMessage("Cross Linked CompanyUser ids # {$cus}");
 
 
         }

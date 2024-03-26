@@ -85,6 +85,8 @@ class ProcessBankTransactionsNordigen implements ShouldQueue
 
             $this->bank_integration->company->notification(new GenericNinjaAdminNotification($content))->ninja();
 
+            sleep(5);
+            
             throw $e;
         }
         if (!$this->nordigen_account) {
@@ -114,23 +116,26 @@ class ProcessBankTransactionsNordigen implements ShouldQueue
 
     private function updateAccount()
     {
-        if (!$this->nordigen->isAccountActive($this->bank_integration->nordigen_account_id)) {
+        $is_account_active = $this->nordigen->isAccountActive($this->bank_integration->nordigen_account_id);
+        $account = $this->nordigen->getAccount($this->bank_integration->nordigen_account_id);
+
+        if (!$is_account_active || !$account) {
             $this->bank_integration->disabled_upstream = true;
             $this->bank_integration->save();
             $this->stop_loop = false;
+
             nlog("Nordigen: account inactive: " . $this->bank_integration->nordigen_account_id);
-            // @turbo124 @todo send email for expired account
 
             $this->nordigen->disabledAccountEmail($this->bank_integration);
 
             return;
         }
 
-        $this->nordigen_account = $this->nordigen->getAccount($this->bank_integration->nordigen_account_id);
+        $this->nordigen_account = $account;
 
         $this->bank_integration->disabled_upstream = false;
-        $this->bank_integration->bank_account_status = $this->nordigen_account['account_status'];
-        $this->bank_integration->balance = $this->nordigen_account['current_balance'];
+        $this->bank_integration->bank_account_status = $account['account_status'];
+        $this->bank_integration->balance = $account['current_balance'];
 
         $this->bank_integration->save();
     }
@@ -138,7 +143,7 @@ class ProcessBankTransactionsNordigen implements ShouldQueue
     private function processTransactions()
     {
         //Get transaction count object
-        $transactions = $this->nordigen->getTransactions($this->bank_integration->nordigen_account_id, $this->from_date);
+        $transactions = $this->nordigen->getTransactions($this->company, $this->bank_integration->nordigen_account_id, $this->from_date);
 
         //if no transactions, update the from_date and move on
         if (count($transactions) == 0) {

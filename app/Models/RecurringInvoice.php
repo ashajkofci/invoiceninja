@@ -106,7 +106,6 @@ use Laracasts\Presenter\PresentableTrait;
  * @property-read \App\Models\Subscription|null $subscription
  * @property-read \App\Models\User $user
  * @property-read \App\Models\Vendor|null $vendor
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel company()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel exclude($columns)
  * @method static \Database\Factories\RecurringInvoiceFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder|RecurringInvoice filter(\App\Filters\QueryFilters $filters)
@@ -342,18 +341,29 @@ class RecurringInvoice extends BaseModel
             return $this->status_id;
         }
     }
-
-    public function calculateStatus()
+    
+    /**
+     * CalculateStatus
+     *
+     * Calculates the status of the Recurring Invoice.
+     * 
+     * We only apply the pending status on new models, we never revert an invoice back to
+     * pending.
+     * @param  bool $new_model
+     * @return int
+     */
+    public function calculateStatus(bool $new_model = false) //15-02-2024 - $new_model needed
     {
 
-        if($this->remaining_cycles == 0) {
+        if($this->remaining_cycles == 0) 
             return self::STATUS_COMPLETED;
-        } elseif ($this->status_id == self::STATUS_ACTIVE && Carbon::parse($this->next_send_date)->isFuture()) {
+        elseif ($new_model && $this->status_id == self::STATUS_ACTIVE && Carbon::parse($this->next_send_date)->isFuture()) 
             return self::STATUS_PENDING;
-        } else {
-            return $this->status_id;
-        }
+        elseif($this->remaining_cycles != 0 && ($this->status_id == self::STATUS_COMPLETED))
+            return self::STATUS_ACTIVE;
 
+        return $this->status_id;
+        
     }
 
     public function nextSendDate(): ?Carbon
@@ -688,7 +698,7 @@ class RecurringInvoice extends BaseModel
 
     public function subscription(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(Subscription::class);
+        return $this->belongsTo(Subscription::class)->withTrashed();
     }
 
     public function translate_entity()

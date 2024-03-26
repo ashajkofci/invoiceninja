@@ -59,7 +59,7 @@ class ProjectFilters extends QueryFilters
     public function sort(string $sort = ''): Builder
     {
         $sort_col = explode('|', $sort);
-        
+
         if (!is_array($sort_col) || count($sort_col) != 2) {
             return $this->builder;
         }
@@ -72,7 +72,7 @@ class ProjectFilters extends QueryFilters
         }
 
         if($sort_col[0] == 'number') {
-            return $this->builder->orderByRaw('ABS(number) ' . $dir);
+            return $this->builder->orderByRaw("REGEXP_REPLACE(number,'[^0-9]+','')+0 " . $dir);
         }
 
         return $this->builder->orderBy($sort_col[0], $dir);

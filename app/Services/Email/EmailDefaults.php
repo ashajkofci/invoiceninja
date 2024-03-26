@@ -17,6 +17,8 @@ use App\Jobs\Invoice\CreateUbl;
 use App\Models\Account;
 use App\Models\Expense;
 use App\Models\Invoice;
+use App\Models\PurchaseOrder;
+use App\Models\Quote;
 use App\Models\Task;
 use App\Utils\Ninja;
 use App\Utils\Traits\MakesHash;
@@ -123,7 +125,7 @@ class EmailDefaults
      */
     private function setFrom(): self
     {
-        if (Ninja::isHosted() && $this->email->email_object->settings->email_sending_method == 'default') {
+        if (Ninja::isHosted() && in_array($this->email->email_object->settings->email_sending_method,['default', 'mailgun'])) {
             if ($this->email->company->account->isPaid() && property_exists($this->email->email_object->settings, 'email_from_name') && strlen($this->email->email_object->settings->email_from_name) > 1) {
                 $email_from_name = $this->email->email_object->settings->email_from_name;
             } else {
@@ -211,17 +213,15 @@ class EmailDefaults
         $reply_to_email = $this->email->company->owner()->email;
         $reply_to_name = $this->email->company->owner()->present()->name();
 
-        if(str_contains($this->email->email_object->settings->reply_to_email, "@")){
-            $reply_to_email = $this->email->email_object->settings->reply_to_email; 
-        }
-        elseif(isset($this->email->email_object->invitation->user)) {
+        if(str_contains($this->email->email_object->settings->reply_to_email, "@")) {
+            $reply_to_email = $this->email->email_object->settings->reply_to_email;
+        } elseif(isset($this->email->email_object->invitation->user)) {
             $reply_to_email = $this->email->email_object->invitation->user->email;
         }
-        
+
         if(strlen($this->email->email_object->settings->reply_to_name) > 3) {
-             $reply_to_name =$this->email->email_object->settings->reply_to_name;
-        }
-        elseif(isset($this->email->email_object->invitation->user)) {
+            $reply_to_name = $this->email->email_object->settings->reply_to_name;
+        } elseif(isset($this->email->email_object->invitation->user)) {
             $reply_to_name = $this->email->email_object->invitation->user->present()->name();
         }
 
@@ -320,7 +320,7 @@ class EmailDefaults
             }
         }
         /** E-Invoice xml file */
-        if ($this->email->email_object->settings->enable_e_invoice && $this->email->email_object->entity instanceof Invoice) {
+        if ($this->email->email_object->settings->enable_e_invoice && ! $this->email->email_object->entity instanceof PurchaseOrder) {
             $xml_string = $this->email->email_object->entity->service()->getEInvoice();
 
             if($xml_string) {

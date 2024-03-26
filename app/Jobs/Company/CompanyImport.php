@@ -311,8 +311,11 @@ class CompanyImport implements ShouldQueue
             }
         }
 
-        unlink($tmp_file);
-        unlink(Storage::path($this->file_location));
+        if(file_exists($tmp_file))
+            unlink($tmp_file);
+
+        if(Storage::exists($this->file_location))
+            unlink(Storage::path($this->file_location));
     }
 
     //
@@ -338,7 +341,7 @@ class CompanyImport implements ShouldQueue
     private function unzipFile()
     {
         $path = TempFile::filePath(Storage::disk(config('filesystems.default'))->get($this->file_location), basename($this->file_location));
-        
+
         $zip = new ZipArchive();
         $res = $zip->open($path);
         $file_path = sys_get_temp_dir().'/'.sha1(microtime());
@@ -357,7 +360,7 @@ class CompanyImport implements ShouldQueue
         }
 
         $file_path = "{$file_path}/backup.json";
-        
+
         nlog($file_path);
 
         if (! file_exists($file_path)) {
