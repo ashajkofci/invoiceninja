@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -646,7 +646,6 @@ class PurchaseOrderController extends BaseController
                     echo $file;
                 }, $purchase_order->numberFormatter().".pdf", ['Content-Type' => 'application/pdf']);
 
-                break;
             case 'restore':
                 $this->purchase_order_repository->restore($purchase_order);
 

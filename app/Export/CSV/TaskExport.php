@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -138,9 +138,9 @@ class TaskExport extends BaseExport
     {
         $entity = [];
         $transformed_entity = $this->entity_transformer->transform($task);
-nlog($this->input['report_keys']);
+
         foreach (array_values($this->input['report_keys']) as $key) {
-nlog($key);
+
             $parts = explode('.', $key);
 
             if (is_array($parts) && $parts[0] == 'task' && array_key_exists($parts[1], $transformed_entity)) {

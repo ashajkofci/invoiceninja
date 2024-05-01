@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -108,7 +108,7 @@ class PdfSlot extends Component
 
     }
 
-    public function downloadEInvoice()
+    public function downloadEDocument()
     {
 
         $file_name = $this->entity->numberFormatter().'.xml';

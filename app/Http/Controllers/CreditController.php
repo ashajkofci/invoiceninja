@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -781,7 +781,7 @@ class CreditController extends BaseController
         $contact = $invitation->contact;
         $credit = $invitation->credit;
 
-        $file = $credit->service()->getEInvoice($contact);
+        $file = $credit->service()->getECredit($contact);
         $file_name = $credit->getFileName("xml");
 
         $headers = ['Content-Type' => 'application/xml'];

@@ -5,14 +5,13 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
 namespace App\Livewire;
 
-use App\Models\Client;
 use App\Models\Invoice;
 use Livewire\Component;
 use App\Libraries\MultiDB;
@@ -186,6 +185,8 @@ class RequiredClientInfo extends Component
 
     public $company_gateway_id;
 
+    public bool $form_only = false;
+
     public $db;
 
     public function mount()
@@ -222,7 +223,7 @@ class RequiredClientInfo extends Component
             $this->show_form = true;
 
             $hash = Cache::get(request()->input('hash'));
-            
+
             /** @var \App\Models\Invoice $invoice */
             $invoice = Invoice::find($this->decodePrimaryKey($hash['invoice_id']));
 
@@ -232,6 +233,15 @@ class RequiredClientInfo extends Component
         count($this->fields) > 0 || $this->show_terms
             ? $this->checkFields()
             : $this->show_form = false;
+
+        if (request()->query('source') === 'subscriptions') {
+            $this->show_form = false;
+
+            $this->dispatch(
+                'passed-required-fields-check',
+                client_postal_code: $this->contact->client->postal_code
+            );
+        }
     }
 
     #[Computed]
@@ -240,7 +250,7 @@ class RequiredClientInfo extends Component
 
         MultiDB::setDb($this->db);
         return ClientContact::withTrashed()->find($this->contact_id);
-        
+
     }
 
     #[Computed]
@@ -259,7 +269,7 @@ class RequiredClientInfo extends Component
 
     public function handleSubmit(array $data): bool
     {
-        
+
         MultiDB::setDb($this->db);
         $contact = ClientContact::withTrashed()->find($this->contact_id);
 
@@ -367,29 +377,45 @@ $_contact->push();
 
     public function checkFields()
     {
+        
+        $this->show_form = true;
+//@todo - need to make this optional
+        // MultiDB::setDb($this->db);
+        // $_contact = ClientContact::withTrashed()->find($this->contact_id);
 
-        MultiDB::setDb($this->db);
-        $_contact = ClientContact::withTrashed()->find($this->contact_id);
+        // foreach ($this->fields as $index => $field) {
+        //     $_field = $this->mappings[$field['name']];
 
-        foreach ($this->fields as $index => $field) {
-            $_field = $this->mappings[$field['name']];
+        //     if (Str::startsWith($field['name'], 'client_')) {
+        //         if (empty($_contact->client->{$_field})
+        //            || is_null($_contact->client->{$_field})
+        //            // || in_array($_field, $this->client_address_array)
+        //         ) {
+        //             $this->show_form = true;
+        //         } else {
+        //             $this->fields[$index]['filled'] = true;
+        //         }
+        //     }
 
-            if (Str::startsWith($field['name'], 'client_')) {
-                if (empty($_contact->client->{$_field}) || is_null($_contact->client->{$_field}) || in_array($_field, $this->client_address_array)) {
-                    $this->show_form = true;
-                } else {
-                    $this->fields[$index]['filled'] = true;
-                }
-            }
+        //     if (Str::startsWith($field['name'], 'contact_')) {
+        //         if (empty($_contact->{$_field}) || is_null($_contact->{$_field}) || str_contains($_contact->{$_field}, '@example.com')) {
+        //             $this->show_form = true;
+        //         } else {
+        //             $this->fields[$index]['filled'] = true;
+        //         }
+        //     }
+        // }
 
-            if (Str::startsWith($field['name'], 'contact_')) {
-                if (empty($_contact->{$_field}) || is_null($_contact->{$_field}) || str_contains($_contact->{$_field}, '@example.com')) {
-                    $this->show_form = true;
-                } else {
-                    $this->fields[$index]['filled'] = true;
-                }
-            }
-        }
+        // $left = collect($this->fields)
+        //     ->filter(fn ($field) => !array_key_exists('filled', $field))
+        //     ->count();
+
+        // if ($left === 0) {
+        //     $this->dispatch(
+        //         'passed-required-fields-check',
+        //         client_postal_code: $this->contact->client->postal_code
+        //     );
+        // }
     }
 
     public function showCopyBillingCheckbox(): bool

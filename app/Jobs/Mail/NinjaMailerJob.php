@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -48,7 +48,6 @@ class NinjaMailerJob implements ShouldQueue
     use MakesHash;
 
     public $tries = 4; //number of retries
-
     public $deleteWhenMissingModels = true;
 
     /** @var null|\App\Models\Company $company  **/
@@ -70,9 +69,7 @@ class NinjaMailerJob implements ShouldQueue
 
     public function backoff()
     {
-        // return [5, 10, 30, 240];
-        return [rand(5, 10), rand(30, 40), rand(60, 79), rand(160, 400)];
-
+        return [rand(5, 29), rand(30, 59), rand(61, 100), rand(180, 500)];
     }
 
     public function handle()
@@ -182,6 +179,11 @@ class NinjaMailerJob implements ShouldQueue
 
                 $this->fail();
                 $this->logMailError($e->getMessage(), $this->company->clients()->first());
+                
+                if ($this->nmo->entity) {
+                    $this->entityEmailFailed($message);
+                }
+
                 $this->cleanUpMailers();
 
                 return;
@@ -195,6 +197,11 @@ class NinjaMailerJob implements ShouldQueue
 
                 $this->fail();
                 $this->logMailError($message, $this->company->clients()->first());
+                
+                if ($this->nmo->entity) {
+                    $this->entityEmailFailed($message);
+                }
+
                 $this->cleanUpMailers();
 
                 return;
@@ -203,7 +210,7 @@ class NinjaMailerJob implements ShouldQueue
 
             //only report once, not on all tries
             if ($this->attempts() == $this->tries) {
-                /* If the is an entity attached to the message send a failure mailer */
+                /* If there is an entity attached to the message send a failure mailer */
                 if ($this->nmo->entity) {
                     $this->entityEmailFailed($message);
                 }
@@ -215,7 +222,7 @@ class NinjaMailerJob implements ShouldQueue
             }
 
             /* Releasing immediately does not add in the backoff */
-            sleep(rand(0, 3));
+            sleep(rand(5, 10));
 
             $this->release($this->backoff()[$this->attempts() - 1]);
         }
