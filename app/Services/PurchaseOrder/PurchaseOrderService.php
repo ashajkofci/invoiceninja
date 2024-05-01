@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -82,6 +82,11 @@ class PurchaseOrderService
     {
         return (new CreateEDocument($this->purchase_order))->handle();
     }
+    public function getEDocument($contact = null)
+    {
+        return $this->getEPurchaseOrder($contact);
+    }
+    
     public function deleteEPurchaseOrder()
     {
         $this->purchase_order->load('invitations');

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -76,6 +76,11 @@ class QuoteService
     public function getEQuote($contact = null)
     {
         return (new CreateEDocument($this->quote))->handle();
+    }
+
+    public function getEDocument($contact = null)
+    {
+        return $this->getEQuote($contact);
     }
 
     public function sendEmail($contact = null): self

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -194,6 +194,7 @@ class Gateway extends StaticModel
                     GatewayType::PAYPAL => ['refund' => false, 'token_billing' => false],
                     GatewayType::CREDIT_CARD => ['refund' => false, 'token_billing' => false],
                     GatewayType::VENMO => ['refund' => false, 'token_billing' => false],
+                    GatewayType::PAYPAL_ADVANCED_CARDS => ['refund' => false, 'token_billing' => true],
                     // GatewayType::SEPA => ['refund' => false, 'token_billing' => false],
                     // GatewayType::BANCONTACT => ['refund' => false, 'token_billing' => false],
                     // GatewayType::EPS => ['refund' => false, 'token_billing' => false],
@@ -207,6 +208,7 @@ class Gateway extends StaticModel
                     GatewayType::PAYPAL => ['refund' => false, 'token_billing' => false],
                     GatewayType::CREDIT_CARD => ['refund' => false, 'token_billing' => false],
                     GatewayType::VENMO => ['refund' => false, 'token_billing' => false],
+                    GatewayType::PAYPAL_ADVANCED_CARDS => ['refund' => false, 'token_billing' => true],
                     // GatewayType::SEPA => ['refund' => false, 'token_billing' => false],
                     // GatewayType::BANCONTACT => ['refund' => false, 'token_billing' => false],
                     // GatewayType::EPS => ['refund' => false, 'token_billing' => false],

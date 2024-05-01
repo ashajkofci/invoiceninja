@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -276,7 +276,7 @@ class BaseController extends Controller
     /**
      * API Error response.
      *
-     * @param string    $message        The return error message
+     * @param string|array    $message        The return error message
      * @param int       $httpErrorCode  404/401/403 etc
      * @return Response                 The JSON response
      * @throws BindingResolutionException

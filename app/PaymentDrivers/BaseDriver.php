@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -790,19 +790,24 @@ class BaseDriver extends AbstractPaymentDriver
             'client' => $this->client->present()->name(),
         ]);
 
-        return sprintf('%s: %s', ctrans('texts.invoices'), \implode(', ', collect($this->payment_hash->invoices())->pluck('invoice_number')->toArray()));
+        // return sprintf('%s: %s', ctrans('texts.invoices'), \implode(', ', collect($this->payment_hash->invoices())->pluck('invoice_number')->toArray()));
     }
 
     /**
      * Stub for disconnecting from the gateway.
      *
-     * @return void
+     * @return bool
      */
     public function disconnect()
     {
         return true;
     }
 
+    /**
+     * Stub for checking authentication.
+     *
+     * @return bool
+     */
     public function auth(): bool
     {
         return true;

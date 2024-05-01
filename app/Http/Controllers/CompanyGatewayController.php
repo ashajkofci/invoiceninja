@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -565,9 +565,10 @@ class CompanyGatewayController extends BaseController
 
     public function importCustomers(TestCompanyGatewayRequest $request, CompanyGateway $company_gateway)
     {
+        
         //Throttle here
-        // if (Cache::get("throttle_polling:import_customers:{$company_gateway->company->company_key}:{$company_gateway->hashed_id}")) 
-            // return response()->json(['message' => ctrans('texts.import_started')], 200);
+        if (Cache::has("throttle_polling:import_customers:{$company_gateway->company->company_key}:{$company_gateway->hashed_id}")) 
+            return response()->json(['message' => 'Please wait whilst your previous attempts complete.'], 200);
 
         dispatch(function () use($company_gateway) {
             MultiDB::setDb($company_gateway->company->db);

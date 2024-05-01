@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -43,6 +43,11 @@ class CreditService
         return (new CreateEDocument($this->credit))->handle();
     }
 
+    public function getEDocument($contact = null)
+    {
+        return $this->getECredit($contact);
+    }
+    
     /**
      * Applies the invoice number.
      * @return $this InvoiceService object

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -148,6 +148,26 @@ class TaskFilters extends QueryFilters
         }
 
         return $this->builder->orderBy($sort_col[0], $dir);
+    }
+
+    public function user_id(string $user = ''): Builder
+    {
+        if (strlen($user) == 0) {
+            return $this->builder;
+        }
+
+        return $this->builder->where('user_id', $this->decodePrimaryKey($user));
+
+    }
+
+    public function assigned_user(string $user = ''): Builder
+    {
+        if (strlen($user) == 0) {
+            return $this->builder;
+        }
+
+        return $this->builder->where('assigned_user_id', $this->decodePrimaryKey($user));
+
     }
 
     public function task_status(string $value = ''): Builder

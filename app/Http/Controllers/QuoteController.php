@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2023. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -914,7 +914,7 @@ class QuoteController extends BaseController
         $contact = $invitation->contact;
         $quote = $invitation->quote;
 
-        $file = $quote->service()->getEInvoice($contact);
+        $file = $quote->service()->getEQuote($contact);
         $file_name = $quote->getFileName("xml");
 
         $headers = ['Content-Type' => 'application/xml'];
