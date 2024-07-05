@@ -29,7 +29,7 @@
                 <div class="grid grid-cols-12 gap-4 mt-10">
                     @if($register_company->client_registration_fields)
                     @foreach($register_company->client_registration_fields as $field)
-                        @if($field['visible'])
+                        @if(isset($field['visible']) && $field['visible'])
                             <div class="col-span-12 md:col-span-6">
                                 <section class="flex items-center">
                                     <label
@@ -81,7 +81,7 @@
                                         name="country_id">
                                             <option value="none"></option>
                                         @foreach(App\Utils\TranslationHelper::getCountries() as $country)
-                                            <option
+                                            <option value="{{ $country->id }}">
                                                 {{ $country->iso_3166_2 }}
                                                 ({{ $country->name }})
                                             </option>
@@ -132,7 +132,7 @@
 
                 <div class="flex justify-between items-center mt-8">
 
-                    <a href="{{route('client.login')}}" class="button button-info bg-green-600 text-white">{{ ctrans('texts.login_label') }}</a>
+                    <a href="{{route('client.login')}}" class="button button-info bg-emerald-600 text-white">{{ ctrans('texts.login_label') }}</a>
 
                     <span class="inline-flex items-center" x-data="{ terms_of_service: false, privacy_policy: false }">
                             @if(!empty($register_company->settings->client_portal_terms) || !empty($register_company->settings->client_portal_privacy_policy))

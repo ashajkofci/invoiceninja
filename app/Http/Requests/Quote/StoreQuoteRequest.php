@@ -43,13 +43,13 @@ class StoreQuoteRequest extends Request
 
         $rules = [];
 
-        $rules['client_id'] = ['required', 'bail', Rule::exists('clients','id')->where('company_id', $user->company()->id)];
+        $rules['client_id'] = ['required', 'bail', Rule::exists('clients', 'id')->where('company_id', $user->company()->id)];
 
         if ($this->file('documents') && is_array($this->file('documents'))) {
             $rules['documents.*'] = $this->fileValidation();
         } elseif ($this->file('documents')) {
             $rules['documents'] = $this->fileValidation();
-        }else {
+        } else {
             $rules['documents'] = 'bail|sometimes|array';
         }
 
@@ -60,12 +60,15 @@ class StoreQuoteRequest extends Request
         }
 
         $rules['number'] = ['nullable', Rule::unique('quotes')->where('company_id', $user->company()->id)];
-        $rules['discount'] = 'sometimes|numeric';
+
+        $rules['discount'] = 'sometimes|numeric|max:99999999999999';
         $rules['is_amount_discount'] = ['boolean'];
         $rules['exchange_rate'] = 'bail|sometimes|numeric';
         $rules['line_items'] = 'array';
+        $rules['date'] = 'bail|sometimes|date:Y-m-d';
         $rules['partial_due_date'] = ['bail', 'sometimes', 'exclude_if:partial,0', Rule::requiredIf(fn () => $this->partial > 0), 'date', 'before:due_date', 'after_or_equal:date'];
         $rules['due_date'] = ['bail', 'sometimes', 'nullable', 'after:partial_due_date', Rule::requiredIf(fn () => strlen($this->partial_due_date) > 1), 'date'];
+        $rules['amount'] = ['sometimes', 'bail', 'numeric', 'max:99999999999999'];
 
         return $rules;
     }
@@ -74,14 +77,18 @@ class StoreQuoteRequest extends Request
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
-        
+
         $input = $this->all();
 
         $input = $this->decodePrimaryKeys($input);
 
-        $input['line_items'] = isset($input['line_items']) ? $this->cleanItems($input['line_items']) : [];
         $input['amount'] = 0;
         $input['balance'] = 0;
+
+        if (isset($input['line_items']) && is_array($input['line_items'])) {
+            $input['line_items'] = isset($input['line_items']) ? $this->cleanItems($input['line_items']) : [];
+            $input['amount'] = $this->entityTotalAmount($input['line_items']);
+        }
 
         if (array_key_exists('exchange_rate', $input) && is_null($input['exchange_rate'])) {
             $input['exchange_rate'] = 1;
@@ -91,13 +98,14 @@ class StoreQuoteRequest extends Request
             $input['partial_due_date'] = null;
         }
 
-        if(!isset($input['date']))
+        if(!isset($input['date'])) {
             $input['date'] = now()->addSeconds($user->company()->utc_offset())->format('Y-m-d');
+        }
 
-        if(isset($input['partial_due_date']) && (!isset($input['due_date']) || strlen($input['due_date']) <=1 )) {
+        if(isset($input['partial_due_date']) && (!isset($input['due_date']) || strlen($input['due_date']) <= 1)) {
             $client = \App\Models\Client::withTrashed()->find($input['client_id']);
-            $valid_days = ($client && strlen($client->getSetting('valid_until')) >= 1) ? $client->getSetting('valid_until') : 7; 
-            $input['due_date'] = \Carbon\Carbon::parse($input['date'])->addDays($valid_days)->format('Y-m-d');
+            $valid_days = ($client && strlen($client->getSetting('valid_until')) >= 1) ? $client->getSetting('valid_until') : 7;
+            $input['due_date'] = \Carbon\Carbon::parse($input['date'])->addDays((int)$valid_days)->format('Y-m-d');
         }
 
         $this->replace($input);

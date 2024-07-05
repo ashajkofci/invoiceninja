@@ -53,7 +53,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\Gateway $gateway
  * @property-read mixed $hashed_id
  * @method getConfigField(string $field)
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel company()
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway filter(\App\Filters\QueryFilters $filters)
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|CompanyGateway newQuery()
@@ -155,6 +154,7 @@ class CompanyGateway extends BaseModel
         'b9886f9257f0c6ee7c302f1c74475f6c' => 321, //GoCardless
         'hxd6gwg3ekb9tb3v9lptgx1mqyg69zu9' => 322,
         '80af24a6a691230bbec33e930ab40666' => 323,
+        'vpyfbmdrkqcicpkjqdusgjfluebftuva' => 324, //BTPay
     ];
 
     protected $touches = [];

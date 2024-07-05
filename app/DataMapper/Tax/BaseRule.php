@@ -11,11 +11,12 @@
 
 namespace App\DataMapper\Tax;
 
-use App\DataMapper\Tax\ZipTax\Response;
-use App\DataProviders\USStates;
+use App\Models\Quote;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\DataProviders\USStates;
+use App\DataMapper\Tax\ZipTax\Response;
 
 class BaseRule implements RuleInterface
 {
@@ -210,7 +211,7 @@ class BaseRule implements RuleInterface
         }
 
         /** Applies the tax data to the invoice */
-        if($this->invoice instanceof Invoice && $tax_data) {
+        if(($this->invoice instanceof Invoice || $this->invoice instanceof Quote) && $tax_data) {
 
             $this->invoice->tax_data = $tax_data;
 
@@ -219,6 +220,7 @@ class BaseRule implements RuleInterface
                 try {
                     $this->invoice->saveQuietly();
                 } catch(\Exception $e) {
+                    nlog("Exception:: BaseRule::" . $e->getMessage());
                 }
 
             }
@@ -260,7 +262,7 @@ class BaseRule implements RuleInterface
                 return $this->client->state;
             }
 
-            return USStates::getState(strlen($this->client->postal_code) > 1 ? $this->client->postal_code : $this->client->shipping_postal_code);
+            return USStates::getState(strlen($this->client->postal_code ?? '') > 1 ? $this->client->postal_code : $this->client->shipping_postal_code);
 
         } catch (\Exception $e) {
             return 'CA';

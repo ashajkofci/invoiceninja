@@ -59,8 +59,6 @@ class RandomDataSeeder extends Seeder
     public function run()
     {
 
-        $this->buildCache(true);
-
         $this->command->info('Running RandomDataSeeder');
 
         Model::unguard();
@@ -277,7 +275,7 @@ class RandomDataSeeder extends Seeder
 
                 event(new PaymentWasCreated($payment, $payment->company, Ninja::eventVars()));
 
-                // $payment->service()->updateInvoicePayment($payment_hash);
+                // $payment->service()->update_invoicePayment($payment_hash);
 
             }
         });

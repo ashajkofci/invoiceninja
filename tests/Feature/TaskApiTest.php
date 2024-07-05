@@ -104,6 +104,33 @@ class TaskApiTest extends TestCase
         }
     }
 
+    public function testTimeLogWithSameStartAndStopTimes()
+    {
+        $settings = ClientSettings::defaults();
+        $settings->default_task_rate = 41;
+
+        $c = Client::factory()->create([
+            'user_id' => $this->user->id,
+            'company_id' => $this->company->id,
+            'settings' => $settings,
+        ]);
+
+        $data = [
+            'client_id' => $c->hashed_id,
+            'description' => 'Test Task',
+            'time_log' => '[[1681165417,1681165432,"sumtin",true],[1681165446,1681165446]]',
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->postJson("/api/v1/tasks", $data);
+
+        $response->assertStatus(200);
+        $arr = $response->json();
+    
+    }
+
     public function testRoundingViaApi()
     {
                 
@@ -159,6 +186,22 @@ class TaskApiTest extends TestCase
         $start = $logs[0];
 
         $this->assertEquals(1, $start[0]);
+
+    }
+
+    public function testTaskDivisionByZero()
+    {
+        $data = [
+        "rate" => 0, 
+        "time_log" => '[[1719350900,1719352700,"",true]]', 
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->postJson("/api/v1/tasks", $data);
+
+        $response->assertStatus(200);
 
     }
 
