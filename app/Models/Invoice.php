@@ -32,6 +32,7 @@ use Laracasts\Presenter\PresentableTrait;
  * App\Models\Invoice
  *
  * @property int $id
+ * @property object|null $e_invoice
  * @property int $client_id
  * @property int $user_id
  * @property int|null $assigned_user_id
@@ -129,7 +130,6 @@ use Laracasts\Presenter\PresentableTrait;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\InvoiceInvitation> $invitations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Payment> $payments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Task> $tasks
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel company()
  * @property object|null $tax_data
  * @mixin \Eloquent
  */
@@ -209,6 +209,7 @@ class Invoice extends BaseModel
         'custom_surcharge_tax2' => 'bool',
         'custom_surcharge_tax3' => 'bool',
         'custom_surcharge_tax4' => 'bool',
+        'e_invoice' => 'object',
     ];
 
     protected $with = [];
@@ -561,6 +562,8 @@ class Invoice extends BaseModel
                 return $this->status_id == self::STATUS_SENT;
             case 'when_paid':
                 return $this->status_id == self::STATUS_PAID || $this->status_id == self::STATUS_PARTIAL;
+            case 'end_of_month':
+                return \Carbon\Carbon::parse($this->date)->setTimezone($this->company->timezone()->name)->endOfMonth()->lte(now());
             default:
                 return false;
         }

@@ -27,6 +27,7 @@ use Laracasts\Presenter\PresentableTrait;
  * App\Models\Quote
  *
  * @property int $id
+ * @property object|null $e_invoice
  * @property int $client_id
  * @property int $user_id
  * @property int|null $assigned_user_id
@@ -47,20 +48,20 @@ use Laracasts\Presenter\PresentableTrait;
  * @property string|null|Carbon $due_date
  * @property string|null $next_send_date
  * @property bool $is_deleted
- * @property object|null $line_items
+ * @property array|null $line_items
  * @property object|null $backup
  * @property string|null $footer
  * @property string|null $public_notes
  * @property string|null $private_notes
  * @property string|null $terms
  * @property string|null $tax_name1
- * @property string $tax_rate1
+ * @property float $tax_rate1
  * @property string|null $tax_name2
- * @property string $tax_rate2
+ * @property float $tax_rate2
  * @property string|null $tax_name3
- * @property string $tax_rate3
+ * @property float $tax_rate3
  * @property string $total_taxes
- * @property int $uses_inclusive_taxes
+ * @property bool $uses_inclusive_taxes
  * @property string|null $custom_value1
  * @property string|null $custom_value2
  * @property string|null $custom_value3
@@ -86,7 +87,7 @@ use Laracasts\Presenter\PresentableTrait;
  * @property string|null $reminder2_sent
  * @property string|null $reminder3_sent
  * @property string|null $reminder_last_sent
- * @property string $paid_to_date
+ * @property float $paid_to_date
  * @property int|null $subscription_id
  * @property \App\Models\User|null $assigned_user
  * @property \App\Models\Client $client
@@ -106,7 +107,6 @@ use Laracasts\Presenter\PresentableTrait;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Document> $documents
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Backup> $history
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\QuoteInvitation> $invitations
- * @method static \Illuminate\Database\Eloquent\Builder|BaseModel company()
  * @mixin \Eloquent
  * @mixin \Illuminate\Database\Eloquent\Builder
  */
@@ -164,6 +164,7 @@ class Quote extends BaseModel
 
     protected $casts = [
         // 'date' => 'date:Y-m-d',
+        'tax_data' => 'object',
         'due_date' => 'date:Y-m-d',
         'partial_due_date' => 'date:Y-m-d',
         'line_items' => 'object',
@@ -173,6 +174,7 @@ class Quote extends BaseModel
         'deleted_at' => 'timestamp',
         'is_deleted' => 'boolean',
         'is_amount_discount' => 'bool',
+        'e_invoice' => 'object',
     ];
 
     public const STATUS_DRAFT = 1;
@@ -195,10 +197,10 @@ class Quote extends BaseModel
         return $this->dateMutator($value);
     }
 
-//    public function getDueDateAttribute($value)
-//    {
-//        return $value ? $this->dateMutator($value) : null;
-//    }
+    //    public function getDueDateAttribute($value)
+    //    {
+    //        return $value ? $this->dateMutator($value) : null;
+    //    }
 
     // public function getPartialDueDateAttribute($value)
     // {
@@ -394,6 +396,50 @@ class Quote extends BaseModel
      */
     public function calculateTemplate(string $entity_string): string
     {
-        return $entity_string;
+                
+        $client = $this->client;
+
+        if ($entity_string != 'quote') {
+            return $entity_string;
+        }
+
+        if ($this->inReminderWindow(
+            $client->getSetting('quote_schedule_reminder1'),
+            $client->getSetting('quote_num_days_reminder1')
+        ) && ! $this->reminder1_sent) {
+            return 'reminder1';
+        // } elseif ($this->inReminderWindow(
+        //     $client->getSetting('schedule_reminder2'),
+        //     $client->getSetting('num_days_reminder2')
+        // ) && ! $this->reminder2_sent) {
+        //     return 'reminder2';
+        // } elseif ($this->inReminderWindow(
+        //     $client->getSetting('schedule_reminder3'),
+        //     $client->getSetting('num_days_reminder3')
+        // ) && ! $this->reminder3_sent) {
+        //     return 'reminder3';
+        // } elseif ($this->checkEndlessReminder(
+        //     $this->reminder_last_sent,
+        //     $client->getSetting('endless_reminder_frequency_id')
+        // )) {
+        //     return 'endless_reminder';
+        } else {
+            return $entity_string;
+        }
+
     }
+
+        
+    /**
+     * @return bool
+     */
+    public function canRemind(): bool
+    {
+        if (in_array($this->status_id, [self::STATUS_DRAFT, self::STATUS_APPROVED, self::STATUS_CONVERTED]) || $this->is_deleted) 
+            return false;
+
+        return true;
+
+    }
+
 }
