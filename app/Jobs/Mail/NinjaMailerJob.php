@@ -77,8 +77,6 @@ class NinjaMailerJob implements ShouldQueue
         /*Set the correct database*/
         MultiDB::setDb($this->nmo->company->db);
 
-nlog("nn");
-
         /* Serializing models from other jobs wipes the primary key */
         $this->company = Company::query()->where('company_key', $this->nmo->company->company_key)->first();
 
@@ -98,7 +96,7 @@ nlog("nn");
             }
 
             $this->nmo->mailable->replyTo($this->nmo->settings->reply_to_email, $reply_to_name);
-        } elseif (isset ($this->nmo->invitation->user)) {
+        } elseif (isset($this->nmo->invitation->user)) {
             $this->nmo->mailable->replyTo($this->nmo->invitation->user->email, $this->nmo->invitation->user->present()->name());
         } else {
             $this->nmo->mailable->replyTo($this->company->owner()->email, $this->company->owner()->present()->name());
@@ -114,6 +112,7 @@ nlog("nn");
                 ->mailable
                 ->withSymfonyMessage(function ($message) {
                     $message->getHeaders()->addTextHeader('x-invitation', $this->nmo->invitation->key);
+                    // $message->getHeaders()->addTextHeader('List-Unsubscribe', $this->nmo->mailable->viewData->email_preferences);
                 });
         }
 
@@ -138,8 +137,8 @@ nlog("nn");
 
             $mailable = $this->nmo->mailable;
 
-            /** May need to re-build it here */
-            if (Ninja::isHosted() && method_exists($mailable, 'build')) {
+            /** May need to re-build it here @todo explain why we need this? */
+            if (Ninja::isHosted() && method_exists($mailable, 'build') && $this->nmo->settings->email_style != "custom") {
                 $mailable->build();
             }
 
@@ -166,7 +165,18 @@ nlog("nn");
             $this->cleanUpMailers();
             $this->logMailError($e->getMessage(), $this->company->clients()->first());
             return;
-        } catch (\Exception | \Google\Service\Exception $e) {
+        } catch(\Google\Service\Exception $e) {
+
+            if ($e->getCode() == '429') {
+
+                $message = "Google rate limiting triggered, we are queueing based on Gmail requirements.";
+                $this->logMailError($message, $this->company->clients()->first());
+                sleep(rand(1, 2));
+                $this->release(900);
+
+            }
+
+        } catch (\Exception $e) {
             nlog("Mailer failed with {$e->getMessage()}");
             $message = $e->getMessage();
 
@@ -175,12 +185,12 @@ nlog("nn");
              * this merges a text string with a json object
              * need to harvest the ->Message property using the following
              */
-            if (stripos($e->getMessage(), 'code 300') || stripos($e->getMessage(), 'code 413')) {
+            if (stripos($e->getMessage(), 'code 300') !== false || stripos($e->getMessage(), 'code 413') !== false) {
                 $message = "Either Attachment too large, or recipient has been suppressed.";
 
                 $this->fail();
                 $this->logMailError($e->getMessage(), $this->company->clients()->first());
-                
+
                 if ($this->nmo->entity) {
                     $this->entityEmailFailed($message);
                 }
@@ -190,7 +200,15 @@ nlog("nn");
                 return;
             }
 
-            if (stripos($e->getMessage(), 'code 406')) {
+            if(stripos($e->getMessage(), 'Dsn') !== false) {
+
+                nlog("Incorrectly configured mail server - setting to default mail driver.");
+                $this->nmo->settings->email_sending_method = 'default';
+                return $this->setMailDriver();
+
+            }
+
+            if (stripos($e->getMessage(), 'code 406') !== false) {
 
                 $email = $this->nmo->to_user->email ?? '';
 
@@ -198,7 +216,7 @@ nlog("nn");
 
                 $this->fail();
                 $this->logMailError($message, $this->company->clients()->first());
-                
+
                 if ($this->nmo->entity) {
                     $this->entityEmailFailed($message);
                 }
@@ -223,8 +241,7 @@ nlog("nn");
             }
 
             /* Releasing immediately does not add in the backoff */
-            sleep(rand(5, 10));
-
+            sleep(rand(2, 3));
             $this->release($this->backoff()[$this->attempts() - 1]);
         }
 
@@ -237,8 +254,9 @@ nlog("nn");
 
     private function incrementEmailCounter(): void
     {
-        if(in_array($this->mailer, ['default','mailgun','postmark']))
+        if(in_array($this->nmo->settings->email_sending_method, ['default','mailgun','postmark'])) {
             Cache::increment("email_quota".$this->company->account->key);
+        }
 
     }
     /**
@@ -279,12 +297,13 @@ nlog("nn");
         $t->replace(Ninja::transformTranslations($this->nmo->settings));
 
         /** Force free/trials onto specific mail driver */
-        // if(Ninja::isHosted() && !$this->company->account->isPaid())
-        // {
-        //     $this->mailer = 'mailgun';
-        //     $this->setHostedMailgunMailer();
-        //     return $this;
-        // }
+
+        if($this->nmo->settings->email_sending_method == 'default' && $this->company->account->isNewHostedAccount()) {
+            $this->mailer = 'mailgun';
+            $this->setHostedMailgunMailer();
+            return $this;
+        }
+
 
         if (Ninja::isHosted() && $this->company->account->isPaid() && $this->nmo->settings->email_sending_method == 'default') {
             //check if outlook.
@@ -368,19 +387,18 @@ nlog("nn");
 
         $company = $this->company;
 
-        $smtp_host = $company->smtp_host;
+        $smtp_host = $company->smtp_host ?? '';
         $smtp_port = $company->smtp_port;
-        $smtp_username = $company->smtp_username;
-        $smtp_password = $company->smtp_password;
+        $smtp_username = $company->smtp_username ?? '';
+        $smtp_password = $company->smtp_password ?? '';
         $smtp_encryption = $company->smtp_encryption ?? 'tls';
-        $smtp_local_domain = strlen($company->smtp_local_domain) > 2 ? $company->smtp_local_domain : null;
+        $smtp_local_domain = strlen($company->smtp_local_domain ?? '') > 2 ? $company->smtp_local_domain : null;
         $smtp_verify_peer = $company->smtp_verify_peer ?? true;
 
-        if(strlen($smtp_host ?? '') <= 1 ||
-        strlen($smtp_username ?? '') <= 1 ||
-        strlen($smtp_password ?? '') <= 1
-        )
-        {
+        if(strlen($smtp_host) <= 1 ||
+        strlen($smtp_username) <= 1 ||
+        strlen($smtp_password) <= 1
+        ) {
             $this->nmo->settings->email_sending_method = 'default';
             return $this->setMailDriver();
         }
@@ -407,7 +425,7 @@ nlog("nn");
         }
 
         $user = $this->resolveSendingUser();
-        $sending_email = (isset ($this->nmo->settings->custom_sending_email) && stripos($this->nmo->settings->custom_sending_email, "@")) ? $this->nmo->settings->custom_sending_email : $user->email;
+        $sending_email = (isset($this->nmo->settings->custom_sending_email) && stripos($this->nmo->settings->custom_sending_email, "@")) ? $this->nmo->settings->custom_sending_email : $user->email;
 
         $this->nmo
             ->mailable
@@ -525,8 +543,8 @@ nlog("nn");
 
         $user = $this->resolveSendingUser();
 
-        $sending_email = (isset ($this->nmo->settings->custom_sending_email) && stripos($this->nmo->settings->custom_sending_email, "@")) ? $this->nmo->settings->custom_sending_email : $user->email;
-        $sending_user = (isset ($this->nmo->settings->email_from_name) && strlen($this->nmo->settings->email_from_name) > 2) ? $this->nmo->settings->email_from_name : $user->name();
+        $sending_email = (isset($this->nmo->settings->custom_sending_email) && stripos($this->nmo->settings->custom_sending_email, "@")) ? $this->nmo->settings->custom_sending_email : $user->email;
+        $sending_user = (isset($this->nmo->settings->email_from_name) && strlen($this->nmo->settings->email_from_name) > 2) ? $this->nmo->settings->email_from_name : $user->name();
 
         $this->nmo
             ->mailable
@@ -548,8 +566,8 @@ nlog("nn");
 
         $user = $this->resolveSendingUser();
 
-        $sending_email = (isset ($this->nmo->settings->custom_sending_email) && stripos($this->nmo->settings->custom_sending_email, "@")) ? $this->nmo->settings->custom_sending_email : $user->email;
-        $sending_user = (isset ($this->nmo->settings->email_from_name) && strlen($this->nmo->settings->email_from_name) > 2) ? $this->nmo->settings->email_from_name : $user->name();
+        $sending_email = (isset($this->nmo->settings->custom_sending_email) && stripos($this->nmo->settings->custom_sending_email, "@")) ? $this->nmo->settings->custom_sending_email : $user->email;
+        $sending_user = (isset($this->nmo->settings->email_from_name) && strlen($this->nmo->settings->email_from_name) > 2) ? $this->nmo->settings->email_from_name : $user->name();
 
         $this->nmo
             ->mailable
@@ -571,8 +589,8 @@ nlog("nn");
 
         $user = $this->resolveSendingUser();
 
-        $sending_email = (isset ($this->nmo->settings->custom_sending_email) && stripos($this->nmo->settings->custom_sending_email, "@")) ? $this->nmo->settings->custom_sending_email : $user->email;
-        $sending_user = (isset ($this->nmo->settings->email_from_name) && strlen($this->nmo->settings->email_from_name) > 2) ? $this->nmo->settings->email_from_name : $user->name();
+        $sending_email = (isset($this->nmo->settings->custom_sending_email) && stripos($this->nmo->settings->custom_sending_email, "@")) ? $this->nmo->settings->custom_sending_email : $user->email;
+        $sending_user = (isset($this->nmo->settings->email_from_name) && strlen($this->nmo->settings->email_from_name) > 2) ? $this->nmo->settings->email_from_name : $user->name();
 
         $this->nmo
             ->mailable
@@ -652,7 +670,7 @@ nlog("nn");
          *  just for this request.
          */
 
-        $token = $user->oauth_user_token->access_token;
+        $token = $user->oauth_user_token->access_token; /** @phpstan-ignore-line */
 
         if (!$token) {
             $this->company->account->gmailCredentialNotification();
@@ -772,6 +790,7 @@ nlog("nn");
     private function refreshOfficeToken(User $user)
     {
         $expiry = $user->oauth_user_token_expiry ?: now()->subDay();
+        $token = false;
 
         if ($expiry->lt(now())) {
             $guzzle = new \GuzzleHttp\Client();
@@ -781,15 +800,19 @@ nlog("nn");
                 return false;
             }
 
-            $token = json_decode($guzzle->post($url, [
-                'form_params' => [
-                    'client_id' => config('ninja.o365.client_id'),
-                    'client_secret' => config('ninja.o365.client_secret'),
-                    'scope' => 'email Mail.Send offline_access profile User.Read openid',
-                    'grant_type' => 'refresh_token',
-                    'refresh_token' => $user->oauth_user_refresh_token
-                ],
-            ])->getBody()->getContents());
+            try {
+                $token = json_decode($guzzle->post($url, [
+                    'form_params' => [
+                        'client_id' => config('ninja.o365.client_id'),
+                        'client_secret' => config('ninja.o365.client_secret'),
+                        'scope' => 'email Mail.Send offline_access profile User.Read openid',
+                        'grant_type' => 'refresh_token',
+                        'refresh_token' => $user->oauth_user_refresh_token
+                    ],
+                ])->getBody()->getContents());
+            } catch(\Exception $e) {
+                nlog("Problem getting new Microsoft token for User: {$user->email}");
+            }
 
             if ($token) {
                 $user->oauth_user_refresh_token = property_exists($token, 'refresh_token') ? $token->refresh_token : $user->oauth_user_refresh_token;

@@ -34,7 +34,7 @@ class TwilioController extends BaseController
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\JsonResponse;
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response;
      */
     public function generate(GenerateSmsRequest $request)
     {
@@ -94,7 +94,7 @@ class TwilioController extends BaseController
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\JsonResponse;
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response;
      */
     public function confirm(ConfirmSmsRequest $request)
     {
@@ -129,6 +129,10 @@ class TwilioController extends BaseController
             $user->verified_phone_number = true;
             $user->save();
 
+            if (class_exists(\Modules\Admin\Jobs\Account\UserQualityCheck::class)) {
+                \Modules\Admin\Jobs\Account\UserQualityCheck::dispatch($user, $user->company()->db);
+            }
+
             return response()->json(['message' => 'SMS verified'], 200);
         }
 
@@ -139,7 +143,7 @@ class TwilioController extends BaseController
     /**
      * generate2faResetCode
      *
-     * @return \Illuminate\Http\JsonResponse;
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response;
      */
     public function generate2faResetCode(Generate2faRequest $request)
     {
@@ -160,7 +164,7 @@ class TwilioController extends BaseController
             return response()->json(['message' => 'Please update your first and/or last name in the User Details before verifying your number.'], 400);
         }
 
-        if (!$user->phone || $user->phone == '') {
+        if (!$user->phone || empty($user->phone)) {
             return response()->json(['message' => 'User found, but no valid phone number on file, please contact support.'], 400);
         }
 
@@ -189,7 +193,7 @@ class TwilioController extends BaseController
      * confirm2faResetCode
      *
      * @param  Confirm2faRequest $request
-     * @return \Illuminate\Http\JsonResponse;
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response;
      */
     public function confirm2faResetCode(Confirm2faRequest $request)
     {

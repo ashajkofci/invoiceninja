@@ -41,7 +41,7 @@ class ClientFilters extends QueryFilters
      */
     public function balance(string $balance = ''): Builder
     {
-        if (strlen($balance) == 0) {
+        if (strlen($balance) == 0 || count(explode(":", $balance)) < 2) {
             return $this->builder;
         }
 
@@ -157,6 +157,10 @@ class ClientFilters extends QueryFilters
         $sort_col = explode('|', $sort);
 
         if (!is_array($sort_col) || count($sort_col) != 2) {
+            return $this->builder;
+        }
+
+        if($sort_col[0] == 'documents') {
             return $this->builder;
         }
 

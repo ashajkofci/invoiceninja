@@ -176,9 +176,10 @@ class Document extends BaseModel
 
     public function generateRoute($absolute = false)
     {
-        try{
-        return route('api.documents.show', ['document' => $this->hashed_id]).'/download';
-        }catch(\Exception $e){
+        try {
+            return route('api.documents.show', ['document' => $this->hashed_id]).'/download';
+        } catch(\Exception $e) {
+            nlog("Exception:: Document::" . $e->getMessage());
             return '';
         }
     }
@@ -244,15 +245,15 @@ class Document extends BaseModel
         try {
             $file = base64_encode($image);
 
-            $img = new \Imagick();
+            $img = new \Imagick(); //@phpstan-ignore-line
             $img->readImageBlob($file);
-            $img->setImageCompression(true);
+            $img->setImageCompression(true); //@phpstan-ignore-line
             $img->setImageCompressionQuality(40);
 
             return $img->getImageBlob();
 
         } catch(\Exception $e) {
-
+            nlog("Exception:: Document::" . $e->getMessage());
             nlog($e->getMessage());
             return $catch_image;
         }

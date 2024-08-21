@@ -58,7 +58,7 @@ class BaseRepository
         $className = $this->getEventClass($entity, 'Archived');
 
         if (class_exists($className)) {
-            event(new $className($entity, $entity->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
+            event(new $className($entity, $entity->company, Ninja::eventVars(auth()->guard('api')->user() ? auth()->guard('api')->user()->id : null)));
         }
     }
 
@@ -84,7 +84,7 @@ class BaseRepository
         $className = $this->getEventClass($entity, 'Restored');
 
         if (class_exists($className)) {
-            event(new $className($entity, $fromDeleted, $entity->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
+            event(new $className($entity, $fromDeleted, $entity->company, Ninja::eventVars(auth()->guard('api')->user() ? auth()->guard('api')->user()->id : null)));
         }
     }
 
@@ -105,7 +105,7 @@ class BaseRepository
         $className = $this->getEventClass($entity, 'Deleted');
 
         if (class_exists($className) && !($entity instanceof Company)) {
-            event(new $className($entity, $entity->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
+            event(new $className($entity, $entity->company, Ninja::eventVars(auth()->guard('api')->user() ? auth()->guard('api')->user()->id : null)));
         }
     }
 
@@ -380,7 +380,7 @@ class BaseRepository
         return $model->fresh();
     }
 
-    public function bulkUpdate(\Illuminate\Database\Eloquent\Builder $model, string $column, mixed $new_value) :void
+    public function bulkUpdate(\Illuminate\Database\Eloquent\Builder $model, string $column, mixed $new_value): void
     {
         $model->update([$column => $new_value]);
     }

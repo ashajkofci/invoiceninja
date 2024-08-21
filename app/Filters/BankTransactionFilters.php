@@ -115,6 +115,29 @@ class BankTransactionFilters extends QueryFilters
         return $this->builder;
     }
 
+
+    /**
+     * Filters the list based on Bank Accounts.
+     *
+     * @param string $ids Comma Separated List of bank account ids
+     * @return Builder
+     */
+    public function bank_integration_ids(string $ids = ''): Builder
+    {
+        if(strlen($ids) == 0) {
+            return $this->builder;
+        }
+
+        $ids = $this->transformKeys(explode(",", $ids));
+
+        $this->builder->where(function ($query) use ($ids) {
+            $query->whereIn('bank_integration_id', $ids);
+        });
+
+        return $this->builder;
+
+    }
+
     /**
      * Sorts the list based on $sort.
      *
@@ -132,11 +155,13 @@ class BankTransactionFilters extends QueryFilters
         $dir = ($sort_col[1] == 'asc') ? 'asc' : 'desc';
 
         if ($sort_col[0] == 'deposit') {
-            return $this->builder->where('base_type', 'CREDIT')->orderBy('amount', $dir);
+            return $this->builder->orderByRaw("(CASE WHEN base_type = 'CREDIT' THEN amount END) $dir")->orderBy('amount', $dir);
+            // return $this->builder->where('base_type', 'CREDIT')->orderBy('amount', $dir);
         }
 
         if ($sort_col[0] == 'withdrawal') {
-            return $this->builder->where('base_type', 'DEBIT')->orderBy('amount', $dir);
+            return $this->builder->orderByRaw("(CASE WHEN base_type = 'DEBIT' THEN amount END) $dir")->orderBy('amount', $dir);
+            // return $this->builder->where('base_type', 'DEBIT')->orderBy('amount', $dir);
         }
 
         if ($sort_col[0] == 'status') {

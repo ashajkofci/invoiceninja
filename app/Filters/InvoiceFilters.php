@@ -124,7 +124,15 @@ class InvoiceFilters extends QueryFilters
                               $q->where('first_name', 'like', '%'.$filter.'%')
                                 ->orWhere('last_name', 'like', '%'.$filter.'%')
                                 ->orWhere('email', 'like', '%'.$filter.'%');
-                          });
+                          })
+                          ->orWhereRaw("
+                            JSON_UNQUOTE(JSON_EXTRACT(
+                                JSON_ARRAY(
+                                    JSON_UNQUOTE(JSON_EXTRACT(line_items, '$[*].notes')), 
+                                    JSON_UNQUOTE(JSON_EXTRACT(line_items, '$[*].product_key'))
+                                ), '$[*]')
+                            ) LIKE ?", ['%'.$filter.'%']);
+                        //   ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(line_items, '$[*].notes')) LIKE ?", ['%'.$filter.'%']);
         });
     }
 
@@ -227,7 +235,12 @@ class InvoiceFilters extends QueryFilters
         if (is_numeric($date)) {
             $date = Carbon::createFromTimestamp((int)$date);
         } else {
-            $date = Carbon::parse($date);
+
+            try {
+                $date = Carbon::parse($date);
+            } catch(\Exception $e) {
+                return $this->builder;
+            }
         }
 
         return $this->builder->where('date', '>=', $date);
@@ -266,6 +279,7 @@ class InvoiceFilters extends QueryFilters
         if (count($parts) != 2) {
             return $this->builder;
         }
+
         try {
 
             $start_date = Carbon::parse($parts[0]);
@@ -276,7 +290,6 @@ class InvoiceFilters extends QueryFilters
             return $this->builder;
         }
 
-        return $this->builder;
     }
 
     /**
@@ -302,7 +315,6 @@ class InvoiceFilters extends QueryFilters
             return $this->builder;
         }
 
-        return $this->builder;
     }
 
 
@@ -316,7 +328,7 @@ class InvoiceFilters extends QueryFilters
     {
         $sort_col = explode('|', $sort);
 
-        if (!is_array($sort_col) || count($sort_col) != 2) {
+        if (!is_array($sort_col) || count($sort_col) != 2 || in_array($sort_col[0], ['documents'])) {
             return $this->builder;
         }
 
@@ -333,10 +345,10 @@ class InvoiceFilters extends QueryFilters
             // return $this->builder->orderByRaw('CAST(number AS UNSIGNED), number ' . $dir);
             // return $this->builder->orderByRaw("number REGEXP '^[A-Za-z]+$',CAST(number as SIGNED INTEGER),CAST(REPLACE(number,'-','')AS SIGNED INTEGER) ,number");
             // return $this->builder->orderByRaw('ABS(number) ' . $dir);
-               return $this->builder->orderByRaw("REGEXP_REPLACE(number,'[^0-9]+','')+0 " . $dir);
+            return $this->builder->orderByRaw("REGEXP_REPLACE(invoices.number,'[^0-9]+','')+0 " . $dir);
         }
 
-        return $this->builder->orderBy($sort_col[0], $dir);
+        return $this->builder->orderBy("{$this->builder->getQuery()->from}.".$sort_col[0], $dir);
     }
 
     /**

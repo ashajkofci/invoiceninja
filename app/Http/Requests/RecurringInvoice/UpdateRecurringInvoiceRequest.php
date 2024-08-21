@@ -48,7 +48,7 @@ class UpdateRecurringInvoiceRequest extends Request
             $rules['documents.*'] = $this->fileValidation();
         } elseif ($this->file('documents')) {
             $rules['documents'] = $this->fileValidation();
-        }else {
+        } else {
             $rules['documents'] = 'bail|sometimes|array';
         }
 
@@ -60,6 +60,8 @@ class UpdateRecurringInvoiceRequest extends Request
 
         $rules['number'] = ['bail', 'sometimes', Rule::unique('recurring_invoices')->where('company_id', $user->company()->id)->ignore($this->recurring_invoice->id)];
 
+        $rules['invitations'] = 'sometimes|bail|array';
+        $rules['invitations.*.client_contact_id'] = 'bail|required|distinct';
 
         $rules['client_id'] = ['bail', 'sometimes', Rule::in([$this->recurring_invoice->client_id])];
 
@@ -72,6 +74,7 @@ class UpdateRecurringInvoiceRequest extends Request
         $rules['tax_name3'] = 'bail|sometimes|string|nullable';
         $rules['exchange_rate'] = 'bail|sometimes|numeric';
         $rules['next_send_date'] = 'bail|required|date|after:yesterday';
+        $rules['amount'] = ['sometimes', 'bail', 'numeric', 'max:99999999999999'];
 
         return $rules;
     }
@@ -125,7 +128,8 @@ class UpdateRecurringInvoiceRequest extends Request
         }
 
         if (isset($input['line_items'])) {
-            $input['line_items'] = isset($input['line_items']) ? $this->cleanItems($input['line_items']) : [];
+            $input['line_items'] = $this->cleanItems($input['line_items']);
+            $input['amount'] = $this->entityTotalAmount($input['line_items']);
         }
 
         if (array_key_exists('auto_bill', $input) && isset($input['auto_bill'])) {

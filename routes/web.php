@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Bank\NordigenController;
 use App\Http\Controllers\Bank\YodleeController;
 use App\Http\Controllers\BaseController;
+use App\Http\Controllers\ImportQuickbooksController;
 use App\Http\Controllers\ClientPortal\ApplePayDomainController;
 use App\Http\Controllers\Gateways\Checkout3dsController;
 use App\Http\Controllers\Gateways\GoCardlessController;
@@ -13,7 +14,6 @@ use App\Http\Controllers\Gateways\Mollie3dsController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\WePayController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [BaseController::class, 'flutterRoute'])->middleware('guest');
@@ -30,9 +30,6 @@ Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestF
 Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->middleware(['domain_db', 'email_db'])->name('password.reset');
 Route::post('password/reset', [ResetPasswordController::class, 'reset'])->middleware('email_db')->name('password.update');
-
-Route::get('wepay/signup/{token}', [WePayController::class, 'signup'])->name('wepay.signup');
-Route::get('wepay/finished', [WePayController::class, 'finished'])->name('wepay.finished');
 
 Route::get('auth/{provider}', [LoginController::class, 'redirectToProvider']);
 
@@ -53,3 +50,5 @@ Route::get('checkout/3ds_redirect/{company_key}/{company_gateway_id}/{hash}', [C
 Route::get('mollie/3ds_redirect/{company_key}/{company_gateway_id}/{hash}', [Mollie3dsController::class, 'index'])->middleware('domain_db')->name('mollie.3ds_redirect');
 Route::get('gocardless/ibp_redirect/{company_key}/{company_gateway_id}/{hash}', [GoCardlessController::class, 'ibpRedirect'])->middleware('domain_db')->name('gocardless.ibp_redirect');
 Route::get('.well-known/apple-developer-merchantid-domain-association', [ApplePayDomainController::class, 'showAppleMerchantId']);
+
+Broadcast::routes(['middleware' => ['token_auth']]);

@@ -739,7 +739,7 @@ class PdfBuilder
                 if ($item->is_amount_discount) {
                     $data[$key][$table_type.'.discount'] = $this->service->config->formatMoney($item->discount);
                 } else {
-                    $data[$key][$table_type.'.discount'] = floatval($item->discount).'%';
+                    $data[$key][$table_type.'.discount'] = $this->service->config->formatValueNoTrailingZeroes(floatval($item->discount)).'%';
                 }
             } else {
                 $data[$key][$table_type.'.discount'] = '';
@@ -993,6 +993,7 @@ class PdfBuilder
             PdfService::DELIVERY_NOTE => $this->getDeliveryNoteSections(),
             PdfService::STATEMENT => $this->getStatementSections(),
             PdfService::PURCHASE_ORDER => $this->getPurchaseOrderSections(),
+            default => $this->getProductSections(),
         };
     }
 
@@ -1665,7 +1666,7 @@ class PdfBuilder
             if ($child['element'] !== 'script') {
                 if ($this->service->company->markdown_enabled && array_key_exists('content', $child)) {
                     $child['content'] = str_replace('<br>', "\r", ($child['content'] ?? ''));
-                    $child['content'] = $this->commonmark->convert($child['content'] ?? '');
+                    $child['content'] = $this->commonmark->convert($child['content'] ?? ''); //@phpstan-ignore-line
                 }
             }
 
