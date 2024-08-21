@@ -58,10 +58,6 @@ class EmailPayment implements ShouldQueue
      */
     public function handle()
     {
-        if ($this->company->is_disabled || (!$this->contact?->email ?? false)) {
-            nlog("company disabled - or - contact email not found");
-            return;
-        }
 
         MultiDB::setDb($this->company->db);
 
@@ -69,6 +65,11 @@ class EmailPayment implements ShouldQueue
 
         if (!$this->contact) {
             $this->contact = $this->payment->client->contacts()->orderBy('is_primary', 'desc')->first();
+        }
+
+        if ($this->company->is_disabled || (!$this->contact?->email ?? false)) {
+            nlog("company disabled - or - contact email not found");
+            return;
         }
 
         $this->contact->load('client');
@@ -116,13 +117,17 @@ class EmailPayment implements ShouldQueue
 
         $invoice->invitations->each(function ($invite) use ($email_builder) {
 
+
+            $cloned_mailable = unserialize(serialize($email_builder));
+
             $nmo = new NinjaMailerObject();
-            $nmo->mailable = new TemplateEmail($email_builder, $invite->contact, $invite);
+            $nmo->mailable = new TemplateEmail($cloned_mailable, $invite->contact, $invite);
             $nmo->to_user = $invite->contact;
             $nmo->settings = $this->settings;
             $nmo->company = $this->company;
             $nmo->entity = $this->payment;
             (new NinjaMailerJob($nmo))->handle();
+            $nmo = null;
 
             event(new PaymentWasEmailed($this->payment, $this->payment->company, $invite->contact, Ninja::eventVars(auth()->user() ? auth()->user()->id : null)));
 

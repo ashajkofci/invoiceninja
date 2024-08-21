@@ -1,7 +1,25 @@
 @extends('portal.ninja2020.layout.payments', ['gateway_title' => ctrans('texts.payment_type_credit_card'), 'card_title' => ''])
+@php
+    $gateway_instance = $gateway instanceof \App\Models\CompanyGateway ? $gateway : $gateway->company_gateway;
+    $token_billing_string = 'true';
 
+    if($gateway_instance->token_billing == 'off' || $gateway_instance->token_billing == 'optin'){
+        $token_billing_string = 'false';
+    }
+
+    if (isset($pre_payment) && $pre_payment == '1' && isset($is_recurring) && $is_recurring == '1') {
+        $token_billing_string = 'true';
+    }
+
+    
+@endphp
 @section('gateway_head')
-
+    <meta http-equiv="Content-Security-Policy" content="
+        frame-src 'self' https://c.paypal.com https://www.sandbox.paypal.com https://www.paypal.com https://www.paypalobjects.com; 
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://c.paypal.com https://www.paypalobjects.com https://www.paypal.com https://www.sandbox.paypal.com https://www.google-analytics.com;
+        img-src * data: 'self'; 
+        style-src 'self' 'unsafe-inline';"
+        >
 @endsection
 
 @section('gateway_content')
@@ -12,7 +30,7 @@
         <input type="hidden" name="gateway_type_id" id="gateway_type_id" value="{{ $gateway_type_id }}">
         <input type="hidden" name="gateway_response" id="gateway_response">
         <input type="hidden" name="amount_with_fee" id="amount_with_fee" value="{{ $total['amount_with_fee'] }}"/>
-        <input type="hidden" name="store_card" id="store_card">
+        <input type="hidden" name="store_card" id="store_card" value="{{ $token_billing_string }}">
         <input type="hidden" name="token" value="" id="token">
     </form>
 
@@ -44,6 +62,7 @@
     <div id="checkout-form">
       <!-- Containers for Card Fields hosted by PayPal -->    
       <div id="card-number-field-container"></div>
+      <div id="card-name-field-container"></div>
       <div class="expcvv" style="display:flex;">
         <div id="card-expiry-field-container" style="width:50%"></div>
         <div id="card-cvv-field-container" style="width:50%"></div>
@@ -60,33 +79,28 @@
 @section('gateway_footer')
 @endsection
 
-@push('footer')
-<link  rel="stylesheet" type="text/css" href=https://www.paypalobjects.com/webstatic/en_US/developer/docs/css/cardfields.css />
-<script src="https://www.paypal.com/sdk/js?client-id={!! $client_id !!}&components=card-fields"  data-partner-attribution-id="invoiceninja_SP_PPCP"></script>
 
+@push('footer')
+<script type="application/json" fncls="fnparams-dede7cc5-15fd-4c75-a9f4-36c430ee3a99">
+    {
+        "f":"{{ $guid }}",
+        "s":"{{ $identifier }}"        // unique ID for each web page
+    }
+</script>
+
+<script type="text/javascript" src="https://c.paypal.com/da/r/fb.js"></script>
+
+@if(isset($merchantId))
+<script src="https://www.paypal.com/sdk/js?client-id={!! $client_id !!}&merchant-id={!! $merchantId !!}&components=card-fields" data-partner-attribution-id="invoiceninja_SP_PPCP"></script>
+@else
+<script src="https://www.paypal.com/sdk/js?client-id={!! $client_id !!}&components=card-fields" data-partner-attribution-id="invoiceninja_SP_PPCP"></script>
+@endif
 <script>
 
     const clientId = "{{ $client_id }}";
     const orderId = "{!! $order_id !!}";
 
-    const cardStyle = {
-        'input': {
-            'font-size': '16px',
-            'font-family': 'courier, monospace',
-            'font-weight': 'lighter',
-            'color': '#ccc',
-        },
-        '.invalid': {
-            'color': 'purple',
-        },
-        '.expcvv': {
-          'display': 'grid',
-          'grid-template-columns': 'auto'
-        }
-    };
-
     const cardField = paypal.CardFields({
-        // style: cardStyle,
         client: clientId,
         createOrder: function(data, actions) {
             return orderId;  
@@ -101,15 +115,9 @@
 
                 document.getElementById('errors').textContent = `Sorry, your transaction could not be processed, Please try a different payment method.`;
                 document.getElementById('errors').hidden = false;
-
                 return;
               }
 
-            }
-
-            var errorDetail = Array.isArray(data.details) && data.details[0];
-                if (errorDetail && ['INSTRUMENT_DECLINED', 'PAYER_ACTION_REQUIRED'].includes(errorDetail.issue)) {
-                return actions.restart();
             }
 
             let storeCard = document.querySelector('input[name=token-billing-checkbox]:checked');
@@ -118,23 +126,67 @@
                 document.getElementById("store_card").value = storeCard.value;
             }
 
-            document.getElementById("gateway_response").value = JSON.stringify( data );
-            document.getElementById("server_response").submit();
+            document.getElementById("gateway_response").value =JSON.stringify( data );  
+            
+            formData = JSON.stringify(Object.fromEntries(new FormData(document.getElementById("server_response")))),
 
+            fetch('{{ route('client.payments.response') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: formData,
+            })
+            .then(response => {
+           
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.message);
+                    });
+                }
+                
+                return response.json();
+            
+            })
+            .then(data => {
+
+                var errorDetail = Array.isArray(data.details) && data.details[0];
+
+                if (errorDetail && ['INSTRUMENT_DECLINED', 'PAYER_ACTION_REQUIRED'].includes(errorDetail.issue)) {
+                    return actions.restart();
+                }
+
+                if(data.redirect){
+                    window.location.href = data.redirect;
+                    return;
+                }
+
+                document.getElementById("gateway_response").value =JSON.stringify( data );
+                document.getElementById("server_response").submit();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                document.getElementById('errors').textContent = `Sorry, your transaction could not be processed...\n\n${error.message}`;
+                document.getElementById('errors').hidden = false;
+
+                document.getElementById('pay-now').disabled = false;
+                document.querySelector('#pay-now > svg').classList.add('hidden');
+                document.querySelector('#pay-now > span').classList.remove('hidden');
+                
+            });
+
+        },
+        onError: function(error) {
+
+            throw new Error(error);
 
         },
         onCancel: function() {
 
             window.location.href = "/client/invoices/";
-        },
-        onError: function(error) {
-
-            // console.log("on error")
-            // console.log(error);
-
-            document.getElementById('errors').textContent = `Sorry, your transaction could not be processed...\n\n${error.message}`;
-            document.getElementById('errors').hidden = false;
-
         },
         onClick: function (){
            
@@ -144,20 +196,22 @@
 
   // Render each field after checking for eligibility
   if (cardField.isEligible()) {
+      
+      // const nameField = cardField.NameField();
+     //  nameField.render("#card-name-field-container");
 
       const numberField = cardField.NumberField({
         inputEvents: {
             onChange: (event)=> {
-                // console.log("returns a stateObject", event);
             }
         },
       });
+      
       numberField.render("#card-number-field-container");
 
       const cvvField = cardField.CVVField({
         inputEvents: {
             onChange: (event)=> {
-                // console.log("returns a stateObject", event);
             }
         },
       });
@@ -166,7 +220,6 @@
       const expiryField = cardField.ExpiryField({
         inputEvents: {
             onChange: (event)=> {
-                // console.log("returns a stateObject", event);
             }
         },
       });
@@ -185,9 +238,17 @@
 
         document.querySelector('#pay-now > span').classList.add('hidden');
 
-        cardField.submit().then((response) => {
+        cardField.submit().then(() => {
 
         }).catch((error) => {
+            
+            let msg;
+
+            if(!['INVALID_NUMBER','INVALID_CVV','INVALID_EXPIRY'].includes(error.message))
+            {
+                const errorM = parseError(error);
+                msg = handle422Error(errorM);
+            }
 
             document.getElementById('pay-now').disabled = false;
             document.querySelector('#pay-now > svg').classList.add('hidden');
@@ -202,7 +263,9 @@
             else if(error.message == 'INVALID_EXPIRY') {
               document.getElementById('errors').textContent = "{{ ctrans('texts.invalid_cvv') }}";
             }
-
+            else if(msg?.description){
+                document.getElementById('errors').textContent = msg?.description;
+            }
             document.getElementById('errors').hidden = false;
 
         });
@@ -213,6 +276,39 @@
   else {
 
   }
+
+    function handle422Error(errorData) {
+        const errorDetails = errorData?.details || [];
+        const detail = errorDetails[0];        
+        return detail;
+    }
+
+
+    function parseError(errorMessage)
+    {
+        try {
+            JSON.parse(errorMessage);
+            return errorMessage;
+        } catch (e) {
+            
+        }
+
+        const startIndex = errorMessage.indexOf('{');
+        const endIndex = errorMessage.lastIndexOf('}');
+        
+        if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+            const jsonString = errorMessage.substring(startIndex, endIndex + 1);
+            try {
+                const json = JSON.parse(jsonString);
+                return json;
+            } catch (error) {
+                return null;
+            }
+        } else {
+            return null;
+        }
+
+    }
 
 </script>
 
@@ -238,7 +334,6 @@
   if (payWithCreditCardToggle) {
       payWithCreditCardToggle
           .addEventListener('click', () => {
-            console.log("Cc");
               document
                   .getElementById('save-card--container').style.display = 'grid';
              document
@@ -261,6 +356,18 @@
             if (token) {
                 document.getElementById("token").value = token.value;
             }
+
+                document.getElementById('errors').textContent = '';
+                document.getElementById('errors').hidden = true;
+                
+                document.getElementById('pay-now-token').disabled = true;
+                document.querySelector('#pay-now-token > svg').classList.remove('hidden');
+                document.querySelector('#pay-now-token > svg').classList.add('justify-center');
+
+                document.querySelector('#pay-now-token > svg').classList.add('mx-auto');
+                document.querySelector('#pay-now-token > svg').classList.add('item-center');
+
+                document.querySelector('#pay-now-token > span').classList.add('hidden');
 
             document.getElementById("gateway_response").value = JSON.stringify( {token: token.value, orderID: "{!! $order_id !!}"} );
             document.getElementById("server_response").submit();

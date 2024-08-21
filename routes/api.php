@@ -57,6 +57,7 @@ use App\Http\Controllers\SystemLogController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ImportJsonController;
+use App\Http\Controllers\ImportQuickbooksController;
 use App\Http\Controllers\SelfUpdateController;
 use App\Http\Controllers\TaskStatusController;
 use App\Http\Controllers\Bank\YodleeController;
@@ -152,9 +153,11 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
     Route::post('check_subdomain', [SubdomainController::class, 'index'])->name('check_subdomain');
     Route::get('ping', [PingController::class, 'index'])->name('ping');
     Route::get('health_check', [PingController::class, 'health'])->name('health_check');
+    Route::get('last_error', [PingController::class, 'lastError'])->name('last_error');
 
     Route::get('activities', [ActivityController::class, 'index']);
     Route::post('activities/entity', [ActivityController::class, 'entityActivity']);
+    Route::post('activities/notes', [ActivityController::class, 'note']);
     Route::get('activities/download_entity/{activity}', [ActivityController::class, 'downloadHistoricalEntity']);
 
     Route::post('charts/totals', [ChartController::class, 'totals'])->name('chart.totals');
@@ -162,6 +165,7 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
 
     Route::post('charts/totals_v2', [ChartController::class, 'totalsV2'])->name('chart.totals_v2');
     Route::post('charts/chart_summary_v2', [ChartController::class, 'chart_summaryV2'])->name('chart.chart_summary_v2');
+    Route::post('charts/calculated_fields', [ChartController::class, 'calculatedFields'])->name('chart.calculated_fields');
 
     Route::post('claim_license', [LicenseController::class, 'index'])->name('license.index');
 
@@ -184,6 +188,7 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
 
     Route::post('client_statement', [ClientStatementController::class, 'statement'])->name('client.statement');
 
+    Route::post('companies/current', [CompanyController::class, 'current'])->name('companies.current');
     Route::post('companies/purge/{company}', [MigrationController::class, 'purgeCompany'])->middleware('password_protected');
     Route::post('companies/purge_save_settings/{company}', [MigrationController::class, 'purgeCompanySaveSettings'])->middleware('password_protected');
     Route::resource('companies', CompanyController::class); // name = (companies. index / create / show / update / destroy / edit
@@ -227,8 +232,8 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
     Route::resource('expenses', ExpenseController::class); // name = (expenses. index / create / show / update / destroy / edit
     Route::put('expenses/{expense}/upload', [ExpenseController::class, 'upload']);
     Route::post('expenses/bulk', [ExpenseController::class, 'bulk'])->name('expenses.bulk');
-
     Route::post('export', [ExportController::class, 'index'])->name('export.index');
+    Route::put('edocument/upload', [ExpenseController::class, "edocument"])->name("expenses.edocument");
 
     Route::resource('expense_categories', ExpenseCategoryController::class); // name = (expense_categories. index / create / show / update / destroy / edit
     Route::post('expense_categories/bulk', [ExpenseCategoryController::class, 'bulk'])->name('expense_categories.bulk');
@@ -240,7 +245,7 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
     Route::post('import', [ImportController::class, 'import'])->name('import.import');
     Route::post('import_json', [ImportJsonController::class, 'import'])->name('import.import_json');
     Route::post('preimport', [ImportController::class, 'preimport'])->name('import.preimport');
-
+    ;
     Route::resource('invoices', InvoiceController::class); // name = (invoices. index / create / show / update / destroy / edit
     Route::get('invoices/{invoice}/delivery_note', [InvoiceController::class, 'deliveryNote'])->name('invoices.delivery_note');
     Route::get('invoices/{invoice}/{action}', [InvoiceController::class, 'action'])->name('invoices.action');
@@ -412,7 +417,7 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
 
     Route::get('subscriptions/steps', [SubscriptionStepsController::class, 'index']);
     Route::post('subscriptions/steps/check', [SubscriptionStepsController::class, 'check']);
-    
+
     Route::resource('subscriptions', SubscriptionController::class);
 
     Route::post('subscriptions/bulk', [SubscriptionController::class, 'bulk'])->name('subscriptions.bulk');

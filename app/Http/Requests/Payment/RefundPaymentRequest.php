@@ -67,9 +67,8 @@ class RefundPaymentRequest extends Request
         $input = $this->all();
 
         $rules = [
-            'id' => 'bail|required', //@phpstan-ignore-line
-            'id' => new ValidRefundableRequest($input),
-            'amount' => 'numeric',
+            'id' => ['bail','required', new ValidRefundableRequest($input)],
+            'amount' => ['numeric', 'max:99999999999999'],
             'date' => 'required',
             'invoices.*.invoice_id' => 'required',
             'invoices.*.amount' => 'required',
@@ -82,7 +81,7 @@ class RefundPaymentRequest extends Request
     public function payment(): ?\App\Models\Payment
     {
         $input = $this->all();
-
-        return Payment::whereId($input['id'])->first();
+        /** @var \App\Models\Payment */
+        return Payment::find($input['id']);
     }
 }

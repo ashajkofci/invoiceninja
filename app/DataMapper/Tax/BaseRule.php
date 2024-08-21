@@ -11,11 +11,13 @@
 
 namespace App\DataMapper\Tax;
 
-use App\DataMapper\Tax\ZipTax\Response;
-use App\DataProviders\USStates;
+use App\Models\Quote;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\DataProviders\USStates;
+use App\DataMapper\Tax\ZipTax\Response;
+use App\Models\RecurringInvoice;
 
 class BaseRule implements RuleInterface
 {
@@ -129,9 +131,8 @@ class BaseRule implements RuleInterface
         return $this;
     }
 
-    public function shouldCalcTax(): bool
-    {
-        return $this->should_calc_tax;
+    public function shouldCalcTax(): bool {
+        return $this->should_calc_tax && $this->checkIfInvoiceLocked();
     }
     /**
      * Initializes the tax rule for the entity.
@@ -210,15 +211,16 @@ class BaseRule implements RuleInterface
         }
 
         /** Applies the tax data to the invoice */
-        if($this->invoice instanceof Invoice && $tax_data) {
+        if(($this->invoice instanceof Invoice || $this->invoice instanceof Quote) && $tax_data) {
 
             $this->invoice->tax_data = $tax_data;
 
-            if(\DB::transactionLevel() == 0) {
+            if(\DB::transactionLevel() == 0 && isset($this->invoice->id)) {
 
                 try {
                     $this->invoice->saveQuietly();
                 } catch(\Exception $e) {
+                    nlog("Exception:: BaseRule::" . $e->getMessage());
                 }
 
             }
@@ -260,7 +262,7 @@ class BaseRule implements RuleInterface
                 return $this->client->state;
             }
 
-            return USStates::getState(strlen($this->client->postal_code) > 1 ? $this->client->postal_code : $this->client->shipping_postal_code);
+            return USStates::getState(strlen($this->client->postal_code ?? '') > 1 ? $this->client->postal_code : $this->client->shipping_postal_code);
 
         } catch (\Exception $e) {
             return 'CA';
@@ -396,6 +398,41 @@ class BaseRule implements RuleInterface
     public function regionWithNoTaxCoverage(string $iso_3166_2): bool
     {
         return ! in_array($iso_3166_2, array_merge($this->eu_country_codes, array_keys($this->region_codes)));
+    }
+
+    private function checkIfInvoiceLocked(): bool
+    {
+        $lock_invoices = $this->client->getSetting('lock_invoices');
+
+        if($this->invoice instanceof RecurringInvoice)
+            return true;
+        
+        switch ($lock_invoices) {
+            case 'off':
+                return true;
+            case 'when_sent':
+                if ($this->invoice->status_id == Invoice::STATUS_SENT) {
+                    return false;
+                }
+
+                return true;
+
+            case 'when_paid':
+                if ($this->invoice->status_id == Invoice::STATUS_PAID) {
+                    return false;
+                }
+
+                return true;
+
+                //if now is greater than the end of month the invoice was dated - do not modify
+            case 'end_of_month':
+                if(\Carbon\Carbon::parse($this->invoice->date)->setTimezone($this->invoice->company->timezone()->name)->endOfMonth()->lte(now())) {
+                    return false;
+                }
+                return true;
+            default:
+                return true;
+        }
     }
 
 }

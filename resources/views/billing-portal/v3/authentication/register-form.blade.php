@@ -47,7 +47,7 @@
                                 @foreach(App\Utils\TranslationHelper::getCurrencies() as $currency)
                                     <option
                                         {{ $currency->id == $subscription->company->settings->currency_id ? 'selected' : null }} value="{{ $currency->id }}">
-                                        {{ $currency->name }}
+                                        {{ $currency->getName() }}
                                     </option>
                                 @endforeach
                             </select>
@@ -61,7 +61,7 @@
                                     <option
                                         {{ $country == isset(auth()->user()->client->shipping_country->id) ? 'selected' : null }} value="{{ $country->id }}">
                                         {{ $country->iso_3166_2 }}
-                                        ({{ $country->name }})
+                                        ({{ $country->getName() }})
                                     </option>
                                 @endforeach
                             </select>
@@ -75,7 +75,7 @@
                                     <option
                                         {{ $country == isset(auth()->user()->client->shipping_country->id) ? 'selected' : null }} value="{{ $country->id }}">
                                         {{ $country->iso_3166_2 }}
-                                        ({{ $country->name }})
+                                        ({{ $country->getName() }})
                                     </option>
                                 @endforeach
                             </select>
@@ -120,6 +120,25 @@
                 @endif
             @endforeach
         @endif
+    </div>
+
+    <div class="col-span-12 md:col-span-6">
+        <span class="inline-flex items-center" x-data="{ terms_of_service: false, privacy_policy: false }">
+            @if(!empty($subscription->company->settings->client_portal_terms) || !empty($subscription->company->settings->client_portal_privacy_policy))
+                <input type="checkbox" name="terms" class="form-checkbox mr-2 cursor-pointer" checked>
+                <span class="text-sm text-gray-800">
+
+                {{ ctrans('texts.i_agree_to_the') }}
+            @endif
+
+            @includeWhen(!empty($subscription->company->settings->client_portal_terms), 'portal.ninja2020.auth.includes.register.popup', ['property' => 'terms_of_service', 'title' => ctrans('texts.terms_of_service'), 'content' => $subscription->company->settings->client_portal_terms])
+            @includeWhen(!empty($subscription->company->settings->client_portal_privacy_policy), 'portal.ninja2020.auth.includes.register.popup', ['property' => 'privacy_policy', 'title' => ctrans('texts.privacy_policy'), 'content' => $subscription->company->settings->client_portal_privacy_policy])
+
+            @error('terms')
+                <p class="text-red-600">{{ $message }}</p>
+            @enderror
+            </span>
+        </span>
     </div>
 
     <button

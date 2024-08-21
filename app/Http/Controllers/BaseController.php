@@ -11,36 +11,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Account;
-use App\Models\BankIntegration;
-use App\Models\BankTransaction;
-use App\Models\BankTransactionRule;
+use App\Models\User;
+use App\Utils\Ninja;
 use App\Models\Client;
-use App\Models\CompanyGateway;
 use App\Models\Design;
-use App\Models\ExpenseCategory;
-use App\Models\GroupSetting;
-use App\Models\PaymentTerm;
+use App\Utils\Statics;
+use App\Models\Account;
+use App\Models\TaxRate;
+use App\Models\Webhook;
 use App\Models\Scheduler;
 use App\Models\TaskStatus;
-use App\Models\TaxRate;
-use App\Models\User;
-use App\Models\Webhook;
-use App\Transformers\ArraySerializer;
-use App\Transformers\EntityTransformer;
-use App\Utils\Ninja;
-use App\Utils\Statics;
-use App\Utils\Traits\AppSetup;
-use Illuminate\Contracts\Container\BindingResolutionException;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
+use App\Models\PaymentTerm;
 use Illuminate\Support\Str;
 use League\Fractal\Manager;
-use League\Fractal\Pagination\IlluminatePaginatorAdapter;
-use League\Fractal\Resource\Collection;
+use App\Models\GroupSetting;
+use Illuminate\Http\Response;
+use App\Models\CompanyGateway;
+use App\Utils\Traits\AppSetup;
+use App\Models\BankIntegration;
+use App\Models\BankTransaction;
+use App\Models\ExpenseCategory;
 use League\Fractal\Resource\Item;
+use App\Models\BankTransactionRule;
+use Illuminate\Support\Facades\Auth;
+use App\Transformers\ArraySerializer;
+use Illuminate\Support\Facades\Schema as DbSchema;
+use App\Transformers\EntityTransformer;
+use League\Fractal\Resource\Collection;
+use Illuminate\Database\Eloquent\Builder;
+use InvoiceNinja\EInvoice\Decoder\Schema;
 use League\Fractal\Serializer\JsonApiSerializer;
+use League\Fractal\Pagination\IlluminatePaginatorAdapter;
+use Illuminate\Contracts\Container\BindingResolutionException;
 
 /**
  * Class BaseController.
@@ -261,7 +263,7 @@ class BaseController extends Controller
 
     /**
      * 404 for the client portal.
-     * @return Response 404 response
+     * @return Response| \Illuminate\Http\JsonResponse 404 response
      */
     public function notFoundClient()
     {
@@ -278,7 +280,7 @@ class BaseController extends Controller
      *
      * @param string|array    $message        The return error message
      * @param int       $httpErrorCode  404/401/403 etc
-     * @return Response                 The JSON response
+     * @return Response| \Illuminate\Http\JsonResponse                 The JSON response
      * @throws BindingResolutionException
      */
     protected function errorResponse($message, $httpErrorCode = 400)
@@ -296,7 +298,7 @@ class BaseController extends Controller
      * Refresh API response with latest cahnges
      *
      * @param  Builder           $query
-     * @return Response
+     * @return Response| \Illuminate\Http\JsonResponse
      */
     protected function refreshResponse($query)
     {
@@ -459,7 +461,7 @@ class BaseController extends Controller
                     }
                 },
                 'company.tasks' => function ($query) use ($updated_at, $user) {
-                    $query->where('updated_at', '>=', $updated_at)->with('project','documents');
+                    $query->where('updated_at', '>=', $updated_at)->with('project', 'documents');
 
                     if (! $user->hasPermission('view_task')) {
                         $query->whereNested(function ($query) use ($user) {
@@ -652,7 +654,7 @@ class BaseController extends Controller
     /**
      * Passes back the miniloaded data response
      *
-     * @param  Builder $query
+     * @param  mixed $query
      *
      */
     protected function timeConstrainedResponse($query)
@@ -797,7 +799,7 @@ class BaseController extends Controller
                     }
                 },
                 'company.tasks' => function ($query) use ($created_at, $user) {
-                    $query->where('created_at', '>=', $created_at)->with('project.documents','documents');
+                    $query->where('created_at', '>=', $created_at)->with('project.documents', 'documents');
 
                     if (! $user->hasPermission('view_task')) {
                         $query->whereNested(function ($query) use ($user) {
@@ -889,16 +891,11 @@ class BaseController extends Controller
             /** @phpstan-ignore-next-line **/
             $query = $paginator->getCollection();// @phpstan-ignore-line
 
-
             $resource = new Collection($query, $transformer, $this->entity_type);
             $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
         }
 
-        // else {
-        //     $resource = new Collection($query, $transformer, $this->entity_type);
-        // }
-
-        return $this->response($this->manager->createData($resource)->toArray());
+        return $this->response($this->manager->createData($resource)->toArray()); //@phpstan-ignore-line
     }
 
     /**
@@ -937,7 +934,9 @@ class BaseController extends Controller
             } elseif (in_array($this->entity_type, [Design::class, GroupSetting::class, PaymentTerm::class, TaskStatus::class])) {
                 // nlog($this->entity_type);
             } else {
-                $query->where('user_id', '=', $user->id)->orWhere('assigned_user_id', $user->id);
+                $query->where(function ($q) use ($user){ //grouping these together improves query performance significantly)
+                    $q->where('user_id', '=', $user->id)->orWhere('assigned_user_id', $user->id);
+                });
             }
         }
 
@@ -969,7 +968,7 @@ class BaseController extends Controller
      * Sorts the response by keys
      *
      * @param  mixed $response
-     * @return Response
+     * @return Response| \Illuminate\Http\JsonResponse
      */
     protected function response($response)
     {
@@ -993,7 +992,18 @@ class BaseController extends Controller
                 /** @var \App\Models\User $user */
                 $user = auth()->user();
 
-                $response['static'] = Statics::company($user->getCompany()->getLocale());
+                $response_data = Statics::company($user->getCompany()->getLocale());
+
+                if(request()->has('einvoice')) {
+
+                    if(class_exists(Schema::class)){
+                        $ro = new Schema();
+                        $response_data['einvoice_schema'] = $ro('Peppol');
+                    }
+                }
+
+                $response['static'] = $response_data;
+
             }
         }
 
@@ -1010,7 +1020,7 @@ class BaseController extends Controller
      * Item Response
      *
      * @param  mixed $item
-     * @return Response
+     * @return Response| \Illuminate\Http\JsonResponse
      */
     protected function itemResponse($item)
     {
@@ -1024,7 +1034,7 @@ class BaseController extends Controller
 
         $resource = new Item($item, $transformer, $this->entity_type);
 
-        /** @var \App\Models\User $user */
+        /** @var ?\App\Models\User $user */
         $user = auth()->user();
 
         if ($user && request()->include_static) {
@@ -1093,7 +1103,7 @@ class BaseController extends Controller
     public function flutterRoute()
     {
 
-        if ((bool) $this->checkAppSetup() !== false && $account = Account::first()) {
+        if ((bool) $this->checkAppSetup() !== false && DbSchema::hasTable('accounts') && $account = Account::first()) {
 
             /** @var \App\Models\Account $account */
 
@@ -1146,8 +1156,6 @@ class BaseController extends Controller
             $data['user_agent'] = request()->server('HTTP_USER_AGENT');
 
             $data['path'] = $this->setBuild();
-
-            $this->buildCache();
 
             if (Ninja::isSelfHost() && $account->set_react_as_default_ap) {
                 return response()->view('react.index', $data)->header('X-Frame-Options', 'SAMEORIGIN', false);

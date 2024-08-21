@@ -12,6 +12,7 @@
 namespace App\Jobs\Entity;
 
 use App\Exceptions\FilePermissionsFailure;
+use App\Jobs\EDocument\MergeEDocument;
 use App\Models\Credit;
 use App\Models\CreditInvitation;
 use App\Models\Invoice;
@@ -39,7 +40,7 @@ class CreateRawPdf
 
     public Invoice | Credit | Quote | RecurringInvoice | PurchaseOrder $entity;
 
-    public $company;
+    public \App\Models\Company $company;
 
     public $contact;
 
@@ -54,6 +55,7 @@ class CreateRawPdf
     {
 
         $this->invitation = $invitation;
+        $this->company = $invitation->company;
 
         if ($invitation instanceof InvoiceInvitation) {
             $this->entity = $invitation->invoice;
@@ -95,6 +97,9 @@ class CreateRawPdf
 
     }
 
+    /**
+     * @throws FilePermissionsFailure
+     */
     public function handle()
     {
         /** Testing this override to improve PDF generation performance */
@@ -104,11 +109,24 @@ class CreateRawPdf
             "{$this->entity_string}s" => [$this->entity],
         ]);
 
-        $pdf = $ps->boot()->getPdf();
-        nlog("pdf timer = ". $ps->execution_time);
-        return $pdf;
+        try {
+            $pdf = $ps->boot()->getPdf();
+        } catch (\Exception $e) {
+            nlog($e->getMessage());
+            throw new FilePermissionsFailure('Unable to generate the raw PDF');
+        }
 
-        throw new FilePermissionsFailure('Unable to generate the raw PDF');
+        if ($this->entity_string == "invoice" && $this->entity->client->getSetting("merge_e_invoice_to_pdf")) {
+            $pdf = (new MergeEDocument($this->entity, $pdf))->handle();
+        }        
+
+        $merge_docs = isset($this->entity->client) ? $this->entity->client->getSetting('embed_documents') : $this->company->getSetting('embed_documents');
+
+        if($merge_docs && ($this->entity->documents()->where('is_public', true)->count() > 0 || $this->company->documents()->where('is_public', true)->count() > 0)) {
+            $pdf = $this->entity->documentMerge($pdf);
+        }
+
+        return $pdf;
     }
 
     public function failed($e)

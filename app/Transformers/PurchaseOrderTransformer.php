@@ -78,7 +78,7 @@ class PurchaseOrderTransformer extends EntityTransformer
     {
         $transformer = new VendorTransformer($this->serializer);
 
-        if (!$purchase_order->vendor) {
+        if (!$purchase_order->vendor) {//@phpstan-ignore-line
             return null;
         }
 
@@ -150,6 +150,8 @@ class PurchaseOrderTransformer extends EntityTransformer
             'expense_id' => $this->encodePrimaryKey($purchase_order->expense_id),
             'currency_id' => $purchase_order->currency_id ? (string) $purchase_order->currency_id : '',
             'tax_info' => $purchase_order->tax_data ?: new \stdClass(),
+            'e_invoice' => $purchase_order->e_invoice ?: new \stdClass(),
+
         ];
     }
 }

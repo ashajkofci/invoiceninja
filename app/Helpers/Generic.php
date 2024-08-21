@@ -27,7 +27,7 @@ function nlog($output, $context = []): void
     }
 
     if (gettype($output) == 'object') {
-        $output = print_r($output, 1);
+        $output = print_r($output, true);
     }
 
     // $trace = debug_backtrace();
@@ -39,6 +39,32 @@ function nlog($output, $context = []): void
         }
     } else {
         \Illuminate\Support\Facades\Log::channel('invoiceninja')->info($output, $context);
+    }
+
+    $output = null;
+    $context = null;
+}
+
+
+function nrlog($output, $context = []): void
+{
+    if (! config('ninja.expanded_logging')) {
+        return;
+    }
+
+    if (gettype($output) == 'object') {
+        $output = print_r($output, true);
+    }
+
+    // $trace = debug_backtrace();
+
+    if (Ninja::isHosted()) {
+        try {
+            info($output);
+        } catch (\Exception $e) {
+        }
+    } else {
+        \Illuminate\Support\Facades\Log::channel('invoiceninja-reminders')->info($output, $context);
     }
 
     $output = null;

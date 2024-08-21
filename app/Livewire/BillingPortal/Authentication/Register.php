@@ -59,7 +59,6 @@ class Register extends Component
 
     public function register(array $data)
     {
-        nlog($data);
 
         $service = new ClientRegisterService(
             company: $this->subscription->company,
@@ -68,13 +67,8 @@ class Register extends Component
 
         $rules = $service->rules();
 
-        nlog($rules);
-
         $data = Validator::make($data, $rules)->validate();
 
-        nlog("validated data");
-        nlog($data);
-        
         $client = $service->createClient($data);
         $contact = $service->createClientContact($data, $client);
 
@@ -87,7 +81,7 @@ class Register extends Component
     public function registerForm()
     {
         $count = collect($this->subscription->company->client_registration_fields ?? [])
-            ->filter(fn($field) => $field['required'] === true || $field['visible'] === true)
+            ->filter(fn ($field) => $field['required'] === true || $field['visible'] === true)
             ->count();
 
         if ($count === 0) {

@@ -165,8 +165,7 @@ class GoCardlessPaymentDriver extends BaseDriver
             ]);
 
             if (in_array($payment->status, ['submitted', 'pending_submission'])) {
-                $this->confirmGatewayFee();
-
+                
                 $data = [
                     'payment_method' => $cgt->hashed_id,
                     'payment_type' => PaymentType::ACH,
@@ -174,6 +173,8 @@ class GoCardlessPaymentDriver extends BaseDriver
                     'transaction_reference' => $payment->id,
                     'gateway_type_id' => GatewayType::BANK_TRANSFER,
                 ];
+
+                $this->confirmGatewayFee($data);
 
                 $payment = $this->createPayment($data, Payment::STATUS_PENDING);
 
@@ -564,8 +565,7 @@ class GoCardlessPaymentDriver extends BaseDriver
         try {
             $customers = $this->init()->gateway->customers()->list();
             return true;
-        }
-        catch(\Exception $e){
+        } catch(\Exception $e) {
 
         }
 
