@@ -5,7 +5,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2021. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -20,11 +20,12 @@ use App\Models\Payment;
 use App\Models\PaymentHash;
 use App\Models\PaymentType;
 use App\Models\SystemLog;
+use App\PaymentDrivers\Common\LivewireMethodInterface;
 use App\PaymentDrivers\FortePaymentDriver;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Support\Facades\Validator;
 
-class CreditCard
+class CreditCard implements LivewireMethodInterface
 {
     use MakesHash;
 
@@ -109,8 +110,8 @@ class CreditCard
             SystemLog::CATEGORY_GATEWAY_RESPONSE,
             SystemLog::EVENT_GATEWAY_FAILURE,
             SystemLog::TYPE_FORTE,
-            $this->client,
-            $this->client->company,
+            $this->forte->client,
+            $this->forte->client->company,
         );
 
         throw new \App\Exceptions\PaymentFailed("Unable to store payment method: {$error->response->response_desc}", 400);
@@ -157,10 +158,8 @@ class CreditCard
 
     public function paymentView(array $data)
     {
-        $this->forte->payment_hash->data = array_merge((array) $this->forte->payment_hash->data, $data);
-        $this->forte->payment_hash->save();
-
-        $data['gateway'] = $this->forte;
+        $data = $this->paymentData($data);
+        
         return render('gateways.forte.credit_card.pay', $data);
     }
 
@@ -259,7 +258,10 @@ class CreditCard
             );
             $error = Validator::make([], []);
             $error->getMessageBag()->add('gateway_error', $response->response->response_desc);
-            return redirect('client/invoices')->withErrors($error);
+
+            return redirect()->route('client.invoice.show', ['invoice' => $payment_hash->fee_invoice->hashed_id])->withErrors($error);
+
+            // return redirect('client/invoices')->withErrors($error);
         }
 
         SystemLogger::dispatch(
@@ -286,5 +288,26 @@ class CreditCard
 
         return redirect()->route('client.payments.show', ['payment' => $payment->hashed_id]);
 
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function livewirePaymentView(array $data): string 
+    {
+        return 'gateways.forte.credit_card.pay_livewire';        
+    }
+    
+    /**
+     * @inheritDoc
+     */
+    public function paymentData(array $data): array 
+    {
+        $this->forte->payment_hash->data = array_merge((array) $this->forte->payment_hash->data, $data);
+        $this->forte->payment_hash->save();
+
+        $data['gateway'] = $this->forte;
+
+        return $data;
     }
 }

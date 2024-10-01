@@ -81,7 +81,7 @@ class RouteServiceProvider extends ServiceProvider
             if (Ninja::isSelfHost()) {
                 return Limit::none();
             } else {
-                return Limit::perMinute(25)->by($request->ip());
+                return Limit::perMinute(10)->by($request->ip());
             }
         });
 
@@ -92,7 +92,7 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('portal', function (Request $request) {
             return Limit::perMinute(15)->by($request->ip());
         });
-        
+
     }
 
     /**

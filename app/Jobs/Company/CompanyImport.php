@@ -354,9 +354,9 @@ class CompanyImport implements ShouldQueue
             unlink($tmp_file);
         }
 
-        if(Storage::exists($this->file_location)) {
-            unlink(Storage::path($this->file_location));
-        }
+        if(Storage::exists($this->file_location)) 
+            Storage::delete($this->file_location);
+        
     }
 
     //
@@ -1407,10 +1407,10 @@ class CompanyImport implements ShouldQueue
         switch ($type) {
             case 'invoices':
                 return $this->transformId('invoices', $id);
-                
+
             case Credit::class:
                 return $this->transformId('credits', $id);
-                
+
             case Payment::class:
                 return $this->transformId('payments', $id);
             default:
