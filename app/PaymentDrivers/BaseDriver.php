@@ -232,7 +232,6 @@ class BaseDriver extends AbstractPaymentDriver
      *
      * @param ClientGatewayToken $cgt The client gateway token object
      * @param PaymentHash $payment_hash The Payment hash containing the payment meta data
-     * @return ?Payment|bool  The payment response
      */
     public function tokenBilling(ClientGatewayToken $cgt, PaymentHash $payment_hash)
     {
@@ -401,13 +400,22 @@ class BaseDriver extends AbstractPaymentDriver
         $invoice = $this->payment_hash->fee_invoice;
 
         $fee_count = collect($invoice->line_items)
-                        ->whereIn('type_id', ['3','4'])
-                        ->where('gross_line_total', $fee_total)
+                        ->map(function ($item){
+                            $item->gross_line_total = round($item->gross_line_total, 2);
+                            return $item;
+                        })
+                        ->whereIn('type_id', ['3'])
+                        ->where('gross_line_total', '<=', round($fee_total,2))
                         ->count();
 
         if($invoice && $fee_count == 0){
 
+            
             nlog("apparently no fee, so injecting here!");
+
+            if(!$invoice->uses_inclusive_taxes){ //must account for taxes! ? line item taxes also
+                $fee_total = round($fee_total/(1 + (($invoice->tax_rate1+$invoice->tax_rate2+$invoice->tax_rate3)/100)),2);
+            }
 
             $balance = $invoice->balance;
 
@@ -423,18 +431,18 @@ class BaseDriver extends AbstractPaymentDriver
             $invoice_item->quantity = 1;
             $invoice_item->cost = (float)$fee_total;
 
-            $invoice_items = (array) $invoice->line_items;
+            $invoice_items = $invoice->line_items;
             $invoice_items[] = $invoice_item;
 
-                if (isset($data['gateway_type_id']) && $fees_and_limits = $this->company_gateway->getFeesAndLimits($data['gateway_type_id'])) {
-                    $invoice_item->tax_rate1 = $fees_and_limits->fee_tax_rate1;
-                    $invoice_item->tax_name1 = $fees_and_limits->fee_tax_name1;
-                    $invoice_item->tax_rate2 = $fees_and_limits->fee_tax_rate2;
-                    $invoice_item->tax_name2 = $fees_and_limits->fee_tax_name2;
-                    $invoice_item->tax_rate3 = $fees_and_limits->fee_tax_rate3;
-                    $invoice_item->tax_name3 = $fees_and_limits->fee_tax_name3;
-                    $invoice_item->tax_id = (string)\App\Models\Product::PRODUCT_TYPE_OVERRIDE_TAX;
-                }
+            if (isset($data['gateway_type_id']) && $fees_and_limits = $this->company_gateway->getFeesAndLimits($data['gateway_type_id'])) {
+                $invoice_item->tax_rate1 = $fees_and_limits->fee_tax_rate1;
+                $invoice_item->tax_name1 = $fees_and_limits->fee_tax_name1;
+                $invoice_item->tax_rate2 = $fees_and_limits->fee_tax_rate2;
+                $invoice_item->tax_name2 = $fees_and_limits->fee_tax_name2;
+                $invoice_item->tax_rate3 = $fees_and_limits->fee_tax_rate3;
+                $invoice_item->tax_name3 = $fees_and_limits->fee_tax_name3;
+                $invoice_item->tax_id = (string)\App\Models\Product::PRODUCT_TYPE_OVERRIDE_TAX;
+            }
 
             $invoice->line_items = $invoice_items;
 
@@ -498,28 +506,28 @@ class BaseDriver extends AbstractPaymentDriver
      */
     public function storeGatewayToken(array $data, array $additional = []): ?ClientGatewayToken
     {
-        $company_gateway_token = new ClientGatewayToken();
-        $company_gateway_token->company_id = $this->client->company->id;
-        $company_gateway_token->client_id = $this->client->id;
-        $company_gateway_token->token = $data['token'];
-        $company_gateway_token->company_gateway_id = $this->company_gateway->id;
-        $company_gateway_token->gateway_type_id = $data['payment_method_id'];
-        $company_gateway_token->meta = $data['payment_meta'];
+        $cgt = new ClientGatewayToken();
+        $cgt->company_id = $this->client->company->id;
+        $cgt->client_id = $this->client->id;
+        $cgt->token = $data['token'];
+        $cgt->company_gateway_id = $this->company_gateway->id;
+        $cgt->gateway_type_id = $data['payment_method_id'];
+        $cgt->meta = $data['payment_meta'];
 
         foreach ($additional as $key => $value) {
-            $company_gateway_token->{$key} = $value;
+            $cgt->{$key} = $value;
         }
 
-        $company_gateway_token->save();
+        $cgt->save();
 
-        if ($this->client->gateway_tokens->count() == 1) {
+        if ($this->client->gateway_tokens->count() > 1) {
             $this->client->gateway_tokens()->update(['is_default' => 0]);
-
-            $company_gateway_token->is_default = 1;
-            $company_gateway_token->save();
         }
 
-        return $company_gateway_token;
+        $cgt->is_default = 1;
+        $cgt->save();
+
+        return $cgt;
     }
 
     public function processInternallyFailedPayment($gateway, $e)
@@ -636,7 +644,7 @@ class BaseDriver extends AbstractPaymentDriver
 
         $message = [
             'server_response' => $response,
-            'data' => $this->payment_hash->data,
+            'data' => $this->payment_hash?->data,
         ];
 
         SystemLogger::dispatch(
@@ -651,6 +659,16 @@ class BaseDriver extends AbstractPaymentDriver
         if ($client_present) {
             throw new PaymentFailed($error, 500);
         }
+    }
+
+    public function livewirePaymentView(array $data): string 
+    {
+        return $this->payment_method->livewirePaymentView($data);
+    }
+
+    public function processPaymentViewData(array $data): array
+    {
+        return $this->payment_method->paymentData($data); 
     }
 
     public function checkRequirements()
@@ -748,6 +766,18 @@ class BaseDriver extends AbstractPaymentDriver
             $response,
             SystemLog::CATEGORY_GATEWAY_RESPONSE,
             SystemLog::EVENT_GATEWAY_SUCCESS,
+            $gateway_const,
+            $this->client,
+            $this->client->company,
+        );
+    }
+
+    public function logUnsuccessfulGatewayResponse($response, $gateway_const)
+    {
+        SystemLogger::dispatch(
+            $response,
+            SystemLog::CATEGORY_GATEWAY_RESPONSE,
+            SystemLog::EVENT_GATEWAY_FAILURE,
             $gateway_const,
             $this->client,
             $this->client->company,

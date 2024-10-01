@@ -12,8 +12,12 @@
 
 namespace App\PaymentDrivers\Rotessa;
 
+use App\Http\Controllers\ClientPortal\InvoiceController;
+use App\Http\Requests\ClientPortal\Invoices\ProcessInvoicesInBulkRequest;
 use App\Models\Payment;
+use App\Models\PaymentHash;
 use App\Models\SystemLog;
+use App\PaymentDrivers\Common\LivewireMethodInterface;
 use Illuminate\View\View;
 use App\Models\GatewayType;
 use App\Models\PaymentType;
@@ -28,7 +32,7 @@ use App\PaymentDrivers\Common\MethodInterface;
 use Omnipay\Common\Exception\InvalidResponseException;
 use App\Http\Requests\ClientPortal\Payments\PaymentResponseRequest;
 
-class PaymentMethod implements MethodInterface
+class PaymentMethod implements MethodInterface, LivewireMethodInterface
 {
 
     private array $transaction = [
@@ -107,12 +111,27 @@ class PaymentMethod implements MethodInterface
 
             $message = json_decode($e->getMessage(), true);        
             
-            return redirect()->route('client.payment_methods.index')->withErrors(array_values($message['errors']));
+            return redirect()->route('client.payment_methods.index')->withErrors(array_values($message['errors'] ?? [$e->getMessage()]));
 
         }
 
-        return redirect()->route('client.payment_methods.index')->withMessage(ctrans('texts.payment_method_added'));
+        if ($request->authorize_then_redirect) {
+            $this->rotessa->payment_hash = PaymentHash::where('hash', $request->payment_hash)->firstOrFail();
 
+            $data = [
+                'invoices' => collect($this->rotessa->payment_hash->data->invoices)->map(fn ($invoice) => $invoice->invoice_id)->toArray(),
+                'action' => 'payment',
+            ];
+
+            $request = new ProcessInvoicesInBulkRequest();
+            $request->replace($data);
+
+            session()->flash('message', ctrans('texts.payment_method_added'));
+
+            return app(InvoiceController::class)->bulk($request);
+        }
+
+        return redirect()->route('client.payment_methods.index')->withMessage(ctrans('texts.payment_method_added'));
     }
 
     /**
@@ -123,14 +142,12 @@ class PaymentMethod implements MethodInterface
      */
     public function paymentView(array $data): View
     {
-        $data['gateway'] = $this->rotessa;
-        $data['amount'] = $data['total']['amount_with_fee'];
-        $data['due_date'] = date('Y-m-d', min(max(strtotime($data['invoices']->max('due_date')), strtotime('now')), strtotime('+1 day')));
-        $data['process_date'] = $data['due_date'];
-        $data['currency'] = $this->rotessa->client->getCurrencyCode();
-        $data['frequency'] = 'Once';
-        $data['installments'] = 1;
-        $data['invoice_nums'] = $data['invoices']->pluck('invoice_number')->join(', '); 
+        $data = $this->paymentData($data);
+
+        if ($data['authorize_then_redirect']) {
+            return $this->authorizeView($data);
+        }
+
         return render('gateways.rotessa.bank_transfer.pay', $data );
     }
 
@@ -219,5 +236,55 @@ class PaymentMethod implements MethodInterface
         );
 
         throw new PaymentFailed($exception->getMessage(), $exception->getCode());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function livewirePaymentView(array $data): string 
+    {
+        if (array_key_exists('authorize_then_redirect', $data)) {
+            return 'gateways.rotessa.bank_transfer.authorize_livewire';
+        }
+
+        return 'gateways.rotessa.bank_transfer.pay_livewire';
+    }
+    
+    /**
+     * @inheritDoc
+     */
+    public function paymentData(array $data): array 
+    {
+        $data['gateway'] = $this->rotessa;
+        $data['amount'] = $data['total']['amount_with_fee'];
+        $data['due_date'] = date('Y-m-d', min(max(strtotime($data['invoices']->max('due_date')), strtotime('now')), strtotime('+1 day')));
+        $data['process_date'] = $data['due_date'];
+        $data['currency'] = $this->rotessa->client->getCurrencyCode();
+        $data['frequency'] = 'Once';
+        $data['installments'] = 1;
+        $data['invoice_nums'] = $data['invoices']->pluck('invoice_number')->join(', '); 
+        $data['payment_hash'] = $this->rotessa->payment_hash->hash;
+
+        if (count($data['tokens']) === 0) {
+            $data['authorize_then_redirect'] = true;
+
+            $data['contact'] = collect($data['client']->contacts->first()->toArray())->merge([
+                'home_phone' => $data['client']->phone, 
+                'custom_identifier' => $data['client']->number,
+                'name' => $data['client']->name,
+                'id' => null
+            ] )->all();
+            $data['gateway'] = $this->rotessa;
+            $data['gateway_type_id'] =   GatewayType::ACSS ;
+            $data['account'] = [
+                'routing_number' => $data['client']->routing_id,
+                'country' => $data['client']->country->iso_3166_2
+            ];
+            $data['address'] = collect($data['client']->toArray())->merge(['country' => $data['client']->country->iso_3166_2 ])->all();
+
+            $this->authorizeView($data);
+        }
+
+        return $data;
     }
 }

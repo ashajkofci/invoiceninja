@@ -41,6 +41,7 @@
         "authorizenet/authorizenet": "^2.0",
         "awobaz/compoships": "^2.1",
         "aws/aws-sdk-php": "^3.319",
+        "babenkoivan/elastic-scout-driver": "^4.0",
         "bacon/bacon-qr-code": "^2.0",
         "beganovich/snappdf": "dev-master",
         "braintree/braintree_php": "^6.0",
@@ -68,6 +69,7 @@
         "josemmo/facturae-php": "^1.7",
         "laracasts/presenter": "^0.2.1",
         "laravel/framework": "^11.0",
+        "laravel/scout": "^10.11",
         "laravel/slack-notification-channel": "^3",
         "laravel/socialite": "^5",
         "laravel/tinker": "^2.7",
@@ -76,12 +78,14 @@
         "league/flysystem-aws-s3-v3": "^3.0",
         "league/fractal": "^0.20.0",
         "livewire/livewire": "^3",
+        "mailgun/mailgun-php": "^3.6",
         "microsoft/microsoft-graph": "^1.69",
+        "mindee/mindee": "^1.8",
         "mollie/mollie-api-php": "^2.36",
         "nelexa/zip": "^4.0",
         "nordigen/nordigen-php": "^1.1",
         "nwidart/laravel-modules": "^11.0",
-        "phpoffice/phpspreadsheet": "^1.29",
+        "phpoffice/phpspreadsheet": "^2.2",
         "pragmarx/google2fa": "^8.0",
         "predis/predis": "^2",
         "psr/http-message": "^1.0",
@@ -102,7 +106,7 @@
         "symfony/postmark-mailer": "^6.1",
         "turbo124/beacon": "^2",
         "twig/intl-extra": "^3.7",
-        "twig/twig": "^3",
+        "twig/twig": "^3.14",
         "twilio/sdk": "^6.40",
         "wildbit/postmark-php": "^4.0"
     },
@@ -117,7 +121,7 @@
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^8.1",
         "phpstan/phpstan": "^1.9",
-        "phpunit/phpunit": "^10",
+        "phpunit/phpunit": "^11",
         "spatie/laravel-ignition": "^2.0",
         "spaze/phpstan-stripe": "^3.0"
     },
@@ -201,8 +205,8 @@
             "url": "https://github.com/turbo124/snappdf"
         },
         {
-            "type":"vcs",
-            "url":"https://github.com/karneaud/QuickBooks-V3-PHP-SDK.git"
+            "type": "vcs",
+            "url": "https://github.com/karneaud/QuickBooks-V3-PHP-SDK.git"
         }
     ],
     "minimum-stability": "dev",

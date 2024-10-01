@@ -99,6 +99,12 @@ class ExpenseFilters extends QueryFilters
                 });
             }
 
+            if (in_array('uninvoiced', $status_parameters)) {
+                $query->orWhere(function ($query) {
+                    $query->whereNull('invoice_id');
+                });
+            }
+
             if (in_array('paid', $status_parameters)) {
                 $query->orWhere(function ($query) {
                     $query->whereNotNull('payment_date');
@@ -162,8 +168,9 @@ class ExpenseFilters extends QueryFilters
     {
         $categories_exploded = explode(",", $categories);
 
-        if(empty($categories) || count(array_filter($categories_exploded)) == 0) 
+        if(empty($categories) || count(array_filter($categories_exploded)) == 0) {
             return $this->builder;
+        }
 
         $categories_keys = $this->transformKeys($categories_exploded);
 
@@ -215,6 +222,11 @@ class ExpenseFilters extends QueryFilters
                     ->orderByRaw('ISNULL(category_id), category_id '. $sort_col[1])
                     ->orderBy(\App\Models\ExpenseCategory::select('name')
                     ->whereColumn('expense_categories.id', 'expenses.category_id'), $sort_col[1]);
+        }
+
+        if ($sort_col[0] == 'payment_date' && in_array($sort_col[1], ['asc', 'desc'])) {
+            return $this->builder
+                    ->orderByRaw('ISNULL(payment_date), payment_date '. $sort_col[1]);
         }
 
         if($sort_col[0] == 'number') {
