@@ -11,14 +11,16 @@
 
 namespace App\Models;
 
-use App\DataMapper\CompanySettings;
-use App\Models\Presenters\VendorPresenter;
-use App\Services\Vendor\VendorService;
+use Laravel\Scout\Searchable;
 use App\Utils\Traits\AppSetup;
-use App\Utils\Traits\GeneratesCounter;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\DataMapper\CompanySettings;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
+use App\Services\Vendor\VendorService;
+use App\Utils\Traits\GeneratesCounter;
 use Laracasts\Presenter\PresentableTrait;
+use App\Models\Presenters\VendorPresenter;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * App\Models\Vendor
@@ -55,6 +57,7 @@ use Laracasts\Presenter\PresentableTrait;
  * @property string|null $id_number
  * @property int|null $language_id
  * @property int|null $last_login
+ * @property bool $is_tax_exempt
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Activity> $activities
  * @property-read int|null $activities_count
  * @property-read \App\Models\User|null $assigned_user
@@ -91,7 +94,8 @@ class Vendor extends BaseModel
     use GeneratesCounter;
     use PresentableTrait;
     use AppSetup;
-
+    use Searchable;
+    
     protected $fillable = [
         'name',
         'assigned_user_id',
@@ -116,6 +120,8 @@ class Vendor extends BaseModel
         'number',
         'language_id',
         'classification',
+        'is_tax_exempt',
+        'routing_id',
     ];
 
     protected $casts = [
@@ -133,6 +139,49 @@ class Vendor extends BaseModel
     protected $with = [
         'contacts.company',
     ];
+
+
+    public function toSearchableArray()
+    {
+
+        $locale = $this->locale();
+        App::setLocale($locale);
+
+        $name = ctrans('texts.vendor') . " | " . $this->present()->name();
+
+        if (strlen($this->vat_number ?? '') > 1) {
+            $name .= " | ". $this->vat_number;
+        }
+
+        return [
+            'id' => $this->id,
+            'name' => $name,
+            'is_deleted' => $this->is_deleted,
+            'hashed_id' => $this->hashed_id,
+            'number' => $this->number,
+            'id_number' => $this->id_number,
+            'vat_number' => $this->vat_number,
+            'phone' => $this->phone,
+            'address1' => $this->address1,
+            'address2' => $this->address2,
+            'city' => $this->city,
+            'state' => $this->state,
+            'postal_code' => $this->postal_code,
+            'website' => $this->website,
+            'private_notes' => $this->private_notes,
+            'public_notes' => $this->public_notes,
+            'custom_value1' => $this->custom_value1,
+            'custom_value2' => $this->custom_value2,
+            'custom_value3' => $this->custom_value3,
+            'custom_value4' => $this->custom_value4,
+            'company_key' => $this->company->company_key,
+        ];
+    }
+
+    public function getScoutKey()
+    {
+        return $this->hashed_id;
+    }
 
     protected $presenter = VendorPresenter::class;
 
@@ -177,11 +226,11 @@ class Vendor extends BaseModel
 
     public function currency()
     {
-        
+
         /** @var \Illuminate\Support\Collection<\App\Models\Currency> */
         $currencies = app('currencies');
 
-        if (! $this->currency_id) {
+        if (!$this->currency_id) {
             return $this->company->currency();
         }
 
@@ -217,14 +266,14 @@ class Vendor extends BaseModel
     {
         $defaults = [];
 
-        if (! (array_key_exists('terms', $data) && strlen($data['terms']) > 1)) {
-            $defaults['terms'] = $this->getSetting($entity_name.'_terms');
+        if (!(array_key_exists('terms', $data) && strlen($data['terms']) > 1)) {
+            $defaults['terms'] = $this->getSetting($entity_name . '_terms');
         } elseif (array_key_exists('terms', $data)) {
             $defaults['terms'] = $data['terms'];
         }
 
-        if (! (array_key_exists('footer', $data) && strlen($data['footer']) > 1)) {
-            $defaults['footer'] = $this->getSetting($entity_name.'_footer');
+        if (!(array_key_exists('footer', $data) && strlen($data['footer']) > 1)) {
+            $defaults['footer'] = $this->getSetting($entity_name . '_footer');
         } elseif (array_key_exists('footer', $data)) {
             $defaults['footer'] = $data['footer'];
         }
@@ -262,7 +311,7 @@ class Vendor extends BaseModel
     {
         $contact_key = $invitation->contact->contact_key;
 
-        return $this->company->company_key.'/'.$this->vendor_hash.'/'.$contact_key.'/purchase_orders/';
+        return $this->company->company_key . '/' . $this->vendor_hash . '/' . $contact_key . '/purchase_orders/';
     }
 
     public function locale(): string
@@ -287,11 +336,36 @@ class Vendor extends BaseModel
 
     public function backup_path(): string
     {
-        return $this->company->company_key.'/'.$this->vendor_hash.'/backups';
+        return $this->company->company_key . '/' . $this->vendor_hash . '/backups';
     }
 
     public function service()
     {
         return new VendorService($this);
+    }
+
+    public function credits(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Credit::class)->withTrashed();
+    }
+
+    public function expenses(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Expense::class)->withTrashed();
+    }
+
+    public function invoices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Invoice::class)->withTrashed();
+    }
+
+    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Payment::class)->withTrashed();
+    }
+
+    public function quotes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Quote::class)->withTrashed();
     }
 }
