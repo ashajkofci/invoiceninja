@@ -204,7 +204,7 @@ class Design extends BaseDesign
 
     public function swissQrCodeElement(): array
     {
-        if ($this->type == self::DELIVERY_NOTE) {
+        if ($this->type == self::DELIVERY_NOTE || $this->entity instanceof Quote) {
             return [];
         }
 
