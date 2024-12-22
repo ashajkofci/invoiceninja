@@ -855,8 +855,16 @@ class PdfBuilder
             // but that's no longer necessary.
 
             if (isset($item->tax_rate1)) {
-                $data[$key][$table_type.'.tax_rate1'] = $this->service->config->formatValueNoTrailingZeroes(floatval($item->tax_rate1)).'%';
-                $data[$key][$table_type.'.tax1'] = &$data[$key][$table_type.'.tax_rate1'];
+                if (floatval($item->tax_rate1) > 0)
+                {
+
+                    $data[$key][$table_type.'.tax1'] = $item->tax_name1;
+                    $data[$key][$table_type.'.tax_rate1'] = $data[$key][$table_type.'.tax1'];
+
+                } else {
+                    $data[$key][$table_type.'.tax_rate1'] = '';
+                    $data[$key][$table_type.'.tax1'] = &$data[$key][$table_type.'.tax_rate1'];
+                }
             }
 
             if (isset($item->tax_rate2)) {
@@ -875,7 +883,7 @@ class PdfBuilder
         }
 
         //nlog(microtime(true) - $start);
-        
+
         return $data;
     }
 
