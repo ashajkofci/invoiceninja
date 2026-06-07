@@ -1094,14 +1094,84 @@ NINJA.invoiceDocuments = function(invoice) {
     return stack.length?{stack:stack}:[];
 }
 
+NINJA.parseNumericValue = function(value)
+{
+    if (typeof value === 'string') {
+        value = value.replace(/,(\d{1,4})(?=\D*$)/, '.$1');
+    }
+
+    value = NINJA.parseFloat(value);
+    return value === '' || isNaN(value) ? 0 : value;
+}
+
+NINJA.poidsField = function(invoice)
+{
+    if (! invoice || ! invoice.account || ! invoice.account.custom_fields) {
+        return false;
+    }
+
+    var fields = [
+        {key: 'custom_value1', label: NINJA.getCustomLabel(invoice.account.custom_fields.product1)},
+        {key: 'custom_value2', label: NINJA.getCustomLabel(invoice.account.custom_fields.product2)}
+    ];
+
+    for (var i = 0; i < fields.length; i++) {
+        if (fields[i].label && fields[i].label.toLowerCase().trim() == 'poids') {
+            return fields[i];
+        }
+    }
+
+    return false;
+}
+
+NINJA.poidsTotal = function(invoice)
+{
+    var field = NINJA.poidsField(invoice);
+    if (! field || ! invoice.invoice_items) {
+        return false;
+    }
+
+    var total = 0;
+    for (var i = 0; i < invoice.invoice_items.length; i++) {
+        var item = invoice.invoice_items[i];
+        total += NINJA.parseNumericValue(item[field.key]) * NINJA.parseNumericValue(item.qty);
+    }
+
+    total = roundToFour(total);
+
+    return total ? {
+        label: field.label || 'Poids',
+        total: total
+    } : false;
+}
+
+NINJA.poidsTotalRow = function(invoice)
+{
+    var poids = NINJA.poidsTotal(invoice);
+    if (! poids) {
+        return false;
+    }
+
+    return [
+        {text: poids.label, style: ['subtotalsLabel', 'poidsTotalLabel']},
+        {text: formatMoneyInvoice(poids.total, invoice, 'none'), style: ['subtotals', 'poidsTotal']}
+    ];
+}
+
 NINJA.subtotals = function(invoice, hideBalance)
 {
-    if (! invoice || invoice.is_delivery_note) {
+    if (! invoice) {
         return [[]];
     }
 
     var account = invoice.account;
     var data = [];
+
+    if (invoice.is_delivery_note) {
+        var poidsTotal = NINJA.poidsTotalRow(invoice);
+        return poidsTotal ? NINJA.prepareDataPairs([poidsTotal], 'subtotals') : [[]];
+    }
+
     data.push([{text: invoiceLabels.subtotal, style: ['subtotalsLabel', 'subtotalLabel']}, {text: formatMoneyInvoice(invoice.subtotal_amount, invoice), style: ['subtotals', 'subtotal']}]);
 
     if (invoice.discount_amount != 0) {
@@ -1151,6 +1221,11 @@ NINJA.subtotals = function(invoice, hideBalance)
     }
 
     var isPartial = NINJA.parseFloat(invoice.partial);
+    var poidsTotal = NINJA.poidsTotalRow(invoice);
+
+    if (poidsTotal) {
+        data.push(poidsTotal);
+    }
 
     if (!hideBalance || isPartial) {
         data.push([
