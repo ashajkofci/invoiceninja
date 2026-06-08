@@ -17,6 +17,7 @@ use App\Models\Quote;
 use App\Services\PdfMaker\Designs\Utilities\BaseDesign;
 use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
 use App\Utils\Number;
+use App\Utils\ProductWeightCalculator;
 use App\Utils\Traits\MakesDates;
 use App\Utils\Traits\MakesInvoiceValues;
 use DOMDocument;
@@ -974,6 +975,8 @@ class Design extends BaseDesign
 
 
         if ($this->type == self::DELIVERY_NOTE) {
+            $this->appendPoidsTotal($elements);
+
             return $elements;
         }
 
@@ -1069,11 +1072,31 @@ class Design extends BaseDesign
             }
         }
 
+        $this->appendPoidsTotal($elements);
+
         $elements[1]['elements'][] = ['element' => 'div', 'elements' => [
             ['element' => 'span', 'content' => '',],
             ['element' => 'span', 'content' => ''],
         ]];
 
         return $elements;
+    }
+
+    private function appendPoidsTotal(array &$elements): void
+    {
+        if ($this->type !== self::DELIVERY_NOTE && !$this->entity instanceof \App\Models\Invoice) {
+            return;
+        }
+
+        $poids_total = ProductWeightCalculator::calculate($this->company->custom_fields, $this->entity->line_items ?? []);
+
+        if (!$poids_total['has_total']) {
+            return;
+        }
+
+        $elements[1]['elements'][] = ['element' => 'div', 'elements' => [
+            ['element' => 'span', 'content' => '$product.poids_total_label', 'properties' => ['data-ref' => 'totals_table-product.poids_total-label']],
+            ['element' => 'span', 'content' => '$product.poids_total', 'properties' => ['data-ref' => 'totals_table-product.poids_total']],
+        ]];
     }
 }

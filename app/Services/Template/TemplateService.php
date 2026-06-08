@@ -25,6 +25,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Utils\HtmlEngine;
+use App\Utils\ProductWeightCalculator;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
 use Twig\Error\RuntimeError;
@@ -287,8 +288,22 @@ class TemplateService
     public function processData($data): self
     {
         $this->data = $this->preProcessDataBlocks($data);
+        $this->addSingleInvoicePoidsTotal();
 
         return $this;
+    }
+
+    private function addSingleInvoicePoidsTotal(): void
+    {
+        if (!isset($this->data['invoices']) || count($this->data['invoices']) !== 1) {
+            return;
+        }
+
+        $invoice = $this->data['invoices'][0];
+
+        $this->data['poids_total'] = $invoice['poids_total'] ?? '';
+        $this->data['poids_total_raw'] = $invoice['poids_total_raw'] ?? '';
+        $this->data['poids_total_label'] = $invoice['poids_total_label'] ?? '';
     }
 
     /**
@@ -531,6 +546,7 @@ class TemplateService
 
                     $payments = [];
                     $this->entity = $invoice;
+                    $poids_total = $this->poidsTotal($invoice);
 
                     if ($invoice->payments ?? false) {
                         $payments = $invoice->payments->map(function ($payment) {
@@ -592,6 +608,9 @@ class TemplateService
                         'payments' => $payments,
                         'total_tax_map' => $invoice->calc()->getTotalTaxMap(),
                         'line_tax_map' => $invoice->calc()->getTaxMap(),
+                        'poids_total' => $poids_total['formatted'],
+                        'poids_total_raw' => $poids_total['total'],
+                        'poids_total_label' => $poids_total['label'],
                     ];
 
                 });
@@ -633,6 +652,17 @@ class TemplateService
             return (array)$item;
 
         })->toArray();
+    }
+
+    private function poidsTotal(Invoice $invoice): array
+    {
+        $poids_total = ProductWeightCalculator::calculate($invoice->company->custom_fields, $invoice->line_items ?? []);
+
+        return [
+            'formatted' => $poids_total['has_total'] ? Number::formatValueNoTrailingZeroes($poids_total['total'], $invoice->client) : '',
+            'total' => $poids_total['has_total'] ? $poids_total['total'] : '',
+            'label' => $poids_total['label'],
+        ];
     }
 
     /**

@@ -623,6 +623,8 @@ class HtmlEngine
         $data['$product.product2'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product2')];
         $data['$product.product3'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product3')];
         $data['$product.product4'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product4')];
+        $data['$product.poids_total'] = $this->poidsTotalVariable();
+        $data['$poids_total'] = &$data['$product.poids_total'];
 
         $data['$task.date'] = ['value' => '', 'label' => ctrans('texts.date')];
         $data['$task.discount'] = ['value' => '', 'label' => ctrans('texts.discount')];
@@ -895,6 +897,16 @@ class HtmlEngine
         }
 
         return $data;
+    }
+
+    private function poidsTotalVariable(): array
+    {
+        $poids_total = ProductWeightCalculator::calculate($this->company->custom_fields, $this->entity->line_items ?? []);
+
+        return [
+            'value' => $poids_total['has_total'] ? Number::formatValueNoTrailingZeroes($poids_total['total'], $this->client) : '',
+            'label' => $poids_total['label'],
+        ];
     }
 
     private function totalTaxLabels(): string
