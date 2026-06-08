@@ -11,6 +11,8 @@
 
 namespace Tests\Feature;
 
+use App\Factory\InvoiceItemFactory;
+use App\Mail\Engine\InvoiceEmailEngine;
 use Tests\TestCase;
 use App\Models\SystemLog;
 use Tests\MockAccountData;
@@ -396,5 +398,43 @@ class InvoiceEmailTest extends TestCase
         });
 
         $this->assertTrue(true);
+    }
+
+    public function testInvoiceEmailTemplateReplacesPoidsTotalVariable()
+    {
+        $settings = $this->client->settings;
+        $settings->pdf_email_attachment = false;
+        $this->client->settings = $settings;
+        $this->client->save();
+
+        $custom_fields = $this->company->custom_fields ?: [];
+        $custom_fields = (array) $custom_fields;
+        $custom_fields['product2'] = 'Poids|single_line_text';
+        $this->company->custom_fields = $custom_fields;
+        $this->company->save();
+
+        $first_item = InvoiceItemFactory::create();
+        $first_item->quantity = 3;
+        $first_item->custom_value2 = '2.5';
+
+        $this->invoice->line_items = [
+            (array) $first_item,
+            ['quantity' => 1, 'custom_value2' => '1,25'],
+        ];
+        $this->invoice->save();
+
+        $invitation = $this->invoice->invitations()->first()->fresh(['invoice.client', 'contact.client', 'company']);
+
+        $engine = new InvoiceEmailEngine($invitation, 'invoice', [
+            'subject' => '$poids_total',
+            'body' => '$poids_total',
+        ]);
+
+        $engine->build();
+
+        $this->assertStringNotContainsString('$poids_total', $engine->getSubject());
+        $this->assertStringNotContainsString('$poids_total', $engine->getBody());
+        $this->assertNotSame('', trim(strip_tags($engine->getSubject())));
+        $this->assertNotSame('', trim(strip_tags($engine->getBody())));
     }
 }
