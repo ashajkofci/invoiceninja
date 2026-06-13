@@ -37,7 +37,7 @@ class MarkInvoiceDeleted extends AbstractService
             return $this->invoice;
         }
 
-        if ($this->invoice->company->track_inventory) {
+        if (env('ENABLE_STOCK_TRACKING', false) && $this->invoice->company->track_inventory) {
             (new AdjustProductInventory($this->invoice->company, $this->invoice, []))->handleDeletedInvoice();
         }
 

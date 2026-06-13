@@ -66,7 +66,7 @@ class HandleRestore extends AbstractService
              ->setAdjustmentAmount()
              ->adjustPayments();
 
-        if ($this->invoice->company->track_inventory) {
+        if (env('ENABLE_STOCK_TRACKING', false) && $this->invoice->company->track_inventory) {
             (new AdjustProductInventory($this->invoice->company, $this->invoice, []))->handleRestoredInvoice();
         }
 
