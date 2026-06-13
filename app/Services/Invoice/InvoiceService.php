@@ -619,7 +619,7 @@ class InvoiceService
 
     public function adjustInventory($old_invoice = [])
     {
-        if ($this->invoice->company->track_inventory) {
+        if (env('ENABLE_STOCK_TRACKING', false) && $this->invoice->company->track_inventory) {
             (new AdjustProductInventory($this->invoice->company, $this->invoice, $old_invoice))->handle();
         }
 
