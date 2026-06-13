@@ -16,6 +16,7 @@ use App\Models\Credit;
 use App\Models\Quote;
 use App\Services\PdfMaker\Designs\Utilities\BaseDesign;
 use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
+use App\Utils\InternalProductFilter;
 use App\Utils\Number;
 use App\Utils\ProductWeightCalculator;
 use App\Utils\Traits\MakesDates;
@@ -835,7 +836,13 @@ class Design extends BaseDesign
     {
         $elements = [];
 
-        $items = $this->transformLineItems($this->entity->line_items, $type);
+        $line_items = $this->entity->line_items;
+
+        if ($type !== self::DELIVERY_NOTE) {
+            $line_items = InternalProductFilter::filter($this->company->custom_fields, $line_items);
+        }
+
+        $items = $this->transformLineItems($line_items, $type);
 
         $this->processNewLines($items);
 
