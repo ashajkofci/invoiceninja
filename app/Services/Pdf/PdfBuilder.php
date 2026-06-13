@@ -16,6 +16,7 @@ use App\Models\Invoice;
 use App\Models\Quote;
 use App\Services\Template\TemplateService;
 use App\Utils\Helpers;
+use App\Utils\InternalProductFilter;
 use App\Utils\ProductWeightCalculator;
 use App\Utils\Traits\MakesDates;
 use DOMDocument;
@@ -648,7 +649,13 @@ class PdfBuilder
     {
         $elements = [];
 
-        $items = $this->transformLineItems($this->service->config->entity->line_items, $type);
+        $line_items = $this->service->config->entity->line_items;
+
+        if ($type !== PdfService::DELIVERY_NOTE) {
+            $line_items = InternalProductFilter::filter($this->service->company->custom_fields, $line_items);
+        }
+
+        $items = $this->transformLineItems($line_items, $type);
 
         $this->processNewLines($items);
 
