@@ -44,13 +44,17 @@ class InternalProductFilter
             return false;
         }
 
-        $value = trim(strip_tags((string) $value));
-
-        if ($value === '' || $value === '0' || strcasecmp($value, 'false') === 0) {
-            return false;
+        if (is_bool($value)) {
+            return $value;
         }
 
-        return true;
+        if (is_numeric($value)) {
+            return (float) $value === 1.0;
+        }
+
+        $value = strtolower(trim(strip_tags((string) $value)));
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 
     private static function findInterneField($custom_fields): ?array
@@ -68,9 +72,11 @@ class InternalProductFilter
                 continue;
             }
 
-            $label = trim(explode('|', (string) $field_config)[0] ?? '');
+            $field_parts = explode('|', (string) $field_config);
+            $label = trim($field_parts[0] ?? '');
+            $type = strtolower(trim($field_parts[1] ?? ''));
 
-            if (strcasecmp($label, 'interne') !== 0) {
+            if (strcasecmp($label, 'interne') !== 0 || $type !== 'switch') {
                 continue;
             }
 
