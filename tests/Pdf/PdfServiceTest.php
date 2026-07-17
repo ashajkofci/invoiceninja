@@ -115,26 +115,22 @@ class PdfServiceTest extends TestCase
         $this->assertEquals('PoIds', $service->html_variables['labels']['$poids_total_label']);
     }
 
-    public function testProductPoidsTotalIsRenderedOnInvoicePdfHtml()
+    public function testProductPoidsTotalIsNotAutomaticallyRenderedOnInvoicePdfHtml()
     {
         $invitation = $this->poidsInvoiceInvitation('POIDS|single_line_text');
 
         $html = (new PdfService($invitation))->boot()->getHtml();
 
-        $this->assertStringContainsString('totals_table-product.poids_total', $html);
-        $this->assertStringContainsString('POIDS', $html);
-        $this->assertStringContainsString('>110<', $html);
+        $this->assertStringNotContainsString('totals_table-product.poids_total', $html);
     }
 
-    public function testProductPoidsTotalIsRenderedOnDeliveryNotePdfHtml()
+    public function testProductPoidsTotalIsNotAutomaticallyRenderedOnDeliveryNotePdfHtml()
     {
         $invitation = $this->poidsInvoiceInvitation('Poids|single_line_text');
 
         $html = (new PdfService($invitation, PdfService::DELIVERY_NOTE))->boot()->getHtml();
 
-        $this->assertStringContainsString('totals_table-product.poids_total', $html);
-        $this->assertStringContainsString('Poids', $html);
-        $this->assertStringContainsString('>110<', $html);
+        $this->assertStringNotContainsString('totals_table-product.poids_total', $html);
     }
 
     public function testProductPoidsTotalIsAvailableInTemplateInvoiceData()
@@ -185,7 +181,6 @@ class PdfServiceTest extends TestCase
         $service = (new PdfService($invitation))->boot();
 
         $this->assertEquals('10', $service->html_variables['values']['$poids_total']);
-        $this->assertStringContainsString('>10<', $service->getHtml());
     }
 
     public function testTemplateResolution()

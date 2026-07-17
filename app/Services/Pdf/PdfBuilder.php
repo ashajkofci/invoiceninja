@@ -12,12 +12,10 @@
 namespace App\Services\Pdf;
 
 use App\Models\Credit;
-use App\Models\Invoice;
 use App\Models\Quote;
 use App\Services\Template\TemplateService;
 use App\Utils\Helpers;
 use App\Utils\InternalProductFilter;
-use App\Utils\ProductWeightCalculator;
 use App\Utils\Traits\MakesDates;
 use DOMDocument;
 use Illuminate\Support\Carbon;
@@ -1221,8 +1219,6 @@ class PdfBuilder
 
 
         if ($this->service->document_type == PdfService::DELIVERY_NOTE) {
-            $this->appendPoidsTotal($elements);
-
             return $elements;
         }
 
@@ -1313,32 +1309,12 @@ class PdfBuilder
             }
         }
 
-        $this->appendPoidsTotal($elements);
-
         $elements[1]['elements'][] = ['element' => 'div', 'elements' => [
             ['element' => 'span', 'content' => '',],
             ['element' => 'span', 'content' => ''],
         ]];
 
         return $elements;
-    }
-
-    private function appendPoidsTotal(array &$elements): void
-    {
-        if ($this->service->document_type !== PdfService::DELIVERY_NOTE && !$this->service->config->entity instanceof Invoice) {
-            return;
-        }
-
-        $poids_total = ProductWeightCalculator::calculate($this->service->company->custom_fields, $this->service->config->entity->line_items ?? []);
-
-        if (!$poids_total['has_total']) {
-            return;
-        }
-
-        $elements[1]['elements'][] = ['element' => 'div', 'elements' => [
-            ['element' => 'span', 'content' => '$product.poids_total_label', 'properties' => ['data-ref' => 'totals_table-product.poids_total-label']],
-            ['element' => 'span', 'content' => '$product.poids_total', 'properties' => ['data-ref' => 'totals_table-product.poids_total']],
-        ]];
     }
 
     /**
