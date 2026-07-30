@@ -251,6 +251,16 @@ class TemplateService
         return $this->compiled_html;
     }
 
+    public function hideElementById(string $id): self
+    {
+        if ($element = $this->document->getElementById($id)) {
+            $element->setAttribute('hidden', 'true');
+            $this->save();
+        }
+
+        return $this;
+    }
+
     /**
      * Returns the PDF string
      *
