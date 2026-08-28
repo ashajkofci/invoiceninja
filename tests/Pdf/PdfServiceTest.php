@@ -15,6 +15,7 @@ namespace Tests\Pdf;
 use App\Factory\InvoiceItemFactory;
 use App\Services\Pdf\PdfConfiguration;
 use App\Services\Pdf\PdfService;
+use App\Services\PdfMaker\Design;
 use App\Services\Template\TemplateService;
 use Tests\MockAccountData;
 use Tests\TestCase;
@@ -103,17 +104,34 @@ class PdfServiceTest extends TestCase
 
     }
 
-    public function testLineTotalIncludesLineTax()
+    public function testLineTotalIncludesLineAndInvoiceTaxes()
     {
         $item = InvoiceItemFactory::create();
         $item->cost = 100;
         $item->line_total = 100;
         $item->gross_line_total = 108.1;
 
+        $this->invoice->uses_inclusive_taxes = false;
+        $this->invoice->tax_name1 = 'VAT';
+        $this->invoice->tax_rate1 = 8.1;
+        $this->invoice->save();
+
         $service = (new PdfService($this->invoice->invitations->first()))->boot();
+        $design = new Design();
+        $design->entity = $this->invoice;
+        $design->client = $this->client;
+        $design->company = $this->company;
+
+        $this->assertSame('$116.20', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$116.20', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$116.20', $design->transformLineItems([$item])[0]['$product.line_total']);
+
+        $service->config->entity->uses_inclusive_taxes = true;
+        $this->invoice->uses_inclusive_taxes = true;
 
         $this->assertSame('$108.10', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
         $this->assertSame('$108.10', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$108.10', $design->transformLineItems([$item])[0]['$product.line_total']);
     }
 
     public function testProductPoidsTotalVariablesAreAvailable()
