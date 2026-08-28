@@ -103,6 +103,19 @@ class PdfServiceTest extends TestCase
 
     }
 
+    public function testLineTotalIncludesLineTax()
+    {
+        $item = InvoiceItemFactory::create();
+        $item->cost = 100;
+        $item->line_total = 100;
+        $item->gross_line_total = 108.1;
+
+        $service = (new PdfService($this->invoice->invitations->first()))->boot();
+
+        $this->assertSame('$108.10', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$108.10', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
+    }
+
     public function testProductPoidsTotalVariablesAreAvailable()
     {
         $invitation = $this->poidsInvoiceInvitation('PoIds|single_line_text');
