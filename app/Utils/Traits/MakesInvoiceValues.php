@@ -311,7 +311,7 @@ trait MakesInvoiceValues
 
                 $data[$key][$table_type.'.cost'] = Number::formatMoney($item->cost, $entity);
 
-                $data[$key][$table_type.'.line_total'] = Number::formatMoney($item->line_total, $entity);
+                $data[$key][$table_type.'.line_total'] = Number::formatMoney($item->gross_line_total, $entity);
             } else {
                 $data[$key][$table_type.'.quantity'] = '';
 
