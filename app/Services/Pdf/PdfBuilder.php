@@ -826,17 +826,7 @@ class PdfBuilder
 
                 $data[$key][$table_type.'.cost'] = $this->service->config->formatMoney($item->cost);
 
-                $line_total = $item->gross_line_total;
-
-                if (! $entity->uses_inclusive_taxes) {
-                    foreach ([1, 2, 3] as $tax) {
-                        if (strlen($entity->{'tax_name'.$tax} ?? '') > 1) {
-                            $line_total += round($item->line_total * $entity->{'tax_rate'.$tax} / 100, 2);
-                        }
-                    }
-                }
-
-                $data[$key][$table_type.'.line_total'] = $this->service->config->formatMoneyNoRounding($line_total);
+                $data[$key][$table_type.'.line_total'] = $this->service->config->formatMoneyNoRounding(Helpers::lineTotalWithTaxes($item, $entity));
             } else {
                 $data[$key][$table_type.'.quantity'] = '';
 
