@@ -23,6 +23,21 @@ class Helpers
 {
     use MakesDates;
 
+    public static function lineTotalWithTaxes($item, $document): float
+    {
+        $line_total = $item->gross_line_total;
+
+        if (! $document->uses_inclusive_taxes) {
+            foreach ([1, 2, 3] as $tax) {
+                if (strlen($document->{'tax_name'.$tax} ?? '') > 1) {
+                    $line_total += $item->line_total * $document->{'tax_rate'.$tax} / 100;
+                }
+            }
+        }
+
+        return $line_total;
+    }
+
     public static function sharedEmailVariables(?Client $client, array $settings = null): array
     {
         if (! $client) {

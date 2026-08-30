@@ -312,17 +312,7 @@ trait MakesInvoiceValues
 
                 $data[$key][$table_type.'.cost'] = Number::formatMoney($item->cost, $entity);
 
-                $line_total = $item->gross_line_total;
-
-                if (! $document->uses_inclusive_taxes) {
-                    foreach ([1, 2, 3] as $tax) {
-                        if (strlen($document->{'tax_name'.$tax} ?? '') > 1) {
-                            $line_total += round($item->line_total * $document->{'tax_rate'.$tax} / 100, 2);
-                        }
-                    }
-                }
-
-                $data[$key][$table_type.'.line_total'] = Number::formatMoney($line_total, $entity);
+                $data[$key][$table_type.'.line_total'] = Number::formatMoney(Helpers::lineTotalWithTaxes($item, $document), $entity);
             } else {
                 $data[$key][$table_type.'.quantity'] = '';
 

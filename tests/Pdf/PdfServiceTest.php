@@ -110,10 +110,13 @@ class PdfServiceTest extends TestCase
         $item->cost = 100;
         $item->line_total = 100;
         $item->gross_line_total = 108.1;
+        $item->tax_name1 = 'VAT';
+        $item->tax_rate1 = 8.1;
 
         $this->invoice->uses_inclusive_taxes = false;
         $this->invoice->tax_name1 = 'VAT';
         $this->invoice->tax_rate1 = 8.1;
+        $this->invoice->line_items = [$item];
         $this->invoice->save();
 
         $service = (new PdfService($this->invoice->invitations->first()))->boot();
@@ -125,6 +128,7 @@ class PdfServiceTest extends TestCase
         $this->assertSame('$116.20', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
         $this->assertSame('$116.20', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
         $this->assertSame('$116.20', $design->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$116.20', $service->html_variables['values']['$subtotal']);
 
         $service->config->entity->uses_inclusive_taxes = true;
         $this->invoice->uses_inclusive_taxes = true;
