@@ -826,7 +826,7 @@ class PdfBuilder
 
                 $data[$key][$table_type.'.cost'] = $this->service->config->formatMoney($item->cost);
 
-                $data[$key][$table_type.'.line_total'] = $this->service->config->formatMoneyNoRounding(Helpers::lineTotalWithTaxes($item, $entity));
+                $data[$key][$table_type.'.line_total'] = $this->service->config->formatMoney(Helpers::lineTotalWithTaxes($item, $entity));
             } else {
                 $data[$key][$table_type.'.quantity'] = '';
 
