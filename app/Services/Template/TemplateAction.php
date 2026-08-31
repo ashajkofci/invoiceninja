@@ -114,7 +114,7 @@ class TemplateAction implements ShouldQueue
         $first_entity = $result->first();
 
         /** Lets be clever and sniff out Statements */
-        if($first_entity instanceof Client && stripos(json_encode($template->design), '##statement##') !== false) {
+        if ($first_entity instanceof Client && stripos(json_encode($template->design), '##statement##') !== false) {
 
             $options = [
                 'show_payments_table' => true,
@@ -126,18 +126,19 @@ class TemplateAction implements ShouldQueue
 
             $pdfs = [];
 
-            foreach($result as $client) {
+            foreach ($result as $client) {
                 $pdfs[] = $client->service()->statement($options);
             }
 
-            if(count($pdfs) == 1) {
+            if (count($pdfs) == 1) {
                 $pdf = $pdfs[0];
             } else {
                 $pdf = (new PdfMerge($pdfs))->run();
             }
 
-            if($this->send_email) {
+            if ($this->send_email) {
                 $this->sendEmail($pdf, $template);
+                return;
             } else {
                 $filename = "templates/{$this->hash}.pdf";
                 Storage::disk(config('filesystems.default'))->put($filename, $pdf);
@@ -146,15 +147,15 @@ class TemplateAction implements ShouldQueue
 
         }
 
-        if($first_entity instanceof Client) {
+        if ($first_entity instanceof Client) {
             $currency_code = $first_entity->currency()->code;
-        } elseif($first_entity->client) {
+        } elseif ($first_entity->client) {
             $currency_code = $first_entity->client->currency()->code;
         } else {
             $currency_code = $this->company->currency()->code;
         }
 
-        if($result->count() <= 1) {
+        if ($result->count() <= 1) {
             $data[$key] = collect($result);
         } else {
             $data[$key] = $result;
@@ -166,7 +167,7 @@ class TemplateAction implements ShouldQueue
                     ->addGlobal(['currency_code' => $currency_code])
                     ->build($data);
 
-        if($this->send_email) {
+        if ($this->send_email) {
             $pdf = $ts->getPdf();
             $this->sendEmail($pdf, $template);
         } else {

@@ -11,9 +11,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\InboundMail\InboundMailEngine;
+use App\Utils\Ninja;
 use App\Models\Company;
 use App\Libraries\MultiDB;
 use Illuminate\Http\Request;
+use App\Utils\Traits\SavesDocuments;
 use App\Jobs\Mailgun\ProcessMailgunWebhook;
 use App\Jobs\Mailgun\ProcessMailgunInboundWebhook;
 
@@ -22,6 +25,8 @@ use App\Jobs\Mailgun\ProcessMailgunInboundWebhook;
  */
 class MailgunController extends BaseController
 {
+    use SavesDocuments;
+
     public function __construct()
     {
     }
@@ -64,7 +69,7 @@ class MailgunController extends BaseController
     {
 
         $input = $request->all();
-        
+
         nlog($input);
 
         if (\abs(\time() - $request['signature']['timestamp']) > 15) {
@@ -120,6 +125,12 @@ class MailgunController extends BaseController
     {
         $input = $request->all();
 
+        $authorizedByHash = \hash_equals(\hash_hmac('sha256', $input['timestamp'] . $input['token'], config('services.mailgun.webhook_signing_key')), $input['signature']);
+        $authorizedByToken = $request->has('token') && $request->get('token') == config('ninja.inbound_mailbox.inbound_webhook_token');
+        if (!$authorizedByHash && !$authorizedByToken) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         nlog($input);
 
         if (!array_key_exists('sender', $input) || !array_key_exists('recipient', $input) || !array_key_exists('message-url', $input)) {
@@ -127,20 +138,15 @@ class MailgunController extends BaseController
             return response()->json(['message' => 'Failed. Missing Parameters. Use store and notify!'], 400);
         }
 
-        // @turbo124 TODO: how to check for services.mailgun.webhook_signing_key on company level, when custom credentials are defined
-        // TODO: validation for client mail credentials by recipient
-        $authorizedByHash = \hash_equals(\hash_hmac('sha256', $input['timestamp'] . $input['token'], config('services.mailgun.webhook_signing_key')), $input['signature']);
-        $authorizedByToken = $request->has('token') && $request->get('token') == config('ninja.inbound_mailbox.inbound_webhook_token');
-        if (!$authorizedByHash && !$authorizedByToken)
-            return response()->json(['message' => 'Unauthorized'], 403); 
+        $inboundEngine = new InboundMailEngine();
 
-        /** @var \App\Models\Company $company */
-        $company = MultiDB::findAndSetDbByExpenseMailbox($input["recipient"]);
+        // Spam protection
+        if ($inboundEngine->isInvalidOrBlocked($input["sender"], $input["recipient"])) {
+            return;
+        }
 
-        if(!$company)
-            return response()->json(['message' => 'Ok'], 200);  // Fail gracefully
-
-        ProcessMailgunInboundWebhook::dispatch($input["sender"], $input["recipient"], $input["message-url"], $company)->delay(rand(2, 10));
+        // Dispatch Job for processing
+        ProcessMailgunInboundWebhook::dispatch($input["sender"], $input["recipient"], $input["message-url"])->delay(rand(2, 10));
 
         return response()->json(['message' => 'Success.'], 200);
     }

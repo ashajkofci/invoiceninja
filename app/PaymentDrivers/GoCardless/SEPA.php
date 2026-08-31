@@ -65,7 +65,7 @@ class SEPA implements MethodInterface, LivewireMethodInterface
                         'method' => GatewayType::SEPA,
                         'session_token' => $session_token,
                         'authorize_then_redirect' => true,
-                        'payment_hash' => $this->go_cardless->payment_hash->hash,
+                        'payment_hash' => $this->go_cardless->payment_hash->hash ?? '',
                     ]),
                     'prefilled_customer' => [
                         'given_name' => auth()->guard('contact')->user()->client->present()->first_name(),
@@ -144,12 +144,12 @@ class SEPA implements MethodInterface, LivewireMethodInterface
                     'invoices' => collect($this->go_cardless->payment_hash->data->invoices)->map(fn ($invoice) => $invoice->invoice_id)->toArray(),
                     'action' => 'payment',
                 ];
-                
+
                 $request = new ProcessInvoicesInBulkRequest();
                 $request->replace($data);
-    
+
                 session()->flash('message', ctrans('texts.payment_method_added'));
-    
+
                 return app(InvoiceController::class)->bulk($request);
             }
 
@@ -235,7 +235,7 @@ class SEPA implements MethodInterface, LivewireMethodInterface
             'gateway_type_id' => GatewayType::SEPA,
         ];
 
-        $payment = $this->go_cardless->createPayment($data, Payment::STATUS_PENDING);
+        $_payment = $this->go_cardless->createPayment($data, Payment::STATUS_PENDING);
 
         SystemLogger::dispatch(
             ['response' => $payment, 'data' => $data],
@@ -246,7 +246,7 @@ class SEPA implements MethodInterface, LivewireMethodInterface
             $this->go_cardless->client->company,
         );
 
-        return redirect()->route('client.payments.show', ['payment' => $this->go_cardless->encodePrimaryKey($payment->id)]);
+        return redirect()->route('client.payments.show', ['payment' => $_payment->hashed_id]);
     }
 
     /**
@@ -277,19 +277,19 @@ class SEPA implements MethodInterface, LivewireMethodInterface
 
         throw new PaymentFailed('Failed to process the payment.', 500);
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function livewirePaymentView(array $data): string 
+    public function livewirePaymentView(array $data): string
     {
         return 'gateways.gocardless.sepa.pay_livewire';
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function paymentData(array $data): array 
+    public function paymentData(array $data): array
     {
         $data['gateway'] = $this->go_cardless;
         $data['amount'] = $this->go_cardless->convertToGoCardlessAmount($data['total']['amount_with_fee'], $this->go_cardless->client->currency()->precision);

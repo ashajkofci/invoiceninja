@@ -86,21 +86,28 @@ class InvoiceController extends Controller
             return render('invoices.show-fullscreen', $data);
         }
 
-        if(!$invoice->isPayable())
-            return $this->render('invoices.show',$data);
+        if (!$invoice->isPayable()) {
+            return $this->render('invoices.show', $data);
+        }
 
         return auth()->guard('contact')->user()->client->getSetting('payment_flow') == 'default' ? $this->render('invoices.show', $data) : $this->render('invoices.show_smooth', $data);
 
-        // return $this->render('invoices.show_smooth', $data);
     }
 
     public function showBlob($hash)
     {
         $data = Cache::get($hash);
 
-        if(!$data) {
-            usleep(200000);
+        for ($x = 0; $x < 3; $x++) {
+
             $data = Cache::get($hash);
+
+            if ($data) {
+                break;
+            }
+
+            usleep(200000);
+
         }
 
         $invitation = false;
@@ -231,7 +238,7 @@ class InvoiceController extends Controller
         $settings = auth()->guard('contact')->user()->client->getMergedSettings();
         $variables = false;
 
-        if(($invitation = $invoices->first()->invitations()->first() ?? false) && $settings->show_accept_invoice_terms) {
+        if (($invitation = $invoices->first()->invitations()->first() ?? false) && $settings->show_accept_invoice_terms) {
             $variables = (new HtmlEngine($invitation))->generateLabelsAndValues();
         }
 

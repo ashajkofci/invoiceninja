@@ -110,7 +110,7 @@ class InstantBankPay implements MethodInterface, LivewireMethodInterface
             );
 
             nlog($billing_request);
-            
+
 
             $payment = $this->go_cardless->gateway->payments()->get(
                 $billing_request->payment_request->links->payment
@@ -151,7 +151,7 @@ class InstantBankPay implements MethodInterface, LivewireMethodInterface
             'gateway_type_id' => GatewayType::INSTANT_BANK_PAY,
         ];
 
-        $payment = $this->go_cardless->createPayment($data, Payment::STATUS_PENDING);
+        $_payment = $this->go_cardless->createPayment($data, Payment::STATUS_PENDING);
 
         SystemLogger::dispatch(
             ['response' => $payment, 'data' => $data],
@@ -162,7 +162,7 @@ class InstantBankPay implements MethodInterface, LivewireMethodInterface
             $this->go_cardless->client->company,
         );
 
-        return redirect()->route('client.payments.show', ['payment' => $payment->hashed_id]);
+        return redirect()->route('client.payments.show', ['payment' => $_payment->hashed_id]);
     }
 
 
@@ -184,7 +184,7 @@ class InstantBankPay implements MethodInterface, LivewireMethodInterface
             'gateway_type_id' => GatewayType::INSTANT_BANK_PAY,
         ];
 
-        $payment = $this->go_cardless->createPayment($data, Payment::STATUS_COMPLETED);
+        $_payment = $this->go_cardless->createPayment($data, Payment::STATUS_COMPLETED);
 
         SystemLogger::dispatch(
             ['response' => $payment, 'data' => $data],
@@ -195,7 +195,7 @@ class InstantBankPay implements MethodInterface, LivewireMethodInterface
             $this->go_cardless->client->company,
         );
 
-        return redirect()->route('client.payments.show', ['payment' => $this->go_cardless->encodePrimaryKey($payment->id)]);
+        return redirect()->route('client.payments.show', ['payment' => $_payment->hashed_id]);
     }
 
     /**
@@ -232,17 +232,17 @@ class InstantBankPay implements MethodInterface, LivewireMethodInterface
     /**
      * @inheritDoc
      */
-    public function livewirePaymentView(array $data): string 
+    public function livewirePaymentView(array $data): string
     {
         // not supported, this is offsite payment method.
 
         return '';
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function paymentData(array $data): array 
+    public function paymentData(array $data): array
     {
         $this->paymentView($data);
 

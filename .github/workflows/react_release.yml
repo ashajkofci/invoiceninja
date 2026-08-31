@@ -16,10 +16,11 @@ jobs:
           extensions: mysql, mysqlnd, sqlite3, bcmath, gd, curl, zip, openssl, mbstring, xml
 
       - name: Checkout code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
         with:
           ref: v5-develop
-      
+          fetch-depth: 1
+
       - name: Copy .env file
         run: |
           cp .env.example .env
@@ -47,6 +48,9 @@ jobs:
           git clone https://${{secrets.commit_secret}}@github.com/invoiceninja/ui.git
           cd ui
           git checkout develop
+          sed -i 's/VITE_IS_TEST=true/VITE_IS_TEST=false/' .env.example
+          echo VITE_PUSHER_APP_KEY=f0111a02782708da651f >> .env.example
+
           cp .env.example .env
           cp ../vite.config.ts.react ./vite.config.js
           sed -i '/"version"/c\  "version": " Latest Build - ${{ env.current_date }}",' package.json

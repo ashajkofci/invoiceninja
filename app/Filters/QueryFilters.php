@@ -215,7 +215,7 @@ abstract class QueryFilters
             }
 
             return $this->builder->where('created_at', '>=', $created_at);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             return $this->builder;
         }
     }
@@ -255,7 +255,7 @@ abstract class QueryFilters
 
     public function client_id(string $client_id = ''): Builder
     {
-        if (strlen($client_id) == 0 || !in_array('vendor_id', \Illuminate\Support\Facades\Schema::getColumnListing($this->builder->getModel()->getTable()))) {
+        if (strlen($client_id) == 0 || !in_array('client_id', \Illuminate\Support\Facades\Schema::getColumnListing($this->builder->getModel()->getTable()))) {
             return $this->builder;
         }
 
@@ -322,7 +322,7 @@ abstract class QueryFilters
             return $this->builder;
         }
 
-        if($this->with_property == 'id') {
+        if ($this->with_property == 'id') {
             $value = $this->decodePrimaryKey($value);
         }
 
@@ -353,7 +353,7 @@ abstract class QueryFilters
             $end_date = Carbon::parse($parts[1]);
 
             return $this->builder->whereBetween('date', [$start_date, $end_date]);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             return $this->builder;
         }
 
@@ -380,7 +380,7 @@ abstract class QueryFilters
             $end_date = Carbon::parse($parts[1]);
 
             return $this->builder->whereBetween('due_date', [$start_date, $end_date]);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             return $this->builder;
         }
 

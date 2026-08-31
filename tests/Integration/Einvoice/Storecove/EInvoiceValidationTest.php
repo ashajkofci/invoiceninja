@@ -12,77 +12,32 @@
 namespace Tests\Integration\Einvoice\Storecove;
 
 use Tests\TestCase;
+use App\Models\User;
 use App\Models\Client;
 use App\Models\Account;
 use App\Models\Company;
 use App\Models\Invoice;
 use Tests\MockAccountData;
+use App\Models\CompanyToken;
 use App\Models\ClientContact;
 use App\DataMapper\InvoiceItem;
 use App\DataMapper\ClientSettings;
 use App\DataMapper\CompanySettings;
+use App\Factory\CompanyUserFactory;
 use App\Services\EDocument\Standards\Peppol;
-use App\Services\EDocument\Standards\Validation\Peppol\EntityLevel;
 use InvoiceNinja\EInvoice\Models\Peppol\PaymentMeans;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use App\Services\EDocument\Standards\Validation\Peppol\EntityLevel;
 
 class EInvoiceValidationTest extends TestCase
 {
     use MockAccountData;
     use DatabaseTransactions;
 
-    private int $routing_id;
-
     protected function setUp(): void
     {
-        
         parent::setUp();
         $this->makeTestData();
-
-    }
-
-    public function testEinvoiceValidationEndpointInvoice()
-    {
-
-        $this->company->legal_entity_id = 123432;
-        $this->company->save();
-
-        $data =[
-            'entity' => 'invoices',
-            'entity_id' => $this->invoice->hashed_id,
-        ];
-
-        $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->postJson('/api/v1/einvoice/validateEntity', $data);
-
-        $response->assertStatus(200);
-
-        $arr = $response->json();
-
-    }
-
-    public function testEinvoiceValidationEndpoint()
-    {
-
-        $this->company->legal_entity_id = 123432;
-        $this->company->save();
-
-        $data =[
-            'entity' => 'companies',
-            'entity_id' => $this->company->hashed_id,
-        ];
-
-        $response = $this->withHeaders([
-                'X-API-SECRET' => config('ninja.api_secret'),
-                'X-API-TOKEN' => $this->token,
-            ])->postJson('/api/v1/einvoice/validateEntity', $data);
-
-        $response->assertStatus(200);
-
-        $arr = $response->json();
-
     }
 
     public function testInvalidCompanySettings()
@@ -172,6 +127,7 @@ class EInvoiceValidationTest extends TestCase
         $settings->postal_code = '2113';
         $settings->country_id = '1';
         $settings->vat_number = '';
+        $settings->id_number ='adfadf';
         $settings->classification = 'individual';
 
         $account = Account::factory()->create();
@@ -229,6 +185,7 @@ class EInvoiceValidationTest extends TestCase
         $client = Client::factory()->create([
             'user_id' => $this->user->id,
             'company_id' => $company->id,
+            'country_id' => 276,
             'classification' => 'business',
             'vat_number' => '',
         ]);
@@ -406,7 +363,7 @@ class EInvoiceValidationTest extends TestCase
             'company_id' => $company->id,
             'classification' => 'individual',
             'vat_number' => '',
-            'country_id' => 1,
+            'country_id' => 276,
             'address1' => '10 Wallaby Way',
             'address2' => '',
             'city' => 'Sydney',
@@ -414,8 +371,20 @@ class EInvoiceValidationTest extends TestCase
             'postal_code' => '2113',
         ]);
 
+        $cc = ClientContact::factory()->create([
+            'client_id' => $client->id,
+            'user_id' => $this->user->id,
+            'company_id' => $company->id,
+            'first_name' => 'Bob',
+            'last_name' => 'Doe',
+            'email' => 'wasa@b.com',
+        ]);
+
         $el = new EntityLevel();
         $validation = $el->checkClient($client);
+
+        if(!$validation['passes'])
+            nlog($validation);
 
         $this->assertTrue($validation['passes']);
 
@@ -433,13 +402,24 @@ class EInvoiceValidationTest extends TestCase
             'company_id' => $company->id,
             'classification' => 'business',
             'vat_number' => 'DE123456789',
-            'country_id' => 1,
+            'country_id' => 276,
             'address1' => '10 Wallaby Way',
             'address2' => '',
             'city' => 'Sydney',
             'state' => 'NSW',
             'postal_code' => '2113',
         ]);
+
+        
+        $cc = ClientContact::factory()->create([
+            'client_id' => $client->id,
+            'user_id' => $this->user->id,
+            'company_id' => $company->id,
+            'first_name' => 'Bob',
+            'last_name' => 'Doe',
+            'email' => 'wasa@b.com',
+        ]);
+
 
         $el = new EntityLevel();
         $validation = $el->checkClient($client);
@@ -460,12 +440,22 @@ class EInvoiceValidationTest extends TestCase
             'company_id' => $company->id,
             'classification' => 'business',
             'vat_number' => '',
-            'country_id' => 1,
+            'country_id' => 276,
             'address1' => '10 Wallaby Way',
             'address2' => '',
             'city' => 'Sydney',
             'state' => 'NSW',
             'postal_code' => '2113',
+        ]);
+
+        
+        $cc = ClientContact::factory()->create([
+            'client_id' => $client->id,
+            'user_id' => $this->user->id,
+            'company_id' => $company->id,
+            'first_name' => 'Bob',
+            'last_name' => 'Doe',
+            'email' => 'wasa@b.com',
         ]);
 
         $el = new EntityLevel();

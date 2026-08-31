@@ -61,7 +61,7 @@ class ClientService
             nlog("DB ERROR " . $throwable->getMessage());
         }
 
-        if($invoice && floatval($this->client->balance)  != floatval($pre_client_balance)) {
+        if ($invoice && floatval($this->client->balance)  != floatval($pre_client_balance)) {
             $diff = $this->client->balance - $pre_client_balance;
             $invoice->ledger()->insertInvoiceBalance($diff, $this->client->balance, "Update Adjustment Invoice # {$invoice->number} => {$diff}");
         }
@@ -77,25 +77,32 @@ class ClientService
      */
     public function updateBalance(float $amount)
     {
-        try {
-            DB::connection(config('database.default'))->transaction(function () use ($amount) {
-                $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
-                $this->client->balance += $amount;
-                $this->client->saveQuietly();
-            }, 2);
-        } catch (\Throwable $throwable) {
+        // try {
+        //     DB::connection(config('database.default'))->transaction(function () use ($amount) {
+        //         $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
+        //         $this->client->balance += $amount;
+        //         $this->client->saveQuietly();
+        //     }, 2); 
+        // } catch (\Throwable $throwable) {
 
-            if (DB::connection(config('database.default'))->transactionLevel() > 0) {
-                DB::connection(config('database.default'))->rollBack();
-            }
+        //     if (DB::connection(config('database.default'))->transactionLevel() > 0) {
+        //         DB::connection(config('database.default'))->rollBack();
+        //     }
 
-        } 
+        // }
+
+        $this->client->increment('balance', $amount);
 
         return $this;
     }
 
     public function updateBalanceAndPaidToDate(float $balance, float $paid_to_date)
     {
+
+        $this->client->increment('balance', $balance);
+        $this->client->increment('paid_to_date', $paid_to_date);
+
+        /* 
         try {
             DB::connection(config('database.default'))->transaction(function () use ($balance, $paid_to_date) {
                 $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
@@ -110,36 +117,66 @@ class ClientService
                 DB::connection(config('database.default'))->rollBack();
             }
 
-        } 
-
+        }
+        */
         return $this;
     }
 
     public function updatePaidToDate(float $amount)
     {
-        try {
-            DB::connection(config('database.default'))->transaction(function () use ($amount) {
-                $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
-                $this->client->paid_to_date += $amount;
-                $this->client->saveQuietly();
-            }, 2);
-        } catch (\Throwable $throwable) {
-            nlog("DB ERROR " . $throwable->getMessage());
+        // try {
+        //     DB::connection(config('database.default'))->transaction(function () use ($amount) {
+        //         $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
+        //         $this->client->paid_to_date += $amount;
+        //         $this->client->saveQuietly();
+        //     }, 2);
+        // } catch (\Throwable $throwable) {
+        //     nlog("DB ERROR " . $throwable->getMessage());
 
-            if (DB::connection(config('database.default'))->transactionLevel() > 0) {
-                DB::connection(config('database.default'))->rollBack();
-            }
+        //     if (DB::connection(config('database.default'))->transactionLevel() > 0) {
+        //         DB::connection(config('database.default'))->rollBack();
+        //     }
 
-        } 
+        // }
+
+        $this->client->increment('paid_to_date', $amount);
 
         return $this;
     }
+
+    public function updatePaymentBalance()
+    {
+        $amount = Payment::query()
+                        ->withTrashed()
+                        ->where('client_id', $this->client->id)
+                        ->where('is_deleted', 0)
+                        ->whereIn('status_id', [Payment::STATUS_COMPLETED, Payment::STATUS_PENDING, Payment::STATUS_PARTIALLY_REFUNDED, Payment::STATUS_REFUNDED])
+                        ->selectRaw('SUM(payments.amount - payments.applied) as amount')->first()->amount ?? 0;
+
+        DB::connection(config('database.default'))->transaction(function () use ($amount) {
+            $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
+            $this->client->payment_balance = $amount;
+            $this->client->saveQuietly();
+        }, 2);
+
+        return $this;
+    }
+
+
+    public function adjustCreditBalance(float $amount)
+    {
+
+        $this->client->credit_balance += $amount;
+
+        return $this;
+    }
+
 
     public function applyNumber(): self
     {
         $x = 1;
 
-        if(isset($this->client->number)) {
+        if (isset($this->client->number)) {
             return $this;
         }
 
@@ -157,32 +194,6 @@ class ClientService
                 }
             }
         } while ($this->completed);
-
-        return $this;
-    }
-
-    public function updatePaymentBalance()
-    {
-        $amount = Payment::query()
-                        ->withTrashed()
-                        ->where('client_id', $this->client->id)
-                        ->where('is_deleted', 0)
-                        ->whereIn('status_id', [Payment::STATUS_COMPLETED, Payment::STATUS_PENDING, Payment::STATUS_PARTIALLY_REFUNDED, Payment::STATUS_REFUNDED])
-                        ->selectRaw('SUM(payments.amount - payments.applied - payments.refunded) as amount')->first()->amount ?? 0;
-
-        DB::connection(config('database.default'))->transaction(function () use ($amount) {
-            $this->client = Client::withTrashed()->where('id', $this->client->id)->lockForUpdate()->first();
-            $this->client->payment_balance = $amount;
-            $this->client->saveQuietly();
-        }, 2);
-
-        return $this;
-    }
-
-
-    public function adjustCreditBalance(float $amount)
-    {
-        $this->client->credit_balance += $amount;
 
         return $this;
     }

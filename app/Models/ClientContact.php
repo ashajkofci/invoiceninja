@@ -171,6 +171,7 @@ class ClientContact extends Authenticatable implements HasLocalePreference
     public function toSearchableArray()
     {
         return [
+            'id' => $this->id,
             'name' => $this->present()->search_display(),
             'hashed_id' => $this->client->hashed_id,
             'email' => $this->email,
@@ -183,6 +184,11 @@ class ClientContact extends Authenticatable implements HasLocalePreference
             'custom_value4' => $this->custom_value4,
             'company_key' => $this->company->company_key,
         ];
+    }
+
+    public function getScoutKey()
+    {
+        return $this->hashed_id;
     }
 
     /*

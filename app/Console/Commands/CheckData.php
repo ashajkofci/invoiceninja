@@ -86,7 +86,7 @@ class CheckData extends Command
     /**
      * @var string
      */
-    protected $signature = 'ninja:check-data {--database=} {--fix=} {--portal_url=} {--client_id=} {--vendor_id=} {--paid_to_date=} {--client_balance=} {--ledger_balance=} {--balance_status=} {--bank_transaction=} {--line_items=}';
+    protected $signature = 'ninja:check-data {--database=} {--fix=} {--portal_url=} {--client_id=} {--vendor_id=} {--paid_to_date=} {--client_balance=} {--ledger_balance=} {--balance_status=} {--bank_transaction=} {--line_items=} {--payment_balance=}';
 
     /**
      * @var string
@@ -145,14 +145,17 @@ class CheckData extends Command
             $this->checkOAuth();
         }
 
-        if($this->option('bank_transaction')) {
+        if ($this->option('bank_transaction')) {
             $this->fixBankTransactions();
         }
 
-        if($this->option('line_items')) {
+        if ($this->option('line_items')) {
             $this->cleanInvoiceLineItems();
         }
 
+        if ($this->option('payment_balance')) {
+            $this->updateClientPaymentBalances();
+        }
         $this->logMessage('Done: '.strtoupper($this->isValid ? Account::RESULT_SUCCESS : Account::RESULT_FAILURE));
         $this->logMessage('Total execution time in seconds: ' . (microtime(true) - $time_start));
 
@@ -489,7 +492,7 @@ class CheckData extends Command
 
                         try {
                             $entity->service()->createInvitations()->save();
-                        } catch(\Exception $e) {
+                        } catch (\Exception $e) {
 
                         }
 
@@ -499,7 +502,7 @@ class CheckData extends Command
                         if ($invitation) {
                             $invitation->save();
                         }
-                    } catch(\Exception $e) {
+                    } catch (\Exception $e) {
                         $this->logMessage($e->getMessage());
                         $invitation = null;
                     }
@@ -524,7 +527,7 @@ class CheckData extends Command
 
             try {
                 $invitation->save();
-            } catch(\Exception $e) {
+            } catch (\Exception $e) {
                 $invitation = null;
             }
         }
@@ -550,6 +553,19 @@ class CheckData extends Command
         ");
 
         return $results;
+    }
+
+    private function updateClientPaymentBalances()
+    {
+        Client::withTrashed()
+            ->where('payment_balance', '!=', 0)
+            ->where('is_deleted', 0)
+            ->cursor()
+            ->each(function ($client) {
+
+                $client->service()->updatePaymentBalance();
+                $this->logMessage("{$client->present()->name()} payment balance = {$client->payment_balance}");
+            });
     }
 
     private function clientCreditPaymentables($client)
@@ -1093,7 +1109,7 @@ class CheckData extends Command
 
         BankTransaction::with('payment')->withTrashed()->where('invoice_ids', ',,,,,,,,')->cursor()->each(function ($bt) {
 
-            if($bt->payment->exists()) {
+            if ($bt->payment->exists()) {
                 $this->isValid = false;
 
                 $bt->invoice_ids = collect($bt->payment->invoices)->pluck('hashed_id')->implode(',');
@@ -1128,7 +1144,7 @@ class CheckData extends Command
 
     public function checkSubdomainsSet()
     {
-        if(Ninja::isSelfHost()) {
+        if (Ninja::isSelfHost()) {
             return;
         }
 
@@ -1153,7 +1169,7 @@ class CheckData extends Command
 
         $this->logMessage($p->count() . " Payments with No currency set");
 
-        if($p->count() != 0) {
+        if ($p->count() != 0) {
             $this->isValid = false;
         }
 
@@ -1197,8 +1213,8 @@ class CheckData extends Command
             $invoice->saveQuietly();
         });
 
-        
+
     }
-    
-    
+
+
 }

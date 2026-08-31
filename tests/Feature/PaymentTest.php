@@ -62,6 +62,120 @@ class PaymentTest extends TestCase
         );
     }
 
+    public function testNullExchangeRateHandling()
+    {
+            
+        $data = [
+            'amount' => 0,
+            'applied' => 0,
+            'archived_at' => 0,
+            'assigned_user_id' => null,
+            'client_contact_id' => null,
+            'client_id' => $this->client->hashed_id,
+            'company_gateway_id' => null,
+            'created_at' => 0,
+            'credits' => [],
+            'currency_id' => null,
+            'custom_value1' => null,
+            'custom_value2' => null,
+            'custom_value3' => null,
+            'custom_value4' => null,
+            'date' => '2024-11-19',
+            'documents' => [],
+            'exchange_currency_id' => '2',
+            'exchange_rate' => null,
+            'gateway_type_id' => null,
+            'id' => null,
+            'idempotency_key' => '1e05f3b2474afce706c5d3f82c3441a9ba3d68c413ea97b8d12e8abab0cbb938',
+            'invitation_id' => null,
+            'invoices' => [],
+            'is_deleted' => false,
+            'is_manual' => false,
+            'number' => null,
+            'paymentables' => [],
+            'private_notes' => null,
+            'project_id' => null,
+            'refunded' => 0,
+            'status_id' => '1',
+            'transaction_id' => null,
+            'transaction_reference' => null,
+            'type_id' => null,
+            'updated_at' => 0,
+            'user_id' => $this->user->hashed_id,
+            'vendor_id' => null,
+        ];
+
+        
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->postJson('/api/v1/payments/', $data);
+
+        $response->assertStatus(200);
+
+        $arr = $response->json();
+
+        $this->assertEquals(1, $arr['data']['exchange_rate']);
+    }
+
+    public function testNegativePaymentPaidToDate()
+    {
+        
+        $c = Client::factory()->create([
+           'user_id' => $this->user->id,
+           'company_id' => $this->company->id,
+       ]);
+
+       $this->assertEquals(0, $c->balance);
+       $this->assertEquals(0, $c->paid_to_date);
+       $this->assertEquals(0, $c->credit_balance);
+       $this->assertEquals(0, $c->payment_balance);
+
+        $data = [
+            'amount' => -500,
+            'client_id' => $c->hashed_id,
+            'invoices' => [
+            ],
+            'credits' => [
+            ],
+            'date' => '2020/12/11',
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->postJson('/api/v1/payments/', $data);
+
+        $response->assertStatus(200);
+        
+        $p = $response->json()['data'];
+
+        $payment = Payment::find($this->decodePrimaryKey($p['id']));
+
+        $this->assertEquals(-500, $payment->amount);
+        $this->assertEquals(0, $payment->refunded);
+        $this->assertEquals(0, $payment->applied);
+
+        $c = $c->fresh();
+
+        $this->assertEquals(0, $c->balance);
+        $this->assertEquals(-500, $c->paid_to_date);
+        $this->assertEquals(0, $c->credit_balance);
+        $this->assertEquals(0, $c->payment_balance);
+
+        $p = $payment->service()->deletePayment()->save();
+
+        $c = $c->fresh();
+
+        $this->assertEquals(0, $c->balance);
+        $this->assertEquals(0, $c->paid_to_date);
+        $this->assertEquals(0, $c->credit_balance);
+        $this->assertEquals(0, $c->payment_balance);
+
+
+
+    }
+
     public function testNullPaymentAmounts()    
     {
 

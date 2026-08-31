@@ -31,7 +31,6 @@ use App\Utils\Traits\MakesHash;
 use App\Utils\Traits\Pdf\PdfMaker as PdfMakerTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class Statement
 {
@@ -40,11 +39,9 @@ class Statement
     use MakesDates;
 
     /**
-     * @var Invoice|Payment|null
+     * @var ?Invoice
      */
     protected $entity;
-
-    protected bool $rollback = false;
 
     private array $variables = [];
 
@@ -56,27 +53,40 @@ class Statement
     {
 
         try {
-            $this
-                ->setupOptions()
-                ->setupEntity();
+            $this->setupOptions();
 
-            $html = new HtmlEngine($this->getInvitation());
+            $this->setupEntity();
+
+            $invitation = $this->getInvitation();
+
+            if(!$invitation)
+                return null;
+
+            $html = new HtmlEngine($invitation);
 
             $variables = [];
             $variables = $html->generateLabelsAndValues();
 
-            $option_template = &$this->options['template'];
-
             $custom_statement_template = \App\Models\Design::where('id', $this->decodePrimaryKey($this->client->getSetting('statement_design_id')))->where('is_template', true)->first();
 
-            if($custom_statement_template || $option_template && $option_template != '') {
+            if ($custom_statement_template || (isset($this->options['template']) && $this->options['template'] != '')) {
 
                 $variables['values']['$start_date'] = $this->translateDate($this->options['start_date'], $this->client->date_format(), $this->client->locale());
                 $variables['values']['$end_date'] = $this->translateDate($this->options['end_date'], $this->client->date_format(), $this->client->locale());
                 $variables['labels']['$start_date_label'] = ctrans('texts.start_date');
                 $variables['labels']['$end_date_label'] = ctrans('texts.end_date');
+                
+                $pdf = null;
 
-                return $this->templateStatement($variables);
+                try{
+                    $pdf = $this->templateStatement($variables);
+                }
+                catch(\Throwable $e){
+                    nlog("wrapped");
+                    nlog($e->getMessage());
+                }
+
+                return $pdf;
             }
 
             if ($this->getDesign()->is_custom) {
@@ -87,7 +97,6 @@ class Statement
                 $template = new PdfMakerDesign(strtolower($this->getDesign()->name), $this->options);
             }
 
-            $variables = $html->generateLabelsAndValues();
             $variables['values']['$show_paid_stamp'] = 'none'; //do not show paid stamp on statement
 
             $state = [
@@ -101,6 +110,7 @@ class Statement
                     'payments' => $this->getPayments()->cursor(),
                     'credits' => $this->getCredits()->cursor(),
                     'aging' => $this->getAging(),
+                    'unapplied' => $this->getUnapplied()->cursor(),
                 ], \App\Services\PdfMaker\Design::STATEMENT),
                 'variables' => $variables,
                 'options' => [
@@ -117,10 +127,7 @@ class Statement
             $pdf = null;
             $html = $maker->getCompiledHTML(true);
 
-            if ($this->rollback) {
-                \DB::connection(config('database.default'))->rollBack();
-                $this->rollback = false;
-            }
+            // nlog($html);
 
             $pdf = $this->convertToPdf($html);
 
@@ -130,15 +137,9 @@ class Statement
             $state = null;
 
             return $pdf;
-        }
-        catch(\Throwable $th){
-            
-            nlog("STATEMENT:: Throwable::" . $th->getMessage());
 
-            if ($this->rollback) {
-                \DB::connection(config('database.default'))->rollBack();
-            }
-
+        } catch (\Throwable $th) {
+            nlog("Statement threw => ". $th->getMessage());
         }
 
         return null;
@@ -159,32 +160,39 @@ class Statement
 
     private function templateStatement($variables)
     {
-        if(isset($this->options['template'])) {
+
+        if (isset($this->options['template'])) {
             $statement_design_id = $this->options['template'];
         } else {
             $statement_design_id = $this->client->getSetting('statement_design_id');
         }
+
+        $html = '';
 
         $template = Design::query()
                             ->where('id', $this->decodePrimaryKey($statement_design_id))
                             ->where('company_id', $this->client->company_id)
                             ->first();
 
-        $ts = $template->service();
-        $ts->addGlobal(['show_credits' => $this->options['show_credits_table']]);
-        $ts->addGlobal(['show_aging' => $this->options['show_aging_table']]);
-        $ts->addGlobal(['show_payments' => $this->options['show_payments_table']]);
-        $ts->addGlobal(['currency_code' => $this->client->company->currency()->code]);
+        if($template)
+        {
+            $ts = $template->service();
+            $ts->addGlobal(['show_credits' => $this->options['show_credits_table']]);
+            $ts->addGlobal(['show_aging' => $this->options['show_aging_table']]);
+            $ts->addGlobal(['show_payments' => $this->options['show_payments_table']]);
+            $ts->addGlobal(['currency_code' => $this->client->company->currency()->code]);
 
-        $ts->build([
-            'variables' => collect([$variables]),
-            'invoices' => $this->getInvoices()->get(),
-            'payments' => $this->options['show_payments_table'] ? $this->getPayments()->get() : collect([]),
-            'credits' => $this->options['show_credits_table'] ? $this->getCredits()->get() : collect([]),
-            'aging' => $this->options['show_aging_table'] ? $this->getAging() : collect([]),
-        ]);
+            $ts->build([
+                'variables' => collect([$variables]),
+                'invoices' => $this->getInvoices()->get(),
+                'payments' => $this->options['show_payments_table'] ? $this->getPayments()->get() : collect([]),
+                'credits' => $this->options['show_credits_table'] ? $this->getCredits()->get() : collect([]),
+                'aging' => $this->options['show_aging_table'] ? $this->getAging() : collect([]),
+                'unapplied' => $this->options['show_payments_table'] ? $this->getPayments()->get() : collect([]),
+            ]);
 
-        $html = $ts->getHtml();
+            $html = $ts->getHtml();
+        }
 
         return $this->convertToPdf($html);
     }
@@ -211,25 +219,26 @@ class Statement
     protected function setupEntity(): self
     {
         if ($this->getInvoices()->count() >= 1) {
-            $this->entity = $this->getInvoices()->first();
+            $this->entity = $this->getInvoices()->first();//@phpstan-ignore-line
+        }
+        else {
+            $this->entity = $this->client->invoices()->whereHas('invitations')->first();
         }
 
-        if (\is_null($this->entity)) {
-            DB::connection(config('database.default'))->beginTransaction();
+        if(\is_null($this->entity)){
+            $settings = new \stdClass();
+            $settings->entity = \App\Models\Client::class;
+            $settings->currency_id = '1';
+            $settings->industry_id = '';
+            $settings->size_id = '';
 
-            $this->rollback = true;
-            
-            $invoice = InvoiceFactory::create($this->client->company->id, $this->client->user->id);
-            $invoice->client_id = $this->client->id;
-            $invoice->line_items = $this->buildLineItems();
-            $invoice->save();
+            $this->entity = \App\Models\Invoice::factory()->make(); //@phpstan-ignore-line
+            $this->entity->client = \App\Models\Client::factory()->make(['settings' => $settings]); //@phpstan-ignore-line
+            $this->entity->client->setRelation('company', $this->client->company);
+            $this->entity->invitation = \App\Models\InvoiceInvitation::factory()->make(); //@phpstan-ignore-line
+            $this->entity->setRelation('company', $this->client->company);
+            $this->entity->setRelation('user', $this->client->user);
 
-            $invitation = InvoiceInvitationFactory::create($invoice->company_id, $invoice->user_id);
-            $invitation->invoice_id = $invoice->id;
-            $invitation->client_contact_id = $this->client->contacts->first()->id;
-            $invitation->save();
-
-            $this->entity = $invoice;
         }
 
         return $this;
@@ -362,12 +371,23 @@ class Statement
     {
         return Payment::withTrashed()
             ->with('client.country', 'invoices')
-            ->where('is_deleted', false)
             ->where('company_id', $this->client->company_id)
             ->where('client_id', $this->client->id)
             ->whereIn('status_id', [Payment::STATUS_COMPLETED, Payment::STATUS_PARTIALLY_REFUNDED, Payment::STATUS_REFUNDED])
             ->whereBetween('date', [Carbon::parse($this->options['start_date']), Carbon::parse($this->options['end_date'])])
+            ->where('is_deleted', false)
             ->orderBy('date', 'ASC');
+    }
+
+    protected function getUnapplied(): Builder
+    {
+        return Payment::query()
+                        ->withTrashed()
+                        ->where('company_id', $this->client->company_id)
+                        ->where('client_id', $this->client->id)
+                        ->whereIn('status_id', [Payment::STATUS_COMPLETED, Payment::STATUS_PENDING, Payment::STATUS_PARTIALLY_REFUNDED, Payment::STATUS_REFUNDED])
+                        ->where('is_deleted', 0)
+                        ->whereRaw('payments.amount > payments.applied');
     }
 
     /**
@@ -385,7 +405,6 @@ class Statement
             ->whereIn('status_id', [Credit::STATUS_SENT, Credit::STATUS_PARTIAL, Credit::STATUS_APPLIED])
             ->whereBetween('date', [Carbon::parse($this->options['start_date']), Carbon::parse($this->options['end_date'])])
             ->where(function ($query) {
-                // $query->whereDate('due_date', '>=', $this->options['end_date'])
                 $query->whereDate('due_date', '>=', now())
                       ->orWhereNull('due_date');
             })
@@ -398,8 +417,17 @@ class Statement
      */
     protected function getInvitation()
     {
-        if ($this->entity instanceof Invoice || $this->entity instanceof Payment) {
-            return $this->entity->invitations->first();
+        if($this->entity instanceof Invoice) {
+            $invitation = $this->entity->invitations->first();
+            
+            if($invitation)
+                return $invitation;
+
+        $invitation = $this->client->invoices()->whereHas('invitations')->first()->invitations->first();
+        
+        if ($invitation) 
+            return $invitation;
+
         }
 
         return false;
@@ -442,7 +470,7 @@ class Statement
             ->where('balance', '>', 0)
             ->where('is_deleted', 0);
 
-        if($range == '0') {
+        if ($range == '0') {
             $query->where(function ($q) use ($to, $from) {
                 $q->whereBetween('due_date', [$to, $from])->orWhereNull('due_date');
             });

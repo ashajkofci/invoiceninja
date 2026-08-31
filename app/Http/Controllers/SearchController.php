@@ -26,20 +26,36 @@ class SearchController extends Controller
 
     private array $invoices = [];
 
+    private array $quotes = [];
+    
+    private array $expenses = [];
+
+    private array $credits = [];
+    
+    private array $recurring_invoices = [];
+    
+    private array $vendors = [];
+    
+    private array $vendor_contacts = [];
+    
+    private array $purchase_orders = [];
+
+
     public function __invoke(GenericSearchRequest $request)
     {
-        if(config('scount.driver') == 'elastic' && $request->has('search') && $request->input('search') !== '') {
-            try{
-                return $this->search($request->input('search', ''));
-            } catch(\Exception $e) {
-               nlog("elk down?");
+        if (config('scout.driver') == 'elastic') {
+            try {
+                return $this->search($request->input('search', '*'));
+            } catch (\Exception $e) {
+                nlog("elk down?" . $e->getMessage());
             }
         }
-        
+
         /** @var \App\Models\User $user */
         $user = auth()->user();
 
         $this->clientMap($user);
+
         $this->invoiceMap($user);
 
         return response()->json([
@@ -55,11 +71,14 @@ class SearchController extends Controller
     {
         $user = auth()->user();
         $company = $user->company();
-        
+
+        \Illuminate\Support\Facades\App::setLocale($company->locale());
+
         $elastic = ClientBuilder::fromConfig(config('elastic.client.connections.default'));
 
         $params = [
-            'index' => 'clients,invoices,client_contacts',
+            // 'index' => 'clients,invoices,client_contacts',
+            'index' => 'clients,invoices,client_contacts,quotes,expenses,credits,recurring_invoices,vendors,vendor_contacts,purchase_orders',
             'body'  => [
                 'query' => [
                     'bool' => [
@@ -77,7 +96,7 @@ class SearchController extends Controller
                         ],
                     ],
                 ],
-                'size' => 1000,
+                'size' => 100,
             ],
         ];
 
@@ -89,6 +108,14 @@ class SearchController extends Controller
             'clients' => $this->clients,
             'client_contacts' => $this->client_contacts,
             'invoices' => $this->invoices,
+            'quotes' => $this->quotes,
+
+            'expenses' => $this->expenses,
+            'credits' => $this->credits,
+            'recurring_invoices' => $this->recurring_invoices,
+            'vendors' => $this->vendors,
+            'vendor_contacts' => $this->vendor_contacts,
+            'purchase_orders' => $this->purchase_orders,
             'settings' => $this->settingsMap(),
         ], 200);
 
@@ -97,12 +124,13 @@ class SearchController extends Controller
     private function mapResults(array $results)
     {
 
-        foreach($results as $result) {
-            switch($result['_index']) {
+        foreach ($results as $result) {
+            switch ($result['_index']) {
                 case 'clients':
 
-                    if($result['_source']['is_deleted']) //do not return deleted results
+                    if ($result['_source']['is_deleted']) { //do not return deleted results
                         break;
+                    }
 
                     $this->clients[] = [
                         'name' => $result['_source']['name'],
@@ -114,9 +142,10 @@ class SearchController extends Controller
                     break;
                 case 'invoices':
 
-                    if ($result['_source']['is_deleted'])  //do not return deleted invoices
+                    if ($result['_source']['is_deleted']) {  //do not return deleted invoices
                         break;
-                    
+                    }
+
 
                     $this->invoices[] = [
                         'name' => $result['_source']['name'],
@@ -127,8 +156,9 @@ class SearchController extends Controller
                     break;
                 case 'client_contacts':
 
-                    if($result['_source']['__soft_deleted']) // do not return deleted contacts
+                    if ($result['_source']['__soft_deleted']) { 
                         break;
+                    }
 
                     $this->client_contacts[] = [
                         'name' => $result['_source']['name'],
@@ -137,6 +167,111 @@ class SearchController extends Controller
                         'path' => "/clients/{$result['_source']['hashed_id']}"
                     ];
                     break;
+                case 'quotes':
+
+                    if ($result['_source']['__soft_deleted']) { 
+                        break;
+                    }
+
+                    $this->quotes[] = [
+                        'name' => $result['_source']['name'],
+                        'type' => '/quote',
+                        'id' => $result['_source']['hashed_id'],
+                        'path' => "/quotes/{$result['_source']['hashed_id']}"
+                    ];
+
+                    break;
+
+                case 'expenses':
+                    
+                    if ($result['_source']['__soft_deleted']) {
+                        break;
+                    }
+
+                    $this->expenses[] = [
+                        'name' => $result['_source']['name'],
+                        'type' => '/expense',
+                        'id' => $result['_source']['hashed_id'],
+                        'path' => "/expenses/{$result['_source']['hashed_id']}"
+                    ];
+
+                    break;
+
+                case 'credits':
+
+                    if ($result['_source']['__soft_deleted']) {
+                        break;
+                    }
+
+                    $this->credits[] = [
+                        'name' => $result['_source']['name'],
+                        'type' => '/credit',
+                        'id' => $result['_source']['hashed_id'],
+                        'path' => "/credits/{$result['_source']['hashed_id']}"
+                    ];
+
+                    break;
+
+                case 'recurring_invoices':
+
+                    if ($result['_source']['__soft_deleted']) {
+                        break;
+                    }
+
+                    $this->recurring_invoices[] = [
+                        'name' => $result['_source']['name'],
+                        'type' => '/recurring_invoice',
+                        'id' => $result['_source']['hashed_id'],
+                        'path' => "/recurring_invoices/{$result['_source']['hashed_id']}"
+                    ];
+
+                    break;
+
+                case 'vendors':
+
+                    if ($result['_source']['__soft_deleted']) {
+                        break;
+                    }
+
+                    $this->vendors[] = [
+                       'name' => $result['_source']['name'],
+                       'type' => '/vendor',
+                       'id' => $result['_source']['hashed_id'],
+                       'path' => "/vendors/{$result['_source']['hashed_id']}"
+                   ];
+
+                    break;
+
+                case 'vendor_contacts':
+
+                    if ($result['_source']['__soft_deleted']) {
+                        break;
+                    }
+
+                    $this->vendor_contacts[] = [
+                        'name' => $result['_source']['name'],
+                        'type' => '/client',
+                        'id' => $result['_source']['hashed_id'],
+                        'path' => "/clients/{$result['_source']['hashed_id']}"
+                    ];
+
+                    break;
+
+                case 'purchase_orders':
+
+                    if ($result['_source']['__soft_deleted']) {
+                        break;
+                    }
+
+                    $this->purchase_orders[] = [
+                       'name' => $result['_source']['name'],
+                       'type' => '/purchase_order',
+                       'id' => $result['_source']['hashed_id'],
+                       'path' => "/purchase_orders/{$result['_source']['hashed_id']}"
+                   ];
+
+                    break;
+
             }
         }
     }
@@ -154,7 +289,7 @@ class SearchController extends Controller
                      ->take(1000)
                      ->get();
 
-        foreach($clients as $client) {
+        foreach ($clients as $client) {
             $this->clients[] = [
                 'name' => $client->present()->name(),
                 'type' => '/client',
@@ -192,7 +327,7 @@ class SearchController extends Controller
                     ->take(3000)
                     ->get();
 
-        foreach($invoices as $invoice) {
+        foreach ($invoices as $invoice) {
             $this->invoices[] = [
                 'name' => $invoice->client->present()->name() . ' - ' . $invoice->number,
                 'type' => '/invoice',
@@ -251,8 +386,6 @@ class SearchController extends Controller
             'custom_fields,vendors' => '/settings/custom_fields/vendors',
             'custom_fields,expenses' => '/settings/custom_fields/expenses',
             'custom_fields,users' => '/settings/custom_fields/users',
-            'custom_fields,quotes' => '/settings/custom_fields/quotes',
-            'custom_fields,credits' => '/settings/custom_fields/credits',
             'generated_numbers' => '/settings/generated_numbers',
             'client_portal' => '/settings/client_portal',
             'email_settings' => '/settings/email_settings',
@@ -274,16 +407,16 @@ class SearchController extends Controller
             'gateways' => '/settings/online_payments',
             'gateways,create' => '/settings/gateways/create',
             'bank_accounts,transaction_rules' => '/settings/bank_accounts/transaction_rules',
-            'bank_accounts,transaction_rules/create' => '/settings/bank_accounts/transaction_rules/create',
+            'bank_accounts,transaction_rules,create' => '/settings/bank_accounts/transaction_rules/create',
         ];
 
         $data = [];
 
-        foreach($paths as $key => $value) {
+        foreach ($paths as $key => $value) {
 
             $translation = '';
 
-            foreach(explode(",", $key) as $transkey) {
+            foreach (explode(",", $key) as $transkey) {
                 $translation .= ctrans("texts.{$transkey}")." ";
             }
 

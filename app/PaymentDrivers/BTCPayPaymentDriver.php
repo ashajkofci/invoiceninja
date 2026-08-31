@@ -44,7 +44,7 @@ class BTCPayPaymentDriver extends BaseDriver
         GatewayType::CRYPTO => BTCPay::class, //maps GatewayType => Implementation class
     ];
 
-    public const SYSTEM_LOG_TYPE = SystemLog::TYPE_CHECKOUT; //define a constant for your gateway ie TYPE_YOUR_CUSTOM_GATEWAY - set the const in the SystemLog model
+    public const SYSTEM_LOG_TYPE = SystemLog::TYPE_BTC_PAY; //define a constant for your gateway ie TYPE_YOUR_CUSTOM_GATEWAY - set the const in the SystemLog model
 
     public $btcpay_url  = "";
     public $api_key  = "";
@@ -91,7 +91,7 @@ class BTCPayPaymentDriver extends BaseDriver
 
     public function processWebhookRequest()
     {
-        sleep(2);
+
 
         $webhook_payload = file_get_contents('php://input');
 
@@ -100,11 +100,21 @@ class BTCPayPaymentDriver extends BaseDriver
         if ($btcpayRep == null) {
             throw new PaymentFailed('Empty data');
         }
-        if (true === empty($btcpayRep->invoiceId)) {
+
+        if (empty($btcpayRep->invoiceId)) {
             throw new PaymentFailed(
                 'Invalid BTCPayServer payment notification- did not receive invoice ID.'
             );
         }
+
+        if (!isset($btcpayRep->metadata->InvoiceNinjaPaymentHash)) {
+
+            throw new PaymentFailed(
+                'Invalid BTCPayServer payment notification- did not receive Payment Hashed ID.'
+            );
+
+        }
+
         if (
             str_starts_with($btcpayRep->invoiceId, "__test__")
             || $btcpayRep->type == "InvoiceProcessing"
@@ -121,7 +131,7 @@ class BTCPayPaymentDriver extends BaseDriver
             }
         }
 
-        $this->init();
+
         $webhookClient = new Webhook($this->btcpay_url, $this->api_key);
 
         if (!$webhookClient->isIncomingWebhookRequestValid($webhook_payload, $sig, $this->webhook_secret)) {
@@ -130,64 +140,83 @@ class BTCPayPaymentDriver extends BaseDriver
             );
         }
 
+
+        sleep(1);
+
+        $this->init();
+
         $this->setPaymentMethod(GatewayType::CRYPTO);
         $this->payment_hash = PaymentHash::where('hash', $btcpayRep->metadata->InvoiceNinjaPaymentHash)->firstOrFail();
 
         $StatusId = Payment::STATUS_PENDING;
 
-        if ($this->payment_hash->payment_id == null) {
-            
-            $_invoice = $this->payment_hash->fee_invoice;
-            
-            $this->client = $_invoice->client;
+        $payment = $this->payment_hash->payment ?? false;
+        $_invoice = $this->payment_hash->fee_invoice;
+        $this->client = $_invoice->client;
 
-            $dataPayment = [
-                'payment_method' => $this->payment_method,
-                'payment_type' => PaymentType::CRYPTO,
-                'amount' => $_invoice->amount,
-                'gateway_type_id' => GatewayType::CRYPTO,
-                'transaction_reference' => $btcpayRep->invoiceId
-            ];
-            $payment = $this->createPayment($dataPayment, $StatusId);
 
-        } else {
-            /** @var \App\Models\Payment $payment */
-            $payment = Payment::withTrashed()->find($this->payment_hash->payment_id);
-            $StatusId =  $payment->status_id;
-        }
         switch ($btcpayRep->type) {
             case "InvoiceExpired":
-                
-                if ($payment->status_id == Payment::STATUS_PENDING) {
+
+                $payment = Payment::query()->withTrashed()->where('client_id', $_invoice->client_id)->where('id', $this->payment_hash->payment_id)->first();
+
+                if ($payment && $payment->status_id == Payment::STATUS_PENDING) {
                     $payment->service()->deletePayment();
                     $this->failedPaymentNotification($payment);
+
+                    $StatusId = Payment::STATUS_CANCELLED;
+
+                    $payment->status_id = $StatusId;
+                    $payment->save();
+
                 }
 
-                $StatusId = Payment::STATUS_CANCELLED;
                 break;
             case "InvoiceInvalid":
-                
-                if ($payment->status_id == Payment::STATUS_PENDING) {
+
+                $payment = Payment::query()->withTrashed()->where('client_id', $_invoice->client_id)->where('id', $this->payment_hash->payment_id)->first();
+
+                if ($payment && $payment->status_id == Payment::STATUS_PENDING) {
                     $payment->service()->deletePayment();
                     $this->failedPaymentNotification($payment);
+                    $StatusId = Payment::STATUS_FAILED;
+
+                    $payment->status_id = $StatusId;
+                    $payment->save();
+
                 }
 
-                $StatusId = Payment::STATUS_FAILED;
                 break;
             case "InvoiceSettled":
+
+                $payment = Payment::query()->withTrashed()->where('client_id', $_invoice->client_id)->where('id', $this->payment_hash->payment_id)->first();
                 $StatusId = Payment::STATUS_COMPLETED;
+
+                if (!$payment) {
+
+
+                    $dataPayment = [
+                        'payment_method' => $this->payment_method,
+                        'payment_type' => PaymentType::CRYPTO,
+                        'amount' => $_invoice->amount,
+                        'gateway_type_id' => GatewayType::CRYPTO,
+                        'transaction_reference' => $btcpayRep->invoiceId
+                    ];
+
+                    $payment = $this->createPayment($dataPayment, $StatusId);
+
+                } else {
+                    $payment->save();
+                }
+
                 break;
         }
 
-        if ($payment->status_id != $StatusId) {
-            $payment->status_id = $StatusId;
-            $payment->save();
-        }
     }
 
     private function failedPaymentNotification(Payment $payment): void
     {
-        
+
         $error = ctrans('texts.client_payment_failure_body', [
             'invoice' => implode(',', $payment->invoices->pluck('number')->toArray()),
             'amount' => array_sum(array_column($this->payment_hash->invoices(), 'amount')) + $this->payment_hash->fee_total, ]);

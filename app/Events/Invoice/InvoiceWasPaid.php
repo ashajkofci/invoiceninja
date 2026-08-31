@@ -12,10 +12,12 @@
 
 namespace App\Events\Invoice;
 
+use App\Models\BaseModel;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Utils\Traits\Invoice\Broadcasting\DefaultInvoiceBroadcast;
+use App\Utils\Traits\Invoice\Broadcasting\DefaultResourceBroadcast;
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
 
@@ -24,7 +26,9 @@ use Illuminate\Queue\SerializesModels;
  */
 class InvoiceWasPaid implements ShouldBroadcast
 {
-    use SerializesModels, DefaultInvoiceBroadcast;
+    use SerializesModels;
+    use DefaultResourceBroadcast;
+    use InteractsWithSockets;
 
     /**
      * Create a new event instance.
@@ -36,5 +40,11 @@ class InvoiceWasPaid implements ShouldBroadcast
      */
     public function __construct(public Invoice $invoice, public Payment $payment, public Company $company, public array $event_vars)
     {
+        $this->dontBroadcastToCurrentUser();
+    }
+
+    public function broadcastModel(): BaseModel
+    {
+        return $this->invoice;
     }
 }

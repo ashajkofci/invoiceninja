@@ -11,6 +11,7 @@
 
 namespace Tests\Unit;
 
+use App\Utils\Helpers;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,20 @@ use Tests\TestCase;
  */
 class MakesInvoiceValuesTest extends TestCase
 {
+    public function testLineTotalKeepsTaxPrecisionUntilSubtotal()
+    {
+        $document = (object) [
+            'uses_inclusive_taxes' => false,
+            'tax_name1' => 'VAT',
+            'tax_rate1' => 8.1,
+        ];
+        $items = array_fill(0, 3, (object) ['line_total' => .05, 'gross_line_total' => .05]);
+
+        $subtotal = array_sum(array_map(fn ($item) => Helpers::lineTotalWithTaxes($item, $document), $items));
+
+        $this->assertSame(.16, round($subtotal, 2));
+    }
+
     public function testStrReplaceArray()
     {
         $columns = ['custom_invoice_label3'];

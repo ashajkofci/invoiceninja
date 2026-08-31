@@ -46,6 +46,7 @@ use App\Libraries\Currency\Conversion\CurrencyApi;
  * @property string|null $time_log
  * @property string|null $number
  * @property float $rate
+ * @property string $calculated_start_date
  * @property bool $invoice_documents
  * @property int $is_date_based
  * @property int|null $status_order
@@ -210,11 +211,11 @@ class Task extends BaseModel
 
     public function stringStatus(): string
     {
-        if($this->invoice_id) {
+        if ($this->invoice_id) {
             return '<h5><span class="badge badge-success">'.ctrans('texts.invoiced').'</span></h5>';
         }
 
-        if($this->status) {
+        if ($this->status) {
             return '<h5><span class="badge badge-primary">' . $this->status?->name ?? ''; //@phpstan-ignore-line
         }
 
@@ -280,11 +281,11 @@ class Task extends BaseModel
 
     public function getRate(): float
     {
-        if($this->project && $this->project->task_rate > 0) {
+        if ($this->project && $this->project->task_rate > 0) {
             return $this->project->task_rate;
         }
 
-        if($this->client) {
+        if ($this->client) {
             return $this->client->getSetting('default_task_rate');
         }
 
@@ -296,13 +297,18 @@ class Task extends BaseModel
         $client_currency = $this->client->getSetting('currency_id');
         $company_currency = $this->company->getSetting('currency_id');
 
-        if($client_currency != $company_currency) {
+        if ($client_currency != $company_currency) {
             $converter = new CurrencyApi();
             return $converter->convert($this->taskValue(), $client_currency, $company_currency);
         }
 
         return $this->taskValue();
 
+    }
+
+    public function getQuantity(): float
+    {
+        return round(($this->calcDuration() / 3600), 2);
     }
 
     public function taskValue(): float
@@ -318,11 +324,11 @@ class Task extends BaseModel
 
             $parent_entity = $this->client ?? $this->company;
 
-            if($log[0]) {
+            if ($log[0]) {
                 $log[0] = Carbon::createFromTimestamp((int)$log[0])->format($parent_entity->date_format().' H:i:s');
             }
 
-            if($log[1] && $log[1] != 0) {
+            if ($log[1] && $log[1] != 0) {
                 $log[1] = Carbon::createFromTimestamp((int)$log[1])->format($parent_entity->date_format().' H:i:s');
             } else {
                 $log[1] = ctrans('texts.running');
@@ -332,6 +338,71 @@ class Task extends BaseModel
         })->toArray();
     }
 
+    public function description(): string
+    {
+        $parent_entity = $this->client ?? $this->company;
+        $time_format = $parent_entity->getSetting('military_time') ? "H:i:s" : "h:i:s A";
+
+        $task_description =  collect(json_decode($this->time_log, true))
+            ->filter(function ($log) {
+                $billable = $log[3] ?? false;
+                return $billable || $this->company->settings->allow_billable_task_items;
+            })
+            ->map(function ($log) use ($parent_entity, $time_format) {
+                $interval_description = $log[2] ?? '';
+                $hours = ctrans('texts.hours');
+
+                $parts = [];
+
+                $parts[] = '<div class="task-time-details">';
+
+                $date_time = [];
+
+                if ($this->company->invoice_task_datelog) {
+                    $date_time[] = Carbon::createFromTimestamp((int)$log[0])
+                        ->setTimeZone($this->company->timezone()->name)
+                        ->format($parent_entity->date_format());
+                }
+
+                if ($this->company->invoice_task_timelog) {
+                    $date_time[] = Carbon::createFromTimestamp((int)$log[0])
+                        ->setTimeZone($this->company->timezone()->name)
+                        ->format($time_format) . " - " .
+                        Carbon::createFromTimestamp((int)$log[1])
+                        ->setTimeZone($this->company->timezone()->name)
+                        ->format($time_format);
+                }
+
+                if ($this->company->invoice_task_hours) {
+                    $date_time[] = "{$this->getQuantity()} {$hours}";
+                }
+
+                $parts[] = implode(" • ", $date_time);
+
+                if ($this->company->invoice_task_item_description && $this->company->settings->show_task_item_description && strlen($interval_description) > 1) {
+                    $parts[] = $interval_description;
+                }
+
+                $parts[] = '</div>';
+
+                return implode(PHP_EOL, $parts);
+            })
+            ->implode(PHP_EOL);
+
+        $body = '';
+
+        if ($this->company->invoice_task_project && $this->project) {
+            $body = "## {$this->project->name}  \n";
+        }
+
+        if (strlen($this->description) > 1) {
+            $body .= $this->description. " ";
+        }
+
+        $body .= $task_description;
+
+        return $body;
+    }
 
     public function processLogsExpandedNotation()
     {
@@ -342,18 +413,18 @@ class Task extends BaseModel
             $parent_entity = $this->client ?? $this->company;
             $logged = [];
 
-            if($log[0] && $log[1] != 0) {
+            if ($log[0] && $log[1] != 0) {
                 $duration = $log[1] - $log[0];
             } else {
                 $duration = 0;
             }
 
-            if($log[0]) {
+            if ($log[0]) {
                 $logged['start_date_raw'] = $log[0];
             }
             $logged['start_date'] = Carbon::createFromTimestamp((int)$log[0])->setTimeZone($this->company->timezone()->name)->format($parent_entity->date_format().' H:i:s');
 
-            if($log[1] && $log[1] != 0) {
+            if ($log[1] && $log[1] != 0) {
                 $logged['end_date_raw'] = $log[1];
                 $logged['end_date'] = Carbon::createFromTimestamp((int)$log[1])->setTimeZone($this->company->timezone()->name)->format($parent_entity->date_format().' H:i:s');
             } else {
@@ -373,7 +444,7 @@ class Task extends BaseModel
 
     public function assignedCompanyUser()
     {
-        if(!$this->assigned_user_id) {
+        if (!$this->assigned_user_id) {
             return false;
         }
 

@@ -13,6 +13,7 @@ namespace Tests\Feature\PdfMaker;
 
 use App\Services\PdfMaker\Design;
 use App\Services\PdfMaker\PdfMaker;
+use App\Services\Template\TemplateService;
 use Tests\TestCase;
 
 class PdfMakerTest extends TestCase
@@ -59,6 +60,16 @@ class PdfMakerTest extends TestCase
             ->build();
 
         $this->assertEquals('table', $maker->getSectionNode('product-table')->nodeName);
+    }
+
+    public function testTemplateElementCanBeHiddenById()
+    {
+        $html = (new TemplateService())
+            ->setRawTemplate('<div id="swiss_qr">QR</div>')
+            ->hideElementById('swiss_qr')
+            ->getHtml();
+
+        $this->assertStringContainsString('id="swiss_qr" hidden="true"', $html);
     }
 
     public function testTableAttributesAreInjected()

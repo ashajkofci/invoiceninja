@@ -14,13 +14,14 @@ namespace App\Models;
 use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
 use App\Utils\Traits\MakesHash;
+use App\Utils\Traits\MakesDates;
 use App\Jobs\Entity\CreateRawPdf;
 use App\Jobs\Util\WebhookHandler;
 use App\Models\Traits\Excludable;
-use App\Services\EDocument\Jobes\SendEDocument;
 use App\Services\PdfMaker\PdfMerge;
 use Illuminate\Database\Eloquent\Model;
 use App\Utils\Traits\UserSessionAttributes;
+use App\Services\EDocument\Jobes\SendEDocument;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\ModelNotFoundException as ModelNotFoundException;
 
@@ -80,6 +81,7 @@ class BaseModel extends Model
     use UserSessionAttributes;
     use HasFactory;
     use Excludable;
+    use MakesDates;
 
     public int $max_attachment_size = 3000000;
 
@@ -261,6 +263,36 @@ class BaseModel extends Model
         return ctrans("texts.e_invoice"). "_" . $this->numberFormatter().'.'.$extension;
     }
 
+    // public function numberFormatter()
+    // {
+    //     $number = strlen($this->number) >= 1 ? $this->translate_entity() . "_" . $this->number : class_basename($this) . "_" . Str::random(5);
+
+    //     // Remove control characters
+    //     $formatted_number = preg_replace('/[\x00-\x1F\x7F]/u', '', $number);
+
+    //     // Replace slash, backslash, and null byte with underscore
+    //     $formatted_number = str_replace(['/', '\\', "\0"], '_', $formatted_number);
+
+    //     // Remove any other characters that are invalid in most filesystems
+    //     $formatted_number = str_replace(['<', '>', ':', '"', '|', '?', '*'], '', $formatted_number);
+
+    //     // Replace multiple spaces or underscores with a single underscore
+    //     $formatted_number = preg_replace('/[\s_]+/', '_', $formatted_number);
+
+    //     // Trim underscores from start and end
+    //     $formatted_number = trim($formatted_number, '_');
+
+    //     // Ensure the filename is not empty
+    //     if (empty($formatted_number)) {
+    //         $formatted_number = 'file_' . Str::random(5);
+    //     }
+
+    //     // Limit the length of the filename (adjust as needed)
+    //     $formatted_number = mb_substr($formatted_number, 0, 255);
+
+    //     return $formatted_number;
+    // }
+
     public function numberFormatter()
     {
         $number = strlen($this->number) >= 1 ? $this->translate_entity() . "_" . $this->number : class_basename($this) . "_" . Str::random(5);
@@ -298,18 +330,18 @@ class BaseModel extends Model
         }
 
         // special catch here for einvoicing eventing
-        if($event_id == Webhook::EVENT_SENT_INVOICE && ($this instanceof Invoice) && is_null($this->backup) && $this->client->getSetting('e_invoice_type') == 'PEPPOL'){
+        if ($event_id == Webhook::EVENT_SENT_INVOICE && ($this instanceof Invoice) && is_null($this->backup) && $this->client->peppolSendingEnabled()) {
             \App\Services\EDocument\Jobs\SendEDocument::dispatch(get_class($this), $this->id, $this->company->db);
         }
 
     }
 
-    
+
     /**
      * arrayFilterRecursive nee filterNullsRecursive
      *
      * Removes null properties from an array
-     * 
+     *
      * @param  array $array
      * @return array
      */
@@ -364,7 +396,7 @@ class BaseModel extends Model
      */
     public function parseHtmlVariables(string $field, array $variables): string
     {
-        if(!$this->{$field}) {
+        if (!$this->{$field}) {
             return '';
         }
 
@@ -379,6 +411,7 @@ class BaseModel extends Model
      * into a single document
      *
      * @param  string $pdf
+     * @todo need to provide a fallback here in case the headers of the PDF do not allow merging
      * @return mixed
      */
     public function documentMerge(string $pdf): mixed
@@ -409,7 +442,9 @@ class BaseModel extends Model
 
         try {
             $pdf = (new PdfMerge($files->flatten()->toArray()))->run();
-        } catch(\Exception $e) {
+            return $pdf;
+
+        } catch (\Exception $e) {
             nlog("Exception:: BaseModel:: PdfMerge::" . $e->getMessage());
         }
 

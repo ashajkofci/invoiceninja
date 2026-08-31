@@ -12,21 +12,32 @@
 
 namespace App\Livewire\Flow2;
 
-use App\Utils\Traits\WithSecureContext;
 use Livewire\Component;
+use Livewire\Attributes\Computed;
+use App\Utils\Traits\WithSecureContext;
 
 class Terms extends Component
 {
     use WithSecureContext;
 
-    public $invoice;
-
     public $variables;
 
     public function mount()
     {
-        $this->invoice = $this->getContext()['invoices']->first();
         $this->variables = $this->getContext()['variables'];
+    }
+
+    #[Computed()]
+    public function invoice()
+    {
+        
+        $invitation_id = $this->getContext()['invitation_id'];
+
+        $db = $this->getContext()['db'];
+
+        $invite = \App\Models\InvoiceInvitation::on($db)->withTrashed()->find($invitation_id);
+
+        return $invite->invoice;
     }
 
     public function render()

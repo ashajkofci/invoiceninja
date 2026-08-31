@@ -16,6 +16,7 @@ use App\Models\Credit;
 use App\Models\Quote;
 use App\Services\PdfMaker\Designs\Utilities\BaseDesign;
 use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
+use App\Utils\InternalProductFilter;
 use App\Utils\Number;
 use App\Utils\Traits\MakesDates;
 use App\Utils\Traits\MakesInvoiceValues;
@@ -55,11 +56,15 @@ class Design extends BaseDesign
 
     public $payments;
 
+    public $unapplied_payments;
+
     public $settings_object;
 
     public $company;
 
     public float $payment_amount_total = 0;
+
+    public float $unapplied_total = 0;
 
     /** @var array */
     public $aging = [];
@@ -154,11 +159,19 @@ class Design extends BaseDesign
             ],
             'statement-credit-table-totals' => [
                 'id' => 'statement-credit-table-totals',
-                'elements' => $this->statementInvoiceTableTotals(),
+                'elements' => $this->statementCreditTableTotals(),
             ],
             'statement-invoice-table' => [
                 'id' => 'statement-invoice-table',
                 'elements' => $this->statementInvoiceTable(),
+            ],
+            'statement-unapplied-payment-table' => [
+                'id' => 'statement-unapplied-payment-table',
+                'elements' => $this->statementUnappliedPaymentTable(),
+            ],
+            'statement-unapplied-payment-table-totals' => [
+                'id' => 'statement-unapplied-payment-table-totals',
+                'elements' => $this->statementUnappliedPaymentTableTotals(),
             ],
             'statement-invoice-table-totals' => [
                 'id' => 'statement-invoice-table-totals',
@@ -192,7 +205,7 @@ class Design extends BaseDesign
 
     public function swissQrCodeElement(): array
     {
-        if ($this->type == self::DELIVERY_NOTE) {
+        if ($this->type == self::DELIVERY_NOTE || $this->entity instanceof Quote) {
             return [];
         }
 
@@ -368,7 +381,7 @@ class Design extends BaseDesign
         // We don't want to show account balance or invoice total on PDF.. or any amount with currency.
         if ($this->type == self::DELIVERY_NOTE) {
             $variables = array_filter($variables, function ($m) {
-                return !in_array($m, ['$invoice.balance_due', '$invoice.total']);
+                return !in_array($m, ['$invoice.balance_due', '$invoice.total', '$invoice.amount']);
             });
         }
 
@@ -516,6 +529,7 @@ class Design extends BaseDesign
 
     public function statementInvoiceTableTotals(): array
     {
+
         if ($this->type !== self::STATEMENT) {
             return [];
         }
@@ -561,23 +575,23 @@ class Design extends BaseDesign
                 $tbody[] = $element;
 
                 $this->payment_amount_total += $payment->pivot->amount;
-            
+
                 if ($payment->pivot->refunded > 0) {
 
                     $refund_date = $payment->date;
 
-                    if($payment->refund_meta && is_array($payment->refund_meta)){
+                    if ($payment->refund_meta && is_array($payment->refund_meta)) {
 
-                        $refund_array = collect($payment->refund_meta)->first(function ($meta) use($invoice){
-                            foreach($meta['invoices'] as $refunded_invoice){
-                                
+                        $refund_array = collect($payment->refund_meta)->first(function ($meta) use ($invoice) {
+                            foreach ($meta['invoices'] as $refunded_invoice) {
+
                                 if ($refunded_invoice['invoice_id'] == $invoice->id) {
                                     return true;
                                 }
 
                             }
                         });
-                        
+
                         $refund_date = $refund_array['date'];
                     }
 
@@ -592,8 +606,8 @@ class Design extends BaseDesign
                     $this->payment_amount_total -= $payment->pivot->refunded;
 
                 }
-            
-        }
+
+            }
 
 
         }
@@ -645,6 +659,10 @@ class Design extends BaseDesign
             return [];
         }
 
+        if (\array_key_exists('show_credits_table', $this->options) && $this->options['show_credits_table'] === false) {
+            return [];
+        }
+
         $outstanding = $this->credits->sum('balance');
 
         return [
@@ -669,6 +687,69 @@ class Design extends BaseDesign
             ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.amount_paid'), Number::formatMoney($this->payment_amount_total, $this->client))],
         ];
     }
+
+    public function statementUnappliedPaymentTableTotals(): array
+    {
+
+        if (is_null($this->unapplied_payments) || !$this->unapplied_payments->first() || $this->type !== self::STATEMENT) {
+            return [];
+        }
+
+        if (\array_key_exists('show_payments_table', $this->options) && $this->options['show_payments_table'] === false) {
+            return [];
+        }
+
+        return [
+            ['element' => 'p', 'content' => \sprintf('%s: %s', ctrans('texts.payment_balance_on_file'), Number::formatMoney($this->unapplied_total, $this->client))],
+        ];
+
+    }
+
+
+    /**
+     * Generates the statement unapplied payments table
+     *
+     * @return array
+     *
+     */
+    public function statementUnappliedPaymentTable(): array
+    {
+
+        if (is_null($this->unapplied_payments) && $this->type !== self::STATEMENT) {
+            return [];
+        }
+
+        if (\array_key_exists('show_payments_table', $this->options) && $this->options['show_payments_table'] === false) {
+            return [];
+        }
+
+        $tbody = [];
+
+        //24-03-2022 show payments per invoice
+        foreach ($this->unapplied_payments as $unapplied_payment) {
+            if ($unapplied_payment->is_deleted) {
+                continue;
+            }
+
+            $element = ['element' => 'tr', 'elements' => []];
+            $element['elements'][] = ['element' => 'td', 'content' => $unapplied_payment->number];
+            $element['elements'][] = ['element' => 'td', 'content' => $this->translateDate($unapplied_payment->date, $this->client->date_format(), $this->client->locale()) ?: '&nbsp;'];
+            $element['elements'][] = ['element' => 'td', 'content' => Number::formatMoney($unapplied_payment->amount, $this->client) ?: '&nbsp;'];
+            $element['elements'][] = ['element' => 'td', 'content' => Number::formatMoney($unapplied_payment->amount - $unapplied_payment->applied, $this->client) ?: '&nbsp;'];
+
+            $tbody[] = $element;
+
+            $this->unapplied_total += round($unapplied_payment->amount - $unapplied_payment->applied, 2);
+
+        }
+
+        return [
+            ['element' => 'thead', 'elements' => $this->buildTableHeader('statement_unapplied')],
+            ['element' => 'tbody', 'elements' => $tbody],
+        ];
+
+    }
+
 
     public function statementAgingTable(): array
     {
@@ -754,7 +835,13 @@ class Design extends BaseDesign
     {
         $elements = [];
 
-        $items = $this->transformLineItems($this->entity->line_items, $type);
+        $line_items = $this->entity->line_items;
+
+        if ($type !== self::DELIVERY_NOTE) {
+            $line_items = InternalProductFilter::filter($this->company->custom_fields, $line_items);
+        }
+
+        $items = $this->transformLineItems($line_items, $type);
 
         $this->processNewLines($items);
 
@@ -996,4 +1083,5 @@ class Design extends BaseDesign
 
         return $elements;
     }
+
 }

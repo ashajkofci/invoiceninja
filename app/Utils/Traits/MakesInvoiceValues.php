@@ -261,6 +261,7 @@ trait MakesInvoiceValues
     public function transformLineItems($items, $table_type = '$product'): array
     {   //$start = microtime(true);
         $entity = $this->client ? $this->client : $this->vendor;
+        $document = $this->entity ?? $this;
 
         $data = [];
 
@@ -311,7 +312,7 @@ trait MakesInvoiceValues
 
                 $data[$key][$table_type.'.cost'] = Number::formatMoney($item->cost, $entity);
 
-                $data[$key][$table_type.'.line_total'] = Number::formatMoney($item->line_total, $entity);
+                $data[$key][$table_type.'.line_total'] = Number::formatMoney(Helpers::lineTotalWithTaxes($item, $document), $entity);
             } else {
                 $data[$key][$table_type.'.quantity'] = '';
 
