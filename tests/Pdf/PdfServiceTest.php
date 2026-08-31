@@ -138,6 +138,27 @@ class PdfServiceTest extends TestCase
         $this->assertSame('$108.10', $design->transformLineItems([$item])[0]['$product.line_total']);
     }
 
+    public function testPdfLineTotalRoundsOnlyForDisplay()
+    {
+        $item = InvoiceItemFactory::create();
+        $item->cost = .05;
+        $item->line_total = .05;
+        $item->gross_line_total = .05;
+        $item->tax_name1 = 'VAT';
+        $item->tax_rate1 = 8.1;
+
+        $this->invoice->uses_inclusive_taxes = false;
+        $this->invoice->tax_name1 = 'VAT';
+        $this->invoice->tax_rate1 = 8.1;
+        $this->invoice->line_items = [$item, $item, $item];
+        $this->invoice->save();
+
+        $service = (new PdfService($this->invoice->invitations->first()))->boot();
+
+        $this->assertSame('$0.05', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$0.16', $service->html_variables['values']['$subtotal']);
+    }
+
     public function testProductPoidsTotalVariablesAreAvailable()
     {
         $invitation = $this->poidsInvoiceInvitation('PoIds|single_line_text');
