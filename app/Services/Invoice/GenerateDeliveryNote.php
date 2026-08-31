@@ -46,14 +46,16 @@ class GenerateDeliveryNote
         $delivery_note_design_id = $this->invoice->client->getSetting('delivery_note_design_id');
         $design = Design::withTrashed()->find($this->decodePrimaryKey($delivery_note_design_id));
 
-        if($design && $design->is_template) {
+        if ($design && $design->is_template) {
 
             $ts = new TemplateService($design);
 
             $pdf = $ts->setCompany($this->invoice->company)
-            ->build([
-                'invoices' => collect([$this->invoice]),
-            ])->getPdf();
+                ->build([
+                    'invoices' => collect([$this->invoice]),
+                ])
+                ->hideElementById('swiss_qr')
+                ->getPdf();
 
             return $pdf;
 
@@ -83,6 +85,8 @@ class GenerateDeliveryNote
 
         $variables = $html->generateLabelsAndValues();
         $variables['labels']['$entity_label'] = ctrans('texts.delivery_note');
+        $variables['labels']['$invoice.date_label'] = ctrans('texts.date');
+        $variables['labels']['$invoice.number_label'] = ctrans('texts.number');
 
         $state = [
             'template' => $template->elements([
@@ -105,6 +109,10 @@ class GenerateDeliveryNote
         $maker
             ->design($template)
             ->build();
+
+        if ($swiss_qr = $maker->getSectionNode('swiss_qr')) {
+            $maker->updateElementProperty($swiss_qr, 'hidden', 'true');
+        }
 
         if (config('ninja.invoiceninja_hosted_pdf_generation') || config('ninja.pdf_generator') == 'hosted_ninja') {
             $pdf = (new NinjaPdf())->build($maker->getCompiledHTML(true));

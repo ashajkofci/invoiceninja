@@ -23,6 +23,21 @@ class Helpers
 {
     use MakesDates;
 
+    public static function lineTotalWithTaxes($item, $document): float
+    {
+        $line_total = $item->gross_line_total;
+
+        if (! $document->uses_inclusive_taxes) {
+            foreach ([1, 2, 3] as $tax) {
+                if (strlen($document->{'tax_name'.$tax} ?? '') > 1) {
+                    $line_total += $item->line_total * $document->{'tax_rate'.$tax} / 100;
+                }
+            }
+        }
+
+        return $line_total;
+    }
+
     public static function sharedEmailVariables(?Client $client, array $settings = null): array
     {
         if (! $client) {
@@ -59,7 +74,7 @@ class Helpers
         $custom_field = '';
         $quote_or_credit_field = false;
 
-        if($custom_fields && stripos($field, 'quote') !== false && property_exists($custom_fields, $field)) {
+        if ($custom_fields && stripos($field, 'quote') !== false && property_exists($custom_fields, $field)) {
             $custom_field = $custom_fields->{$field};
             $custom_field_parts = explode('|', $custom_field);
 
@@ -69,7 +84,7 @@ class Helpers
 
             $quote_or_credit_field = true;
 
-        } elseif($custom_fields && stripos($field, 'credit') !== false && property_exists($custom_fields, $field)) {
+        } elseif ($custom_fields && stripos($field, 'credit') !== false && property_exists($custom_fields, $field)) {
             $custom_field = $custom_fields->{$field};
             $custom_field_parts = explode('|', $custom_field);
 
@@ -79,9 +94,9 @@ class Helpers
 
             $quote_or_credit_field = true;
 
-        } elseif($custom_fields && stripos($field, 'credit') !== false) {
+        } elseif ($custom_fields && stripos($field, 'credit') !== false) {
             $field = str_replace("credit", "invoice", $field);
-        } elseif($custom_fields && stripos($field, 'quote') !== false) {
+        } elseif ($custom_fields && stripos($field, 'quote') !== false) {
             $field = str_replace("quote", "invoice", $field);
         }
 

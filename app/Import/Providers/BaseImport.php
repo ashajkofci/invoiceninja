@@ -194,6 +194,33 @@ class BaseImport
 
     }
 
+    public function groupClients($csvData, $key)
+    {
+        if (!$key || !isset($csvData[0][$key])) {
+            return $csvData;
+        }
+
+        $grouped = [];
+
+        // Group by client name / id.
+        $grouped = [];
+
+        foreach ($csvData as $contact_item) {
+            if (empty($contact_item[$key])) {
+                $this->error_array['client'][] = [
+                    'client' => $contact_item,
+                    'error' => 'No client identifier',
+                ];
+            } else {
+                $grouped[$contact_item[$key]][] = $contact_item;
+            }
+        }
+
+        return $grouped;
+
+
+    }
+
     private function groupInvoices($csvData, $key)
     {
         if (! $key) {
@@ -257,7 +284,7 @@ class BaseImport
 
             unset($record['']);
 
-            if(!is_array($record)) {
+            if (!is_array($record)) {
                 continue;
             }
 
@@ -317,7 +344,7 @@ class BaseImport
 
         foreach ($data as $key => $record) {
 
-            if(!is_array($record)) {
+            if (!is_array($record)) {
                 continue;
             }
 
@@ -384,7 +411,7 @@ class BaseImport
 
         foreach ($invoices as $raw_invoice) {
 
-            if(!is_array($raw_invoice)) {
+            if (!is_array($raw_invoice)) {
                 continue;
             }
 
@@ -479,7 +506,7 @@ class BaseImport
         foreach ($tasks as $raw_task) {
             $task_data = [];
 
-            if(!is_array($raw_task)) {
+            if (!is_array($raw_task)) {
                 continue;
             }
 
@@ -552,7 +579,7 @@ class BaseImport
 
         foreach ($invoices as $raw_invoice) {
 
-            if(!is_array($raw_invoice)) {
+            if (!is_array($raw_invoice)) {
                 continue;
             }
 
@@ -604,7 +631,7 @@ class BaseImport
                     nlog($invoice_data);
                     $saveable_invoice_data = $invoice_data;
 
-                    if(array_key_exists('payments', $saveable_invoice_data)) {
+                    if (array_key_exists('payments', $saveable_invoice_data)) {
                         unset($saveable_invoice_data['payments']);
                     }
 
@@ -620,9 +647,13 @@ class BaseImport
                         // Check for payment columns
                         if (! empty($invoice_data['payments'])) {
                             foreach (
-                                $invoice_data['payments']
-                                as $payment_data
+                                $invoice_data['payments'] as $payment_data
                             ) {
+
+                                if ($payment_data['amount'] == 0 && $invoice_data['status_id'] == 4) {
+                                    $payment_data['amount'] = $invoice->amount;
+                                }
+
                                 $payment_data['user_id'] = $invoice->user_id;
                                 $payment_data['client_id'] =
                                     $invoice->client_id;
@@ -647,7 +678,7 @@ class BaseImport
 
                                     $payment_date = Carbon::parse($payment->date);
 
-                                    if(!$payment_date->isToday()) {
+                                    if (!$payment_date->isToday()) {
 
                                         $payment->paymentables()->update(['created_at' => $payment_date]);
 
@@ -772,7 +803,7 @@ class BaseImport
 
         foreach ($quotes as $raw_quote) {
 
-            if(!is_array($raw_quote)) {
+            if (!is_array($raw_quote)) {
                 continue;
             }
 
@@ -861,7 +892,7 @@ class BaseImport
     {
         $user = false;
 
-        if(is_numeric($user_hash)) {
+        if (is_numeric($user_hash)) {
 
             $user = User::query()
                         ->where('account_id', $this->company->account->id)
@@ -870,7 +901,7 @@ class BaseImport
 
         }
 
-        if($user) {
+        if ($user) {
             return $user->id;
         }
 
@@ -933,7 +964,7 @@ class BaseImport
 
             $diff = array_diff($key_keys, $row_keys);
 
-            if(!empty($diff)) {
+            if (!empty($diff)) {
                 return false;
             }
             /** 12-04-2024 If we do not have matching keys - then this row import is _not_ valid */

@@ -363,9 +363,9 @@ class BillingPortalPurchase extends Component
         $method_values = array_column($this->methods, 'is_paypal');
         $is_paypal = in_array('1', $method_values);
 
-        if($is_paypal && !$this->steps['check_rff']) {
+        if ($is_paypal && !$this->steps['check_rff']) {
             $this->rff();
-        } elseif(!$this->steps['check_rff']) {
+        } elseif (!$this->steps['check_rff']) {
             $this->steps['fetched_payment_methods'] = true;
         }
 
@@ -469,8 +469,12 @@ class BillingPortalPurchase extends Component
 
         $context = 'purchase';
 
-        if (Ninja::isHosted() && $this->subscription->service()->recurring_products()->first()?->product_key == 'whitelabel') {
+        if (config('ninja.ninja_default_company_id') == $this->subscription->company_id && $this->subscription->service()->recurring_products()->first()?->product_key == 'whitelabel') {
             $context = 'whitelabel';
+        }
+
+        if (config('ninja.ninja_default_company_id') == $this->subscription->company_id && in_array($this->subscription->service()->products()->first()?->product_key, ['peppol_500','peppol_1000','selfhost_peppol_500','selfhost_peppol_1000'])) {
+            $context = $this->subscription->service()->products()->first()?->product_key;
         }
 
         Cache::put($this->hash, [
@@ -480,6 +484,7 @@ class BillingPortalPurchase extends Component
             'invoice_id' => $this->invoice->hashed_id,
             'context' => $context,
             'campaign' => $this->campaign,
+            'request_data' => $this->request_data,
         ], now()->addMinutes(60));
 
         $this->dispatch('beforePaymentEventsCompleted');

@@ -25,7 +25,10 @@ use App\Services\InboundMail\InboundMailEngine;
 
 class ProcessMailgunInboundWebhook implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public $tries = 1;
 
@@ -35,9 +38,9 @@ class ProcessMailgunInboundWebhook implements ShouldQueue
      * Create a new job instance.
      * $input consists of 3 informations: sender/from|recipient/to|messageUrl
      */
-    public function __construct(private string $sender, private string $recipient, private string $message_url, private Company $company)
+    public function __construct(private string $sender, private string $recipient, private string $message_url)
     {
-        $this->engine = new InboundMailEngine($company);
+        $this->engine = new InboundMailEngine();
     }
 
     /**
@@ -177,6 +180,15 @@ class ProcessMailgunInboundWebhook implements ShouldQueue
             return;
         }
 
+        // match company
+        $company = MultiDB::findAndSetDbByExpenseMailbox($to);
+
+        if (!$company) {
+            return;
+        }
+
+        $this->engine->setCompany($company);
+
         // lets assess this at a higher level to ensure that only valid email inboxes are processed.
         // match company
         // $company = MultiDB::findAndSetDbByExpenseMailbox($to);
@@ -189,10 +201,11 @@ class ProcessMailgunInboundWebhook implements ShouldQueue
         try { // important to save meta if something fails here to prevent spam
 
             // fetch message from mailgun-api
-            $company_mailgun_domain = $this->company->getSetting('email_sending_method') == 'client_mailgun' && strlen($this->company->getSetting('mailgun_domain') ?? '') > 2 ? $this->company->getSetting('mailgun_domain') : null;
-            $company_mailgun_secret = $this->company->getSetting('email_sending_method') == 'client_mailgun' && strlen($this->company->getSetting('mailgun_secret') ?? '') > 2 ? $this->company->getSetting('mailgun_secret') : null;
-            if (!($company_mailgun_domain && $company_mailgun_secret) && !(config('services.mailgun.domain') && config('services.mailgun.secret')))
+            $company_mailgun_domain = $company->getSetting('email_sending_method') == 'client_mailgun' && strlen($company->getSetting('mailgun_domain') ?? '') > 2 ? $company->getSetting('mailgun_domain') : null;
+            $company_mailgun_secret = $company->getSetting('email_sending_method') == 'client_mailgun' && strlen($company->getSetting('mailgun_secret') ?? '') > 2 ? $company->getSetting('mailgun_secret') : null;
+            if (!($company_mailgun_domain && $company_mailgun_secret) && !(config('services.mailgun.domain') && config('services.mailgun.secret'))) {
                 throw new \Error("[ProcessMailgunInboundWebhook] no mailgun credentials found, we cannot get the attachements and files");
+            }
 
             $mail = null;
             if ($company_mailgun_domain && $company_mailgun_secret) {
@@ -214,8 +227,9 @@ class ProcessMailgunInboundWebhook implements ShouldQueue
                         $messageUrl = str_replace("https://", "https://" . $credentials, $messageUrl);
                         $mail = json_decode(file_get_contents($messageUrl));
 
-                    } else
+                    } else {
                         throw $e;
+                    }
                 }
 
             } else {
@@ -262,8 +276,9 @@ class ProcessMailgunInboundWebhook implements ShouldQueue
                             $url = str_replace("https://", "https://" . $credentials, $url);
                             $inboundMail->documents[] = TempFile::UploadedFileFromUrl($url, $attachment->name, $attachment->{"content-type"});
 
-                        } else
+                        } else {
                             throw $e;
+                        }
                     }
 
                 } else {

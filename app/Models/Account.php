@@ -58,7 +58,7 @@ use Laracasts\Presenter\PresentableTrait;
  * @property bool $is_scheduler_running
  * @property int|null $trial_duration
  * @property bool $is_onboarding
- * @property object|null $onboarding
+ * @property object|array|null $onboarding
  * @property bool $is_migrated
  * @property string|null $platform
  * @property int|null $hosted_client_count
@@ -72,6 +72,7 @@ use Laracasts\Presenter\PresentableTrait;
  * @property bool $account_sms_verified
  * @property string|null $bank_integration_account_id
  * @property bool $is_trial
+ * @property int $e_invoice_quota
  * @property-read int|null $bank_integrations_count
  * @property-read int|null $companies_count
  * @property-read int|null $company_users_count
@@ -86,7 +87,6 @@ use Laracasts\Presenter\PresentableTrait;
  * @method static \Illuminate\Database\Eloquent\Builder|Account query()
  * @method static \Illuminate\Database\Eloquent\Builder|BaseModel scope()
  * @method static \Illuminate\Database\Eloquent\Builder|Account first()
- * @method static \Illuminate\Database\Eloquent\Builder|Account with()
  * @method static \Illuminate\Database\Eloquent\Builder|Account count()
  * @method static \Illuminate\Database\Eloquent\Builder|Account where($query)
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BankIntegration> $bank_integrations
@@ -127,6 +127,7 @@ class Account extends BaseModel
         'platform',
         'set_react_as_default_ap',
         'inapp_transaction_id',
+        'e_invoicing_token',
     ];
 
     protected $casts = [
@@ -498,7 +499,7 @@ class Account extends BaseModel
             return 0;
         }
 
-        if($this->email_quota) {
+        if ($this->email_quota) {
             return (int)$this->email_quota;
         }
 

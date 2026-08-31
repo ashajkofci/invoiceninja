@@ -83,12 +83,13 @@ class SendRemindersCron extends Command
                          //check if this reminder needs to be emailed
                          if (in_array($reminder_template, ['reminder1', 'reminder2', 'reminder3']) && $invoice->client->getSetting('enable_'.$reminder_template)) {
                              $invoice->invitations->each(function ($invitation) use ($invoice, $reminder_template) {
-                                 EmailEntity::dispatch($invitation, $invitation->company, $reminder_template);
+                                 EmailEntity::dispatch($invitation->withoutRelations(), $invitation->company->db, $reminder_template);
                                  nlog("Firing reminder email for invoice {$invoice->number}");
                              });
 
                              if ($invoice->invitations->count() > 0) {
-                                 event(new InvoiceWasEmailed($invoice->invitations->first(), $invoice->company, Ninja::eventVars(), $reminder_template));
+                                //  event(new InvoiceWasEmailed($invoice->invitations->first(), $invoice->company, Ninja::eventVars(), $reminder_template));
+                                 $invoice->entityEmailEvent($invoice->invitations->first(), $reminder_template);
                              }
                          }
                          $invoice->service()->setReminder()->save();

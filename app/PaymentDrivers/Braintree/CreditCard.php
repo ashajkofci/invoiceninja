@@ -77,7 +77,7 @@ class CreditCard implements LivewireMethodInterface
 
     public function paymentView(array $data)
     {
-       $data = $this->paymentData($data);
+        $data = $this->paymentData($data);
 
         return render('gateways.braintree.credit_card.pay', $data);
     }
@@ -115,6 +115,7 @@ class CreditCard implements LivewireMethodInterface
             'options' => [
                 'submitForSettlement' => true,
             ],
+            'channel' => 'invoiceninja_BT',
             'billing' => [
                 'streetAddress' => $this->braintree->client->address1 ?: '',
                 'extendedAddress' => $this->braintree->client->address2 ?: '',
@@ -144,7 +145,7 @@ class CreditCard implements LivewireMethodInterface
         }
 
         if ($result->success) {
-            $this->braintree->logSuccessfulGatewayResponse(['response' => $request->server_response, 'data' => $this->braintree->payment_hash], SystemLog::TYPE_BRAINTREE);
+            $this->braintree->logSuccessfulGatewayResponse(['response' => $request->server_response, 'data' => $this->braintree->payment_hash->data], SystemLog::TYPE_BRAINTREE);
 
             if ($request->store_card && is_null($request->token)) {
                 $payment_method = $this->braintree->gateway->paymentMethod()->find($token);
@@ -273,15 +274,15 @@ class CreditCard implements LivewireMethodInterface
     /**
      * @inheritDoc
      */
-    public function livewirePaymentView(array $data): string 
+    public function livewirePaymentView(array $data): string
     {
         return 'gateways.braintree.credit_card.pay_livewire';
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function paymentData(array $data): array 
+    public function paymentData(array $data): array
     {
         $data['gateway'] = $this->braintree;
         $data['client_token'] = $this->braintree->gateway->clientToken()->generate();

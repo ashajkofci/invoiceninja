@@ -41,7 +41,7 @@ class InvoicePay extends Component
         'client_postal_code' => 'postal_code',
         'client_country_id' => 'country_id',
 
-        'client_shipping_address_line_1' => 'shipping_address1',  
+        'client_shipping_address_line_1' => 'shipping_address1',
         'client_shipping_address_line_2' => 'shipping_address2',
         'client_shipping_city' => 'shipping_city',
         'client_shipping_state' => 'shipping_state',
@@ -105,15 +105,12 @@ class InvoicePay extends Component
     #[On('terms-accepted')]
     public function termsAccepted()
     {
-        nlog("Terms accepted");
-        // $this->invite = \App\Models\InvoiceInvitation::withTrashed()->find($this->invitation_id)->withoutRelations();
         $this->terms_accepted = true;
     }
 
     #[On('signature-captured')]
     public function signatureCaptured($base64)
     {
-        nlog("signature captured");
 
         $this->signature_accepted = true;
         $invite = \App\Models\InvoiceInvitation::withTrashed()->find($this->invitation_id);
@@ -127,8 +124,6 @@ class InvoicePay extends Component
     #[On('payable-amount')]
     public function payableAmount($payable_amount)
     {
-        // $this->setContext('payable_invoices.0.amount', Number::parseFloat($payable_amount)); // $this->context['payable_invoices'][0]['amount'] = Number::parseFloat($payable_amount); //TODO DB: check parseFloat()
-        
         $this->setContext('amount', $payable_amount);
         $this->under_over_payment = false;
     }
@@ -141,7 +136,6 @@ class InvoicePay extends Component
         $this->setContext('amount', $amount);
         $this->setContext('pre_payment', false);
         $this->setContext('is_recurring', false);
-        $this->setContext('invitation_id', $this->invitation_id);
 
         $this->payment_method_accepted = true;
 
@@ -163,10 +157,6 @@ class InvoicePay extends Component
 
         $this->setContext('fields', $fields); // $this->context['fields'] = $fields;
 
-        if ($company_gateway->always_show_required_fields) {
-            return $this->required_fields = true;
-        }
-
         /** @var \App\Models\ClientContact $contact */
         $contact = $this->getContext()['contact'];
 
@@ -178,9 +168,7 @@ class InvoicePay extends Component
                     empty($contact->client->{$_field})
                     || is_null($contact->client->{$_field}) //@phpstan-ignore-line
                 ) {
-
                     return $this->required_fields = true;
-
                 }
             }
 
@@ -190,7 +178,11 @@ class InvoicePay extends Component
                 }
             }
         }
-        
+
+        if ($company_gateway->always_show_required_fields) {
+            return $this->required_fields = true;
+        }
+
         return $this->required_fields = false;
 
     }
@@ -220,7 +212,7 @@ class InvoicePay extends Component
         }
 
         return ProcessPayment::class;
-        
+
     }
 
     #[Computed()]
@@ -231,29 +223,33 @@ class InvoicePay extends Component
 
     public function mount()
     {
+
         $this->resetContext();
 
         MultiDB::setDb($this->db);
 
         // @phpstan-ignore-next-line
         $invite = \App\Models\InvoiceInvitation::with('contact.client', 'company')->withTrashed()->find($this->invitation_id);
+
         $client = $invite->contact->client;
         $settings = $client->getMergedSettings();
         $this->setContext('contact', $invite->contact); // $this->context['contact'] = $invite->contact;
         $this->setContext('settings', $settings); // $this->context['settings'] = $settings;
         $this->setContext('db', $this->db); // $this->context['db'] = $this->db;
+        $this->setContext('invitation_id', $this->invitation_id);
 
-        if(is_array($this->invoices))
-            $this->invoices = Invoice::find($this->transformKeys($this->invoices));
-        
-        $invoices = $this->invoices->filter(function ($i) {
-            $i = $i->service()
-                ->markSent()
-                ->removeUnpaidGatewayFees()
-                ->save();
+        $invoices = Invoice::withTrashed()
+                                    ->whereIn('id', $this->transformKeys($this->invoices))
+                                    ->where('is_deleted', 0)
+                                    ->get()
+                                    ->filter(function ($i) {
+                                        $i = $i->service()
+                                            ->markSent()
+                                            ->removeUnpaidGatewayFees()
+                                            ->save();
 
-            return $i->isPayable();
-        });
+                                        return $i->isPayable();
+                                    });
 
         //under-over / payment
 
@@ -266,7 +262,7 @@ class InvoicePay extends Component
         $this->setContext('variables', $this->variables); // $this->context['variables'] = $this->variables;
         $this->setContext('invoices', $invoices); // $this->context['invoices'] = $invoices;
         $this->setContext('settings', $settings); // $this->context['settings'] = $settings;
-        $this->setContext('invitation', $invite); // $this->context['invitation'] = $invite;
+        // $this->setContext('invitation', $invite->withoutRelations()); // $this->context['invitation'] = $invite;
 
         $payable_invoices = $invoices->map(function ($i) {
             /** @var \App\Models\Invoice $i */
@@ -277,7 +273,8 @@ class InvoicePay extends Component
                 'formatted_currency' => Number::formatMoney($i->partial > 0 ? $i->partial : $i->balance, $i->client),
                 'number' => $i->number,
                 'date' => $i->translateDate($i->date, $i->client->date_format(), $i->client->locale()),
-                'due_date' => $i->translateDate($i->due_date, $i->client->date_format(), $i->client->locale())
+                'due_date' => $i->translateDate($i->due_date, $i->client->date_format(), $i->client->locale()),
+                'terms' => $i->terms,
             ];
         })->toArray();
 
@@ -290,11 +287,11 @@ class InvoicePay extends Component
         return render('flow2.invoice-pay');
     }
 
-    public function exception($e, $stopPropagation) 
+    public function exception($e, $stopPropagation)
     {
-       
-        nlog($e->getMessage());
 
+        app('sentry')->captureException($e);
+        nlog($e->getMessage());
         $stopPropagation();
 
     }

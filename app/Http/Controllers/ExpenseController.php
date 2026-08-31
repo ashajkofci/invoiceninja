@@ -497,6 +497,18 @@ class ExpenseController extends BaseController
 
         $expenses = Expense::withTrashed()->find($request->ids);
 
+        if ($request->action == 'bulk_update' && $user->can('edit', $expenses->first())) {
+
+            $expenses = Expense::withTrashed()
+                    ->company()
+                    ->whereIn('id', $request->ids);
+
+            $this->expense_repo->bulkUpdate($expenses, $request->column, $request->new_value);
+
+            return $this->listResponse(Expense::query()->withTrashed()->company()->whereIn('id', $request->ids));
+
+        }
+
         if ($request->action == 'bulk_categorize' && $user->can('edit', $expenses->first())) {
             $this->expense_repo->categorize($expenses, $request->category_id);
             $expenses = collect([]);
@@ -635,7 +647,7 @@ class ExpenseController extends BaseController
         $user = auth()->user();
 
         foreach ($request->file("documents") as $file) {
-            ImportEDocument::dispatch($file->get(), $file->getClientOriginalName(), $request->file("documents")->getMimeType(), $user->company());
+            ImportEDocument::dispatch($file->get(), $file->getClientOriginalName(), $file->getMimeType(), $user->company());
         }
 
         return response()->json(['message' => 'Processing....'], 200);

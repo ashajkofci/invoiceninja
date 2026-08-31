@@ -11,12 +11,12 @@
 
 namespace App\Models;
 
-use App\DataMapper\InvoiceSync;
 use App\Utils\Ninja;
 use Laravel\Scout\Searchable;
 use Illuminate\Support\Carbon;
-use App\Utils\Traits\MakesDates;
+use App\DataMapper\InvoiceSync;
 use App\Helpers\Invoice\InvoiceSum;
+use Illuminate\Support\Facades\App;
 use App\Utils\Traits\MakesReminders;
 use App\Utils\Traits\NumberFormatter;
 use App\Services\Ledger\LedgerService;
@@ -29,6 +29,7 @@ use App\Helpers\Invoice\InvoiceSumInclusive;
 use App\Utils\Traits\Invoice\ActionsInvoice;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Events\Invoice\InvoiceReminderWasEmailed;
+use App\Utils\Number;
 
 /**
  * App\Models\Invoice
@@ -141,12 +142,10 @@ class Invoice extends BaseModel
     use SoftDeletes;
     use Filterable;
     use NumberFormatter;
-    use MakesDates;
     use PresentableTrait;
     use MakesInvoiceValues;
     use MakesReminders;
     use ActionsInvoice;
-
     use Searchable;
 
     protected $presenter = EntityPresenter::class;
@@ -244,8 +243,12 @@ class Invoice extends BaseModel
 
     public function toSearchableArray()
     {
+        $locale = $this->company->locale();
+        App::setLocale($locale);
+
         return [
-            'name' => $this->client->present()->name() . ' - ' . $this->number,
+            'id' => $this->id,
+            'name' => ctrans('texts.invoice') . " " . $this->number . " | " . $this->client->present()->name() .  ' | ' . Number::formatMoney($this->amount, $this->company) . ' | ' . $this->translateDate($this->date, $this->company->date_format(), $locale),
             'hashed_id' => $this->hashed_id,
             'number' => $this->number,
             'is_deleted' => $this->is_deleted,
@@ -253,12 +256,18 @@ class Invoice extends BaseModel
             'balance' => (float) $this->balance,
             'due_date' => $this->due_date,
             'date' => $this->date,
-            'custom_value1' => $this->custom_value1,
-            'custom_value2' => $this->custom_value2,
-            'custom_value3' => $this->custom_value3,
-            'custom_value4' => $this->custom_value4,
+            'custom_value1' => (string)$this->custom_value1,
+            'custom_value2' => (string)$this->custom_value2,
+            'custom_value3' => (string)$this->custom_value3,
+            'custom_value4' => (string)$this->custom_value4,
             'company_key' => $this->company->company_key,
+            'po_number' => (string)$this->po_number,
         ];
+    }
+
+    public function getScoutKey()
+    {
+        return $this->hashed_id;
     }
 
     public function getEntityType()
@@ -282,7 +291,7 @@ class Invoice extends BaseModel
     // }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Company>
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function company()
     {
@@ -335,7 +344,7 @@ class Invoice extends BaseModel
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany<Document>
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
      */
     public function documents(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
@@ -343,7 +352,7 @@ class Invoice extends BaseModel
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\MorphToMany<Payment>
+     * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
      */
     public function payments(): \Illuminate\Database\Eloquent\Relations\MorphToMany
     {
@@ -351,7 +360,7 @@ class Invoice extends BaseModel
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\MorphToMany<Payment>
+     * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
      */
     public function net_payments(): \Illuminate\Database\Eloquent\Relations\MorphToMany
     {
@@ -359,7 +368,7 @@ class Invoice extends BaseModel
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany<CompanyLedger>
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
      */
     public function company_ledger(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
@@ -372,7 +381,7 @@ class Invoice extends BaseModel
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough<Backup>
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
      */
     public function history(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
     {
@@ -390,7 +399,7 @@ class Invoice extends BaseModel
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne<Task>
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
     public function task(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
@@ -398,7 +407,7 @@ class Invoice extends BaseModel
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne<Quote>
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
     public function quote(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
@@ -411,7 +420,7 @@ class Invoice extends BaseModel
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne<Expense>
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
     public function expense(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
@@ -457,17 +466,13 @@ class Invoice extends BaseModel
 
     public function isPayable(): bool
     {
-        if($this->is_deleted || $this->status_id == self::STATUS_PAID) {
+        if ($this->is_deleted || $this->status_id == self::STATUS_PAID || $this->balance < 0) {
             return false;
         } elseif ($this->status_id == self::STATUS_DRAFT && $this->is_deleted == false) {
             return true;
-        } elseif ($this->status_id == self::STATUS_SENT && $this->is_deleted == false) {
+        } elseif ($this->status_id == self::STATUS_SENT && !$this->is_deleted && $this->balance > 0) {
             return true;
-        } elseif ($this->status_id == self::STATUS_PARTIAL && $this->is_deleted == false) {
-            return true;
-        } elseif ($this->status_id == self::STATUS_SENT && $this->is_deleted == false) {
-            return true;
-        } elseif ($this->status_id == self::STATUS_DRAFT && $this->is_deleted == false) {
+        } elseif ($this->status_id == self::STATUS_PARTIAL && !$this->is_deleted && $this->balance > 0) {
             return true;
         } else {
             return false;
@@ -634,10 +639,10 @@ class Invoice extends BaseModel
 
     public function entityEmailEvent($invitation, $reminder_template, $template = '')
     {
-
+        
         switch ($reminder_template) {
             case 'invoice':
-                event(new InvoiceWasEmailed($invitation, $invitation->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null), $template));
+                event(new InvoiceWasEmailed($invitation, $invitation->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null), $reminder_template));
                 break;
             case 'reminder1':
                 event(new InvoiceReminderWasEmailed($invitation, $invitation->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null), $reminder_template));
@@ -655,7 +660,7 @@ class Invoice extends BaseModel
             case 'custom1':
             case 'custom2':
             case 'custom3':
-                event(new InvoiceWasEmailed($invitation, $invitation->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null), $template));
+                event(new InvoiceWasEmailed($invitation, $invitation->company, Ninja::eventVars(auth()->user() ? auth()->user()->id : null), $reminder_template));
                 break;
             default:
                 // code...
@@ -784,25 +789,25 @@ class Invoice extends BaseModel
         $days_endless = \App\Models\RecurringInvoice::frequencyForKey($settings->endless_reminder_frequency_id);
         $label_endless = ctrans('texts.reminder_endless');
 
-        if($schedule_1 == ctrans('texts.disabled') || $settings->schedule_reminder1 == 'disabled' || $settings->schedule_reminder1 == '') {
+        if ($schedule_1 == ctrans('texts.disabled') || $settings->schedule_reminder1 == 'disabled' || $settings->schedule_reminder1 == '') {
             $reminder_schedule .= "{$label_1}: " . ctrans('texts.disabled') ."<br>";
         } else {
             $reminder_schedule .= "{$label_1}: {$days_1} {$schedule_1} [{$sends_email_1}]<br>";
         }
 
-        if($schedule_2 == ctrans('texts.disabled') || $settings->schedule_reminder2 == 'disabled' || $settings->schedule_reminder2 == '') {
+        if ($schedule_2 == ctrans('texts.disabled') || $settings->schedule_reminder2 == 'disabled' || $settings->schedule_reminder2 == '') {
             $reminder_schedule .= "{$label_2}: " . ctrans('texts.disabled') ."<br>";
         } else {
             $reminder_schedule .= "{$label_2}: {$days_2} {$schedule_2} [{$sends_email_2}]<br>";
         }
 
-        if($schedule_3 == ctrans('texts.disabled') || $settings->schedule_reminder3 == 'disabled' || $settings->schedule_reminder3 == '') {
+        if ($schedule_3 == ctrans('texts.disabled') || $settings->schedule_reminder3 == 'disabled' || $settings->schedule_reminder3 == '') {
             $reminder_schedule .= "{$label_3}: " . ctrans('texts.disabled') ."<br>";
         } else {
             $reminder_schedule .= "{$label_3}: {$days_3} {$schedule_3} [{$sends_email_3}]<br>";
         }
 
-        if($sends_email_endless == ctrans('texts.disabled') || $settings->endless_reminder_frequency_id == '0' || $settings->endless_reminder_frequency_id == '') {
+        if ($sends_email_endless == ctrans('texts.disabled') || $settings->endless_reminder_frequency_id == '0' || $settings->endless_reminder_frequency_id == '') {
             $reminder_schedule .= "{$label_endless}: " . ctrans('texts.disabled') ."<br>";
         } else {
             $reminder_schedule .= "{$label_endless}: {$days_endless} [{$sends_email_endless}]<br>";

@@ -203,7 +203,7 @@ class CompanyTransformer extends EntityTransformer
             'has_e_invoice_certificate_passphrase' => $company->e_invoice_certificate_passphrase ? true : false,
             'invoice_task_project_header' => (bool) $company->invoice_task_project_header,
             'invoice_task_item_description' => (bool) $company->invoice_task_item_description,
-            'origin_tax_data' => $company->origin_tax_data ?: new \stdClass,
+            'origin_tax_data' => $company->origin_tax_data ?: new \stdClass(),
             'expense_mailbox' => (string) $company->expense_mailbox,
             'expense_mailbox_active' => (bool) $company->expense_mailbox_active,
             'inbound_mailbox_allow_company_users' => (bool) $company->inbound_mailbox_allow_company_users,
@@ -222,6 +222,7 @@ class CompanyTransformer extends EntityTransformer
             'e_invoice' => $company->e_invoice ?: new \stdClass(),
             'has_quickbooks_token' => $company->quickbooks ? true : false,
             'is_quickbooks_token_active' => $company->quickbooks?->accessTokenKey ?? false,
+            'legal_entity_id' => $company->legal_entity_id ?? null,
         ];
     }
 

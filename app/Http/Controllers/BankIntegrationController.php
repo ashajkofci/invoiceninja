@@ -242,6 +242,7 @@ class BankIntegrationController extends BaseController
             if ($bi = BankIntegration::withTrashed()->where("integration_type", BankIntegration::INTEGRATION_TYPE_YODLEE)->where('bank_account_id', $account['id'])->where('company_id', $user->company()->id)->first()) {
                 $bi->balance = $account['current_balance'];
                 $bi->currency = $account['account_currency'];
+                $bi->disabled_upstream = false;
                 $bi->save();
             } else {
                 $bank_integration = new BankIntegration();
@@ -277,7 +278,7 @@ class BankIntegrationController extends BaseController
             $is_account_active = $nordigen->isAccountActive($bank_integration->nordigen_account_id);
             $account = $nordigen->getAccount($bank_integration->nordigen_account_id);
 
-            if (!$is_account_active || !$account) {
+            if (!$is_account_active || !$account || isset($account['requisition'])) {
                 $bank_integration->disabled_upstream = true;
                 $bank_integration->save();
 

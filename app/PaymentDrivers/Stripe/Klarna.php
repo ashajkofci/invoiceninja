@@ -57,7 +57,7 @@ class Klarna implements LivewireMethodInterface
         $this->stripe->payment_hash->data = array_merge((array) $this->stripe->payment_hash->data, $request->all());
         $this->stripe->payment_hash->save();
 
-        if (in_array($request->redirect_status, ['succeeded','pending'])) {
+        if (in_array($request->redirect_status, ['succeeded', 'pending'])) {
             return $this->processSuccessfulPayment($request->payment_intent);
         }
 
@@ -70,7 +70,7 @@ class Klarna implements LivewireMethodInterface
 
         //catch duplicate submissions.
         if ($pay_exists = Payment::query()->where('transaction_reference', $payment_intent)->first()) {
-            
+
             return redirect()->route('client.payments.show', ['payment' => $pay_exists->hashed_id]);
 
         }

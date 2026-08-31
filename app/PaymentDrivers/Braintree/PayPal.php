@@ -72,6 +72,7 @@ class PayPal implements LivewireMethodInterface
             'amount' => $this->braintree->payment_hash->data->amount_with_fee,
             'paymentMethodToken' => $token,
             'deviceData' => $state['client-data'],
+            'channel' => 'invoiceninja_BT',
             'options' => [
                 'submitForSettlement' => true,
                 'paypal' => [
@@ -82,7 +83,7 @@ class PayPal implements LivewireMethodInterface
 
         if ($result->success) {
             $this->braintree->logSuccessfulGatewayResponse(
-                ['response' => $request->server_response, 'data' => $this->braintree->payment_hash],
+                ['response' => $request->server_response, 'data' => $this->braintree->payment_hash->data],
                 SystemLog::TYPE_BRAINTREE
             );
 
@@ -192,15 +193,15 @@ class PayPal implements LivewireMethodInterface
     /**
      * @inheritDoc
      */
-    public function livewirePaymentView(array $data): string 
+    public function livewirePaymentView(array $data): string
     {
         return 'gateways.braintree.paypal.pay_livewire';
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function paymentData(array $data): array 
+    public function paymentData(array $data): array
     {
         $data['gateway'] = $this->braintree;
         $data['client_token'] = $this->braintree->gateway->clientToken()->generate();

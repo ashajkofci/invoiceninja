@@ -11,16 +11,20 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\Entity\EmailEntity;
+use App\Factory\InvoiceItemFactory;
+use App\Mail\Engine\InvoiceEmailEngine;
+use Tests\TestCase;
 use App\Models\SystemLog;
+use Tests\MockAccountData;
+use App\Jobs\Entity\EmailEntity;
+use Illuminate\Support\Facades\Bus;
 use App\Utils\Traits\GeneratesCounter;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Email\SendEmailRequest;
 use Illuminate\Validation\ValidationException;
-use Tests\MockAccountData;
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 /**
  * 
@@ -46,7 +50,35 @@ class InvoiceEmailTest extends TestCase
 
         $this->makeTestData();
 
-        // $this->withoutExceptionHandling();
+    }
+
+    public function testEmailTemplateValidation()
+    {
+        $this->user->setCompany($this->company);
+        $this->actingAs($this->user);
+    
+        $request = new SendEmailRequest();
+
+        collect($request->templates)->filter(function ($template){
+            return stripos($template, 'quote') === false;
+        })->each(function ($template) use($request){
+
+        
+            $data = [
+                "body" => "hey what's up",
+                "entity" => 'App\Models\Invoice',
+                "entity_id" => $this->invoice->id,
+                "subject" => 'Reminder $number',
+                "template" => $template
+            ];
+
+            $request->initialize($data);
+            $validator = Validator::make($data, $request->rules());
+    
+            $this->assertTrue($validator->passes());
+        
+        });
+
 
     }
 
@@ -55,6 +87,52 @@ class InvoiceEmailTest extends TestCase
         $email = 'illegal@example.com';
 
         $this->assertTrue(strpos($email, '@example.com') !== false);
+    }
+
+
+     public function testTemplateValidationWhenArray()
+    {
+        $data = [
+            "body" => "hey what's up",
+            "entity" => 'blergen',
+            "entity_id" => $this->invoice->hashed_id,
+            "subject" => 'Reminder $number',
+            "template" => [
+                "email_template_invoice","noo",
+            ],
+        ];
+
+        $response = false;
+
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->postJson('/api/v1/emails', $data);
+
+        $response->assertStatus(422);
+
+    }
+
+
+    public function testEntityValidation()
+    {
+        $data = [
+            "body" => "hey what's up",
+            "entity" => 'blergen',
+            "entity_id" => $this->invoice->hashed_id,
+            "subject" => 'Reminder $number',
+            "template" => "email_template_invoice"
+        ];
+
+        $response = false;
+
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->postJson('/api/v1/emails', $data);
+
+        $response->assertStatus(422);
+
     }
 
 
@@ -320,5 +398,43 @@ class InvoiceEmailTest extends TestCase
         });
 
         $this->assertTrue(true);
+    }
+
+    public function testInvoiceEmailTemplateReplacesPoidsTotalVariable()
+    {
+        $settings = $this->client->settings;
+        $settings->pdf_email_attachment = false;
+        $this->client->settings = $settings;
+        $this->client->save();
+
+        $custom_fields = $this->company->custom_fields ?: [];
+        $custom_fields = (array) $custom_fields;
+        $custom_fields['product2'] = 'Poids|single_line_text';
+        $this->company->custom_fields = $custom_fields;
+        $this->company->save();
+
+        $first_item = InvoiceItemFactory::create();
+        $first_item->quantity = 3;
+        $first_item->custom_value2 = '2.5';
+
+        $this->invoice->line_items = [
+            (array) $first_item,
+            ['quantity' => 1, 'custom_value2' => '1,25'],
+        ];
+        $this->invoice->save();
+
+        $invitation = $this->invoice->invitations()->first()->fresh(['invoice.client', 'contact.client', 'company']);
+
+        $engine = new InvoiceEmailEngine($invitation, 'invoice', [
+            'subject' => '$poids_total',
+            'body' => '$poids_total',
+        ]);
+
+        $engine->build();
+
+        $this->assertStringNotContainsString('$poids_total', $engine->getSubject());
+        $this->assertStringNotContainsString('$poids_total', $engine->getBody());
+        $this->assertNotSame('', trim(strip_tags($engine->getSubject())));
+        $this->assertNotSame('', trim(strip_tags($engine->getBody())));
     }
 }
