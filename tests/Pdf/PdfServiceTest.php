@@ -104,7 +104,7 @@ class PdfServiceTest extends TestCase
 
     }
 
-    public function testLineTotalIncludesLineAndInvoiceTaxes()
+    public function testLineTotalExcludesLineAndInvoiceTaxes()
     {
         $item = InvoiceItemFactory::create();
         $item->cost = 100;
@@ -125,17 +125,35 @@ class PdfServiceTest extends TestCase
         $design->client = $this->client;
         $design->company = $this->company;
 
-        $this->assertSame('$116.20', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
-        $this->assertSame('$116.20', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
-        $this->assertSame('$116.20', $design->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$100.00', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$100.00', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$100.00', $design->transformLineItems([$item])[0]['$product.line_total']);
         $this->assertSame('$116.20', $service->html_variables['values']['$subtotal']);
 
         $service->config->entity->uses_inclusive_taxes = true;
         $this->invoice->uses_inclusive_taxes = true;
 
-        $this->assertSame('$108.10', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
-        $this->assertSame('$108.10', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
-        $this->assertSame('$108.10', $design->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$100.00', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$100.00', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
+        $this->assertSame('$100.00', $design->transformLineItems([$item])[0]['$product.line_total']);
+    }
+
+    public function testTimeCoefficientIsAvailableAsPdfProductColumn()
+    {
+        $item = InvoiceItemFactory::create();
+        $item->quantity = 2;
+        $item->cost = 25;
+        $item->time_coefficient = 3.5;
+        $item->time_coefficient_name = 'Three and a half days';
+        $item->line_total = 175;
+        $item->gross_line_total = 189;
+
+        $service = (new PdfService($this->invoice->invitations->first()))->boot();
+        $values = $service->builder->transformLineItems([$item])[0];
+
+        $this->assertSame('3.5', $values['$product.time_coefficient']);
+        $this->assertSame('Three and a half days', $values['$product.time_coefficient_name']);
+        $this->assertSame('$175.00', $values['$product.line_total']);
     }
 
     public function testPdfLineTotalRoundsOnlyForDisplay()

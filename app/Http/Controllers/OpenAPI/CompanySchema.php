@@ -19,6 +19,8 @@
  *       @OA\Property(property="custom_fields", type="object", description="Custom fields map"),
  *       @OA\Property(property="enable_product_cost", type="boolean", example=true, description="Show/Hide the product cost field in the UI"),
  *       @OA\Property(property="enable_product_quantity", type="boolean", example=true, description="Show/hide the product quantity field (used in the UI to show the default quantity)"),
+ *       @OA\Property(property="enable_time_coefficient", type="boolean", example=false, description="Show/hide the time coefficient field for invoice and quote line items"),
+ *       @OA\Property(property="time_coefficients", type="array", description="Reusable named rental time coefficients", @OA\Items(type="object")),
  *       @OA\Property(property="default_quantity", type="boolean", example=true, description="Enable/Disable whether to use a default quantity"),
  *       @OA\Property(property="custom_surcharge_taxes1", type="boolean", example=true, description="Toggles charging taxes on custom surcharge amounts"),
  *       @OA\Property(property="custom_surcharge_taxes2", type="boolean", example=true, description="Toggles charging taxes on custom surcharge amounts"),

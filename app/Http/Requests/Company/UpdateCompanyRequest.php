@@ -70,6 +70,10 @@ class UpdateCompanyRequest extends Request
         $rules['reservation_statuses.*.value'] = 'nullable|string|max:100';
         $rules['reservation_statuses.*.color'] = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
         $rules['reservation_statuses_json'] = 'sometimes|string|json';
+        $rules['enable_time_coefficient'] = 'sometimes|boolean';
+        $rules['time_coefficients'] = 'sometimes|array|max:50';
+        $rules['time_coefficients.*.name'] = 'required|string|max:100';
+        $rules['time_coefficients.*.coefficient'] = 'required|numeric|min:0|max:1000000';
         $rules['e_invoice_certificate_passphrase'] = 'sometimes|nullable';
         $rules['e_invoice_certificate'] = 'sometimes|nullable|file|mimes:p12,pfx,pem,cer,crt,der,txt,p7b,spc,bin';
 

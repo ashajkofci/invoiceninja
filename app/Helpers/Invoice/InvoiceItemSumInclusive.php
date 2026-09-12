@@ -176,7 +176,9 @@ class InvoiceItemSumInclusive
 
     private function sumLineItem()
     {
-        $this->setLineTotal($this->item->cost * $this->item->quantity);
+        $this->setLineTotal(
+            $this->item->cost * $this->item->quantity * ($this->item->time_coefficient ?? 1)
+        );
 
         return $this;
     }

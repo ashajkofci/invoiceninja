@@ -173,6 +173,8 @@ class CompanyImport implements ShouldQueue
         "enabled_modules",
         "enable_product_cost",
         "enable_product_quantity",
+        "enable_time_coefficient",
+        "time_coefficients",
         "default_quantity",
         "subdomain",
         "size_id",

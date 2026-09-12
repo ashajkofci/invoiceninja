@@ -22,6 +22,8 @@ class InvoiceItemFactory
     {
         $item = new stdClass();
         $item->quantity = 0;
+        $item->time_coefficient = 1;
+        $item->time_coefficient_name = '';
         $item->cost = 0;
         $item->product_key = '';
         $item->notes = '';

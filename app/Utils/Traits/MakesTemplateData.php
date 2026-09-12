@@ -190,6 +190,8 @@ trait MakesTemplateData
         $data['$product.notes'] = ['value' => 'Product Stuff', 'label' => ctrans('texts.notes')];
         $data['$product.cost'] = ['value' => '$10.00', 'label' => ctrans('texts.cost')];
         $data['$product.quantity'] = ['value' => '1', 'label' => ctrans('texts.quantity')];
+        $data['$product.time_coefficient'] = ['value' => '1', 'label' => ctrans('texts.time_coefficient')];
+        $data['$product.time_coefficient_name'] = ['value' => 'Standard', 'label' => ctrans('texts.time_coefficient_name')];
         $data['$product.tax_name1'] = ['value' => 'GST', 'label' => ctrans('texts.tax')];
         $data['$product.tax_name2'] = ['value' => 'VAT', 'label' => ctrans('texts.tax')];
         $data['$product.tax_name3'] = ['value' => 'Sales TAX', 'label' => ctrans('texts.tax')];

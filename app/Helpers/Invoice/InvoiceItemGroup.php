@@ -48,7 +48,9 @@ class InvoiceItemGroup
                 continue;
             }
 
-            $line_total = (float) ($item->cost ?? 0) * (float) ($item->quantity ?? 0);
+            $line_total = (float) ($item->cost ?? 0)
+                * (float) ($item->quantity ?? 0)
+                * (float) ($item->time_coefficient ?? 1);
             $discount = (float) ($item->discount ?? 0);
             $line_total -= $amount_discount ? $discount : ($line_total * $discount / 100);
             $totals[(string) $item->group_id] += $line_total;
