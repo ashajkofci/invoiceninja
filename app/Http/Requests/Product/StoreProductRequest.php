@@ -51,6 +51,13 @@ class StoreProductRequest extends Request
         $rules['in_stock_quantity'] = 'sometimes|numeric';
         $rules['stock_notification_threshold'] = 'sometimes|numeric';
         $rules['stock_notification'] = 'sometimes|bool';
+        $rules['is_group'] = 'sometimes|bool';
+        $rules['group_hide_item_prices'] = 'sometimes|bool';
+        $rules['group_has_price'] = 'sometimes|bool';
+        $rules['group_price'] = 'sometimes|numeric';
+        $rules['group_items'] = 'sometimes|array';
+        $rules['group_items.*.product_id'] = 'required';
+        $rules['group_items.*.quantity'] = 'required|numeric|min:0.0001';
 
         $rules['tax_rate1'] = 'bail|sometimes|numeric';
         $rules['tax_rate2'] = 'bail|sometimes|numeric';
@@ -75,6 +82,12 @@ class StoreProductRequest extends Request
         $input['tax_name1'] =  $input['tax_name1'] ?? '';
         $input['tax_name2'] =  $input['tax_name2'] ?? '';
         $input['tax_name3'] =  $input['tax_name3'] ?? '';
+
+        foreach ($input['group_items'] ?? [] as &$item) {
+            if (isset($item['product_id']) && is_string($item['product_id'])) {
+                $item['product_id'] = $this->decodePrimaryKey($item['product_id']);
+            }
+        }
 
         $this->replace($input);
     }

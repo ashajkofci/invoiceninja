@@ -96,7 +96,8 @@ class ProductReservationService
         string $endDate,
         array $requestedItems = [],
         ?int $excludeInvoiceId = null,
-        ?int $productId = null
+        ?int $productId = null,
+        bool $includeAllProducts = false
     ): array {
         [$start, $end] = $this->normalizePeriod($startDate, $endDate);
         $requested = $this->quantitiesByProductKey($requestedItems);
@@ -133,7 +134,7 @@ class ProductReservationService
             ->where('is_deleted', false)
             ->whereNull('deleted_at')
             ->when($productId, fn ($query) => $query->where('id', $productId))
-            ->whereIn('product_key', $keys)
+            ->when(! $includeAllProducts && ! $productId, fn ($query) => $query->whereIn('product_key', $keys))
             ->get();
 
         return $products->map(function (Product $product) use ($used, $requested, $conflicts) {

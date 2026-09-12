@@ -101,6 +101,10 @@ class Product extends BaseModel
         'max_quantity',
         'product_image',
         'tax_id',
+        'is_group',
+        'group_hide_item_prices',
+        'group_has_price',
+        'group_price',
     ];
 
     protected $casts = [
@@ -108,6 +112,10 @@ class Product extends BaseModel
         'created_at' => 'timestamp',
         'deleted_at' => 'timestamp',
         'sync' => ProductSync::class,
+        'is_group' => 'boolean',
+        'group_hide_item_prices' => 'boolean',
+        'group_has_price' => 'boolean',
+        'group_price' => 'float',
     ];
 
     public array $ubl_tax_map = [
@@ -198,6 +206,16 @@ class Product extends BaseModel
     public function documents()
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    public function group_products()
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_group_items',
+            'group_product_id',
+            'product_id'
+        )->withPivot(['quantity', 'sort_id'])->orderByPivot('sort_id');
     }
 
     public function translate_entity()

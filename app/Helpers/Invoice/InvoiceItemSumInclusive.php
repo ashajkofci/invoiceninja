@@ -145,7 +145,17 @@ class InvoiceItemSumInclusive
 
     private function calcLineItems()
     {
-        foreach ($this->invoice->line_items as $this->item) {
+        [$items, $group_headers] = InvoiceItemGroup::prepare(
+            $this->invoice->line_items,
+            (bool) $this->invoice->is_amount_discount
+        );
+
+        foreach ($items as $this->item) {
+            if (InvoiceItemGroup::isChild($this->item, $group_headers)) {
+                $this->line_items[] = $this->item;
+                continue;
+            }
+
             $this->sumLineItem()
                 ->setDiscount()
                 ->calcTaxes()
@@ -361,7 +371,12 @@ class InvoiceItemSumInclusive
         $this->setGroupedTaxes(collect([]));
 
 
+        $group_headers = InvoiceItemGroup::headers($this->line_items);
+
         foreach ($this->line_items as $this->item) {
+            if (InvoiceItemGroup::isChild($this->item, $group_headers)) {
+                continue;
+            }
             if ($this->sub_total == 0) {
                 $amount = $this->item->line_total;
             } else {
