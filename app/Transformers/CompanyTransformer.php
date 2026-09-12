@@ -144,6 +144,8 @@ class CompanyTransformer extends EntityTransformer
             'settings' => $company->settings ?? '',
             'enabled_tax_rates' => (int) $company->enabled_tax_rates,
             'enabled_modules' => (int) $company->enabled_modules,
+            'reservation_start_custom_field' => (int) $company->reservation_start_custom_field,
+            'reservation_end_custom_field' => (int) $company->reservation_end_custom_field,
             'updated_at' => (int) $company->updated_at,
             'archived_at' => (int) $company->deleted_at,
             'created_at' => (int) $company->created_at,

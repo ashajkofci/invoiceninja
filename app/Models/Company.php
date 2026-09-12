@@ -48,6 +48,8 @@ use Laracasts\Presenter\PresentableTrait;
  * @property int $show_product_cost
  * @property int $enabled_tax_rates
  * @property int $enabled_modules
+ * @property int $reservation_start_custom_field
+ * @property int $reservation_end_custom_field
  * @property int $enable_product_cost
  * @property int $enable_product_quantity
  * @property int $default_quantity
@@ -234,6 +236,8 @@ use Laracasts\Presenter\PresentableTrait;
  */
 class Company extends BaseModel
 {
+    public const MODULE_PRODUCT_RESERVATIONS = 32768;
+
     use PresentableTrait;
     use MakesHash;
     use CompanySettingsSaver;
@@ -297,6 +301,8 @@ class Company extends BaseModel
         'enable_product_cost',
         'enable_product_quantity',
         'enabled_modules',
+        'reservation_start_custom_field',
+        'reservation_end_custom_field',
         'default_quantity',
         'enabled_tax_rates',
         'portal_mode',
@@ -391,6 +397,8 @@ class Company extends BaseModel
         'e_invoice' => 'object',
         'quickbooks' => QuickbooksSettings::class,
         'smtp_port' => 'int',
+        'reservation_start_custom_field' => 'int',
+        'reservation_end_custom_field' => 'int',
     ];
 
     protected $with = [];

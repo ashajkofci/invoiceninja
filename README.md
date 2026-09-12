@@ -58,6 +58,29 @@ All Pro and Enterprise features from the hosted app are included in the open-sou
 * [Stripe](https://stripe.com/)
 * [Postmark](https://postmarkapp.com/)
 
+## Local UI development
+
+The local database and environment can be started with Docker and Laravel:
+
+```sh
+cp .env.local.example .env
+composer install
+docker compose -f compose.local.yml up -d
+php artisan key:generate
+docker compose -f compose.local.yml exec -T mysql mysql -uroot -proot -e \
+  "DROP DATABASE IF EXISTS ninja; CREATE DATABASE ninja CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+docker compose -f compose.local.yml exec -T mysql mysql -uninja -pninja ninja \
+  < database/schema/mysql-schema.sql
+php artisan migrate --seed --force
+php artisan ninja:create-account --email=small@example.com --password=password --no-interaction
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+The adjacent `invoiceninja-dk-ui` repository is configured to call this server
+when running `npm run dev` and is available at `http://localhost:3000`.
+
+The seeded administrator credentials are `small@example.com` / `password`.
+
 ## [Advanced] Quick Hosting Setup
 
 In addition to the official [Invoice Ninja - Self-Hosted Installation Guide](https://invoiceninja.github.io/en/self-host-installation/) we have a few commands for you.

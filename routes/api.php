@@ -47,6 +47,7 @@ use App\Http\Controllers\OneTimeTokenController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductReservationController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaxRateController;
 use App\Http\Controllers\WebCronController;
@@ -167,6 +168,9 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
 
     Route::post('charts/totals', [ChartController::class, 'totals'])->name('chart.totals');
     Route::post('charts/chart_summary', [ChartController::class, 'chart_summary'])->name('chart.chart_summary');
+    Route::get('product_reservations/calendar', [ProductReservationController::class, 'calendar'])->name('product_reservations.calendar');
+    Route::get('product_reservations/availability', [ProductReservationController::class, 'availability'])->name('product_reservations.availability');
+    Route::post('product_reservations/check', [ProductReservationController::class, 'check'])->name('product_reservations.check');
 
     Route::post('charts/totals_v2', [ChartController::class, 'totalsV2'])->name('chart.totals_v2');
     Route::post('charts/chart_summary_v2', [ChartController::class, 'chart_summaryV2'])->name('chart.chart_summary_v2');
