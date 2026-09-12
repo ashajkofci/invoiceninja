@@ -69,6 +69,7 @@ class UpdateCompanyRequest extends Request
         $rules['reservation_statuses'] = 'sometimes|array|max:20';
         $rules['reservation_statuses.*.value'] = 'required|string|max:100';
         $rules['reservation_statuses.*.color'] = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
+        $rules['reservation_statuses_json'] = 'sometimes|string|json';
         $rules['e_invoice_certificate_passphrase'] = 'sometimes|nullable';
         $rules['e_invoice_certificate'] = 'sometimes|nullable|file|mimes:p12,pfx,pem,cer,crt,der,txt,p7b,spc,bin';
 
@@ -121,6 +122,11 @@ class UpdateCompanyRequest extends Request
     public function prepareForValidation()
     {
         $input = $this->all();
+
+        if (isset($input['reservation_statuses_json'])) {
+            $input['reservation_statuses'] = json_decode($input['reservation_statuses_json'], true) ?? [];
+            unset($input['reservation_statuses_json']);
+        }
 
         if (isset($input['portal_domain']) && strlen($input['portal_domain']) > 1) {
             $input['portal_domain'] = $this->addScheme($input['portal_domain']);
