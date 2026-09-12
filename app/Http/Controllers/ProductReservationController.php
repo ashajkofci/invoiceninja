@@ -58,6 +58,7 @@ class ProductReservationController extends BaseController
             'invoice' => ['required', 'array'],
             'invoice.line_items' => ['sometimes', 'array'],
             'invoice.id' => ['sometimes', 'string'],
+            'entity_type' => ['sometimes', 'in:invoice,quote'],
         ]);
 
         $service = $this->service();
@@ -69,7 +70,9 @@ class ProductReservationController extends BaseController
             return response()->json(['message' => $exception->getMessage(), 'data' => []], 422);
         }
 
-        $invoiceId = data_get($validated, 'invoice.id');
+        $invoiceId = ($validated['entity_type'] ?? 'invoice') === 'invoice'
+            ? data_get($validated, 'invoice.id')
+            : null;
         $invoiceId = $invoiceId ? $this->decodePrimaryKey($invoiceId) : null;
         $availability = $service->availability(
             $start,

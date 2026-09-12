@@ -145,6 +145,7 @@ class ProductReservationService
 
             return [
                 'product_id' => $product->hashed_id,
+                'product_key' => (string) $product->product_key,
                 'product_description' => (string) ($product->notes ?: 'Product'),
                 'stock_quantity' => $stock,
                 'reserved_quantity' => $reserved,
