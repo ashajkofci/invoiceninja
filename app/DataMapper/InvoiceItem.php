@@ -67,6 +67,18 @@ class InvoiceItem
 
     public $unit_code = 'C62';
 
+    /** A stable client generated identifier shared by a group header and its children. */
+    public $group_id = '';
+
+    public $group_title = '';
+
+    public $group_hide_item_prices = false;
+
+    /** Whether group_price replaces the calculated sum of the child items. */
+    public $group_has_price = false;
+
+    public $group_price = 0;
+
     public static $casts = [
         'task_id' => 'string',
         'expense_id' => 'string',
@@ -95,5 +107,10 @@ class InvoiceItem
         'custom_value3' => 'string',
         'custom_value4' => 'string',
         'unit_code' => 'string',
+        'group_id' => 'string',
+        'group_title' => 'string',
+        'group_hide_item_prices' => 'bool',
+        'group_has_price' => 'bool',
+        'group_price' => 'float',
     ];
 }

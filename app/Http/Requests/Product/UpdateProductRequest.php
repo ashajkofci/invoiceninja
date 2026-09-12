@@ -54,6 +54,13 @@ class UpdateProductRequest extends Request
         $rules['in_stock_quantity'] = 'sometimes|numeric';
         $rules['stock_notification_threshold'] = 'sometimes|numeric';
         $rules['stock_notification'] = 'sometimes|bool';
+        $rules['is_group'] = 'sometimes|bool';
+        $rules['group_hide_item_prices'] = 'sometimes|bool';
+        $rules['group_has_price'] = 'sometimes|bool';
+        $rules['group_price'] = 'sometimes|numeric';
+        $rules['group_items'] = 'sometimes|array';
+        $rules['group_items.*.product_id'] = 'required';
+        $rules['group_items.*.quantity'] = 'required|numeric|min:0.0001';
 
         return $rules;
     }
@@ -68,6 +75,12 @@ class UpdateProductRequest extends Request
 
         if (array_key_exists('assigned_user_id', $input) && is_string($input['assigned_user_id'])) {
             $input['assigned_user_id'] = $this->decodePrimaryKey($input['assigned_user_id']);
+        }
+
+        foreach ($input['group_items'] ?? [] as &$item) {
+            if (isset($item['product_id']) && is_string($item['product_id'])) {
+                $item['product_id'] = $this->decodePrimaryKey($item['product_id']);
+            }
         }
 
         if (array_key_exists('in_stock_quantity', $input) && request()->has('update_in_stock_quantity') && request()->input('update_in_stock_quantity') == 'true') {

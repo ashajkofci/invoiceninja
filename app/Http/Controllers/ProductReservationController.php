@@ -48,7 +48,8 @@ class ProductReservationController extends BaseController
             $validated['end_date'],
             [],
             null,
-            $productId
+            $productId,
+            true
         )]);
     }
 

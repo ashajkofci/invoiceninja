@@ -300,7 +300,10 @@ class PdfBuilder
         $tbody = [];
 
         foreach ($this->service->options['credits'] as $credit) {
-            $element = ['element' => 'tr', 'elements' => []];
+            $row_class = !empty($row['__is_group_header'])
+                ? 'group-header'
+                : (!empty($row['__is_group_child']) ? 'group-item' : '');
+            $element = ['element' => 'tr', 'properties' => ['class' => $row_class], 'elements' => []];
 
             $element['elements'][] = ['element' => 'td', 'content' => $credit->number];
             $element['elements'][] = ['element' => 'td', 'content' => $this->translateDate($credit->date, $this->service->config->client->date_format(), $this->service->config->locale) ?: ' '];
@@ -781,6 +784,7 @@ class PdfBuilder
     {
         $data = [];
         $entity = $this->service->config->entity;
+        $group_headers = \App\Helpers\Invoice\InvoiceItemGroup::headers($items);
 
         $locale_info = localeconv();
 
@@ -788,7 +792,7 @@ class PdfBuilder
             /** @var \App\DataMapper\InvoiceItem $item */
 
             if ($table_type == '$product' && $item->type_id != 1) {
-                if ($item->type_id != 4 && $item->type_id != 6 && $item->type_id != 5) {
+                if ($item->type_id != 7 && $item->type_id != 4 && $item->type_id != 6 && $item->type_id != 5) {
                     continue;
                 }
             }
@@ -802,9 +806,24 @@ class PdfBuilder
             $helpers = new Helpers();
             $_table_type = ltrim($table_type, '$'); // From $product -> product.
 
+            $is_group_header = \App\Helpers\Invoice\InvoiceItemGroup::isHeader($item);
+            $is_group_child = \App\Helpers\Invoice\InvoiceItemGroup::isChild($item, $group_headers);
+            $group_header = $is_group_child ? $group_headers[(string) $item->group_id] : null;
+
+            $data[$key]['__is_group_header'] = $is_group_header;
+            $data[$key]['__is_group_child'] = $is_group_child;
+
             $data[$key][$table_type.'.product_key'] = is_null(optional($item)->product_key) ? $item->item : $item->product_key;
             $data[$key][$table_type.'.item'] = is_null(optional($item)->item) ? $item->product_key : $item->item;
             $data[$key][$table_type.'.service'] = is_null(optional($item)->service) ? $item->product_key : $item->service;
+
+            if ($is_group_header) {
+                $data[$key][$table_type.'.product_key'] = $item->group_title ?: $item->product_key;
+                $data[$key][$table_type.'.item'] = $data[$key][$table_type.'.product_key'];
+            } elseif ($is_group_child) {
+                $data[$key][$table_type.'.product_key'] = '&nbsp;&nbsp;↳ '.$data[$key][$table_type.'.product_key'];
+                $data[$key][$table_type.'.item'] = $data[$key][$table_type.'.product_key'];
+            }
 
             $currentDateTime = null;
             if (isset($this->service->config->entity->next_send_date)) {
@@ -885,6 +904,17 @@ class PdfBuilder
 
                 $data[$key][$table_type.'.tax_rate3'] = $this->service->config->formatValueNoTrailingZeroes(floatval($item->tax_rate3)).'%';
                 $data[$key][$table_type.'.tax3'] = &$data[$key][$table_type.'.tax_rate3'];
+            }
+
+            if ($is_group_header) {
+                $data[$key][$table_type.'.quantity'] = '';
+                $data[$key][$table_type.'.unit_cost'] = '';
+                $data[$key][$table_type.'.cost'] = '';
+                $data[$key][$table_type.'.discount'] = '';
+            } elseif ($is_group_child && !empty($group_header->group_hide_item_prices)) {
+                foreach (['unit_cost', 'cost', 'line_total', 'gross_line_total', 'tax_amount', 'discount', 'tax_rate1', 'tax_rate2', 'tax_rate3', 'tax1', 'tax2', 'tax3'] as $field) {
+                    $data[$key][$table_type.'.'.$field] = '';
+                }
             }
 
             $data[$key]['task_id'] = property_exists($item, 'task_id') ? $item->task_id : '';

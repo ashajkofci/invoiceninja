@@ -454,7 +454,7 @@ class Design extends BaseDesign
     public function productTable(): array
     {
         $product_items = collect($this->entity->line_items)->filter(function ($item) {
-            return $item->type_id == 1 || $item->type_id == 6 || $item->type_id == 5 || $item->type_id == 4;
+            return $item->type_id == 1 || $item->type_id == 7 || $item->type_id == 6 || $item->type_id == 5 || $item->type_id == 4;
         });
 
         if (count($product_items) == 0) {
@@ -887,7 +887,10 @@ class Design extends BaseDesign
         }
 
         foreach ($items as $row) {
-            $element = ['element' => 'tr', 'elements' => []];
+            $row_class = !empty($row['__is_group_header'])
+                ? 'group-header'
+                : (!empty($row['__is_group_child']) ? 'group-item' : '');
+            $element = ['element' => 'tr', 'properties' => ['class' => $row_class], 'elements' => []];
 
             if (
                 array_key_exists($type, $this->context) &&

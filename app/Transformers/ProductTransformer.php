@@ -66,6 +66,30 @@ class ProductTransformer extends EntityTransformer
 
     public function transform(Product $product)
     {
+        $group_items = $product->is_group
+            ? $product->group_products->map(function (Product $child) {
+                return [
+                    'product_id' => $this->encodePrimaryKey($child->id),
+                    'quantity' => (float) $child->pivot->quantity,
+                    'product_key' => $child->product_key ?: '',
+                    'notes' => $child->notes ?: '',
+                    'cost' => (float) $child->cost,
+                    'price' => (float) $child->price,
+                    'tax_id' => (string) ($child->tax_id ?: '1'),
+                    'tax_name1' => $child->tax_name1 ?: '',
+                    'tax_rate1' => (float) $child->tax_rate1,
+                    'tax_name2' => $child->tax_name2 ?: '',
+                    'tax_rate2' => (float) $child->tax_rate2,
+                    'tax_name3' => $child->tax_name3 ?: '',
+                    'tax_rate3' => (float) $child->tax_rate3,
+                    'custom_value1' => $child->custom_value1 ?: '',
+                    'custom_value2' => $child->custom_value2 ?: '',
+                    'custom_value3' => $child->custom_value3 ?: '',
+                    'custom_value4' => $child->custom_value4 ?: '',
+                ];
+            })->values()->all()
+            : [];
+
         return [
             'id' => $this->encodePrimaryKey($product->id),
             'user_id' => $this->encodePrimaryKey($product->user_id),
@@ -95,6 +119,11 @@ class ProductTransformer extends EntityTransformer
             'max_quantity' => (int) $product->max_quantity,
             'product_image' => (string) $product->product_image ?: '',
             'tax_id' => (string) $product->tax_id ?: '1',
+            'is_group' => (bool) $product->is_group,
+            'group_hide_item_prices' => (bool) $product->group_hide_item_prices,
+            'group_has_price' => (bool) $product->group_has_price,
+            'group_price' => (float) $product->group_price,
+            'group_items' => $group_items,
         ];
     }
 }

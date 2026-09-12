@@ -67,7 +67,7 @@ class UpdateCompanyRequest extends Request
         $rules['reservation_end_custom_field'] = 'sometimes|integer|between:0,4';
         $rules['reservation_status_custom_field'] = 'sometimes|integer|between:0,4';
         $rules['reservation_statuses'] = 'sometimes|array|max:20';
-        $rules['reservation_statuses.*.value'] = 'required|string|max:100';
+        $rules['reservation_statuses.*.value'] = 'nullable|string|max:100';
         $rules['reservation_statuses.*.color'] = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
         $rules['reservation_statuses_json'] = 'sometimes|string|json';
         $rules['e_invoice_certificate_passphrase'] = 'sometimes|nullable';
