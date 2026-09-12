@@ -63,6 +63,8 @@ class UpdateCompanyRequest extends Request
         $rules['country_id'] = 'integer|nullable';
         $rules['work_email'] = 'email|nullable';
         $rules['matomo_id'] = 'nullable|integer';
+        $rules['reservation_start_custom_field'] = 'sometimes|integer|between:0,4';
+        $rules['reservation_end_custom_field'] = 'sometimes|integer|between:0,4';
         $rules['e_invoice_certificate_passphrase'] = 'sometimes|nullable';
         $rules['e_invoice_certificate'] = 'sometimes|nullable|file|mimes:p12,pfx,pem,cer,crt,der,txt,p7b,spc,bin';
 
