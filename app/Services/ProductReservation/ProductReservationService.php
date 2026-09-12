@@ -99,6 +99,12 @@ class ProductReservationService
         });
 
         $keys = collect(array_keys($used))->merge(array_keys($requested))->unique();
+        if ($productId) {
+            $selectedProduct = Product::query()
+                ->where('company_id', $this->company->id)
+                ->findOrFail($productId);
+            $keys->push($selectedProduct->product_key);
+        }
         $products = Product::query()
             ->where('company_id', $this->company->id)
             ->where('is_deleted', false)
