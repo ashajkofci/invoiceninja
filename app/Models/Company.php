@@ -50,6 +50,8 @@ use Laracasts\Presenter\PresentableTrait;
  * @property int $enabled_modules
  * @property int $reservation_start_custom_field
  * @property int $reservation_end_custom_field
+ * @property int $reservation_status_custom_field
+ * @property array|null $reservation_statuses
  * @property int $enable_product_cost
  * @property int $enable_product_quantity
  * @property int $default_quantity
@@ -303,6 +305,8 @@ class Company extends BaseModel
         'enabled_modules',
         'reservation_start_custom_field',
         'reservation_end_custom_field',
+        'reservation_status_custom_field',
+        'reservation_statuses',
         'default_quantity',
         'enabled_tax_rates',
         'portal_mode',
@@ -399,6 +403,8 @@ class Company extends BaseModel
         'smtp_port' => 'int',
         'reservation_start_custom_field' => 'int',
         'reservation_end_custom_field' => 'int',
+        'reservation_status_custom_field' => 'int',
+        'reservation_statuses' => 'array',
     ];
 
     protected $with = [];

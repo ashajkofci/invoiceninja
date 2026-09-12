@@ -88,6 +88,14 @@ class ProductReservationController extends BaseController
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
+        abort_unless(
+            $user->isAdmin()
+                || $user->hasPermission('view_invoice')
+                || $user->hasPermission('edit_invoice')
+                || $user->hasPermission('create_invoice'),
+            403
+        );
+
         return new ProductReservationService($user->company());
     }
 

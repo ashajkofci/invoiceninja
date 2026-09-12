@@ -65,6 +65,10 @@ class UpdateCompanyRequest extends Request
         $rules['matomo_id'] = 'nullable|integer';
         $rules['reservation_start_custom_field'] = 'sometimes|integer|between:0,4';
         $rules['reservation_end_custom_field'] = 'sometimes|integer|between:0,4';
+        $rules['reservation_status_custom_field'] = 'sometimes|integer|between:0,4';
+        $rules['reservation_statuses'] = 'sometimes|array|max:20';
+        $rules['reservation_statuses.*.value'] = 'required|string|max:100';
+        $rules['reservation_statuses.*.color'] = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
         $rules['e_invoice_certificate_passphrase'] = 'sometimes|nullable';
         $rules['e_invoice_certificate'] = 'sometimes|nullable|file|mimes:p12,pfx,pem,cer,crt,der,txt,p7b,spc,bin';
 

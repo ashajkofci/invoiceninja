@@ -146,6 +146,8 @@ class CompanyTransformer extends EntityTransformer
             'enabled_modules' => (int) $company->enabled_modules,
             'reservation_start_custom_field' => (int) $company->reservation_start_custom_field,
             'reservation_end_custom_field' => (int) $company->reservation_end_custom_field,
+            'reservation_status_custom_field' => (int) $company->reservation_status_custom_field,
+            'reservation_statuses' => (array) ($company->reservation_statuses ?? []),
             'updated_at' => (int) $company->updated_at,
             'archived_at' => (int) $company->deleted_at,
             'created_at' => (int) $company->created_at,
