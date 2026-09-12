@@ -134,6 +134,7 @@ class CompanyTransformer extends EntityTransformer
             'enable_product_quantity' => (bool) $company->enable_product_quantity,
             'enable_time_coefficient' => (bool) $company->enable_time_coefficient,
             'time_coefficients' => (array) ($company->time_coefficients ?? []),
+            'time_coefficients_json' => json_encode($company->time_coefficients ?? []),
             'default_quantity' => (bool) $company->default_quantity,
             'custom_fields' => (object) $company->custom_fields ?? $std,
             'size_id' => (string) $company->size_id ?: '',

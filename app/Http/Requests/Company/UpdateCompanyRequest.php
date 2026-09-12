@@ -74,6 +74,7 @@ class UpdateCompanyRequest extends Request
         $rules['time_coefficients'] = 'sometimes|array|max:50';
         $rules['time_coefficients.*.name'] = 'required|string|max:100';
         $rules['time_coefficients.*.coefficient'] = 'required|numeric|min:0|max:1000000';
+        $rules['time_coefficients_json'] = 'sometimes|string|json';
         $rules['e_invoice_certificate_passphrase'] = 'sometimes|nullable';
         $rules['e_invoice_certificate'] = 'sometimes|nullable|file|mimes:p12,pfx,pem,cer,crt,der,txt,p7b,spc,bin';
 
@@ -130,6 +131,11 @@ class UpdateCompanyRequest extends Request
         if (isset($input['reservation_statuses_json'])) {
             $input['reservation_statuses'] = json_decode($input['reservation_statuses_json'], true) ?? [];
             unset($input['reservation_statuses_json']);
+        }
+
+        if (isset($input['time_coefficients_json'])) {
+            $input['time_coefficients'] = json_decode($input['time_coefficients_json'], true) ?? [];
+            unset($input['time_coefficients_json']);
         }
 
         if (isset($input['portal_domain']) && strlen($input['portal_domain']) > 1) {
