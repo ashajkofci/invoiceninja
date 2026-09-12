@@ -68,7 +68,9 @@ class InvoiceItemGroup
             $header->cost = !empty($header->group_has_price)
                 ? (float) ($header->group_price ?? 0)
                 : round($totals[$group_id] ?? 0, 4);
-            $header->product_key = (string) ($header->group_title ?: $header->product_key);
+            $header->product_key = (string) (
+                ($header->group_title ?? '') ?: ($header->product_key ?? '')
+            );
         }
 
         return [$items, $headers];

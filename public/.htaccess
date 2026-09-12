@@ -24,3 +24,7 @@
     # Blocks Search Engine Indexing
     Header set X-Robots-Tag "noindex, nofollow"
 </IfModule>
+
+<IfModule mod_mime.c>
+    AddType application/wasm .wasm
+</IfModule>
