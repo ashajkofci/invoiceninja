@@ -841,11 +841,14 @@ class PdfBuilder
             if ($item->cost > 0) {
                 $data[$key][$table_type.'.quantity'] = $this->service->config->formatValueNoTrailingZeroes($item->quantity);
 
+                $data[$key][$table_type.'.time_coefficient'] = $this->service->config->formatValueNoTrailingZeroes($item->time_coefficient ?? 1);
+                $data[$key][$table_type.'.time_coefficient_name'] = $item->time_coefficient_name ?? '';
+
                 $data[$key][$table_type.'.unit_cost'] = $this->service->config->formatMoneyNoRounding($item->cost);
 
                 $data[$key][$table_type.'.cost'] = $this->service->config->formatMoney($item->cost);
 
-                $data[$key][$table_type.'.line_total'] = $this->service->config->formatMoney(Helpers::lineTotalWithTaxes($item, $entity));
+                $data[$key][$table_type.'.line_total'] = $this->service->config->formatMoney($item->line_total);
             } else {
                 $data[$key][$table_type.'.quantity'] = '';
 
@@ -908,6 +911,9 @@ class PdfBuilder
 
             if ($is_group_header) {
                 $data[$key][$table_type.'.quantity'] = '';
+
+                $data[$key][$table_type.'.time_coefficient'] = '';
+                $data[$key][$table_type.'.time_coefficient_name'] = '';
                 $data[$key][$table_type.'.unit_cost'] = '';
                 $data[$key][$table_type.'.cost'] = '';
                 $data[$key][$table_type.'.discount'] = '';

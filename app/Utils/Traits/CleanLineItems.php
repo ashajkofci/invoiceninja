@@ -121,7 +121,7 @@ trait CleanLineItems
         $total = 0;
 
         foreach ($items as $item) {
-            $total += ($item['cost'] * $item['quantity']);
+            $total += ($item['cost'] * $item['quantity'] * ($item['time_coefficient'] ?? 1));
         }
 
         return $total;

@@ -54,6 +54,8 @@ use Laracasts\Presenter\PresentableTrait;
  * @property array|null $reservation_statuses
  * @property int $enable_product_cost
  * @property int $enable_product_quantity
+ * @property int $enable_time_coefficient
+ * @property array $time_coefficients
  * @property int $default_quantity
  * @property string|null $subdomain
  * @property string|null $db
@@ -302,6 +304,8 @@ class Company extends BaseModel
         'custom_fields',
         'enable_product_cost',
         'enable_product_quantity',
+        'enable_time_coefficient',
+        'time_coefficients',
         'enabled_modules',
         'reservation_start_custom_field',
         'reservation_end_custom_field',
@@ -405,6 +409,7 @@ class Company extends BaseModel
         'reservation_end_custom_field' => 'int',
         'reservation_status_custom_field' => 'int',
         'reservation_statuses' => 'array',
+        'time_coefficients' => 'array',
     ];
 
     protected $with = [];

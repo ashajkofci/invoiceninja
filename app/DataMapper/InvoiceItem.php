@@ -15,6 +15,12 @@ class InvoiceItem
 {
     public $quantity = 0;
 
+    /** Multiplies quantity and unit cost for time-based rental billing. */
+    public $time_coefficient = 1;
+
+    /** The user-facing name of the selected time coefficient. */
+    public $time_coefficient_name = '';
+
     public $cost = 0;
 
     public $product_key = '';
@@ -85,6 +91,8 @@ class InvoiceItem
         'tax_id' => 'string',
         'type_id' => 'string',
         'quantity' => 'float',
+        'time_coefficient' => 'float',
+        'time_coefficient_name' => 'string',
         'cost' => 'float',
         'product_cost' => 'float',
         'product_key' => 'string',

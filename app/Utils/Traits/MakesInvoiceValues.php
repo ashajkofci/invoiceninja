@@ -34,6 +34,8 @@ trait MakesInvoiceValues
         'notes',
         'cost',
         'quantity',
+        'time_coefficient',
+        'time_coefficient_name',
         'tax_name1',
         'tax_name2',
         'tax_name3',
@@ -320,11 +322,14 @@ trait MakesInvoiceValues
             if ($item->quantity > 0 || $item->cost > 0) {
                 $data[$key][$table_type.'.quantity'] = Number::formatValueNoTrailingZeroes($item->quantity, $entity);
 
+                $data[$key][$table_type.'.time_coefficient'] = Number::formatValueNoTrailingZeroes($item->time_coefficient ?? 1, $entity);
+                $data[$key][$table_type.'.time_coefficient_name'] = $item->time_coefficient_name ?? '';
+
                 $data[$key][$table_type.'.unit_cost'] = Number::formatMoneyNoRounding($item->cost, $entity);
 
                 $data[$key][$table_type.'.cost'] = Number::formatMoney($item->cost, $entity);
 
-                $data[$key][$table_type.'.line_total'] = Number::formatMoney(Helpers::lineTotalWithTaxes($item, $document), $entity);
+                $data[$key][$table_type.'.line_total'] = Number::formatMoney($item->line_total, $entity);
             } else {
                 $data[$key][$table_type.'.quantity'] = '';
 
@@ -377,6 +382,9 @@ trait MakesInvoiceValues
 
             if ($is_group_header) {
                 $data[$key][$table_type.'.quantity'] = '';
+
+                $data[$key][$table_type.'.time_coefficient'] = '';
+                $data[$key][$table_type.'.time_coefficient_name'] = '';
                 $data[$key][$table_type.'.unit_cost'] = '';
                 $data[$key][$table_type.'.cost'] = '';
                 $data[$key][$table_type.'.discount'] = '';
