@@ -1,6 +1,6 @@
 {
-    "name": "DKPROD Facturation",
-    "short_name": "DKPROD Facturation",
+    "name": "Invoice Ninja",
+    "short_name": "Invoice Ninja",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
