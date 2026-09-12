@@ -32,9 +32,9 @@ class TimeCoefficientTest extends TestCase
         $item->cost = 15;
         $this->invoice->line_items = [$item];
 
-        (new InvoiceItemSum($this->invoice))->process();
+        $calculator = (new InvoiceItemSum($this->invoice))->process();
 
-        $this->assertSame(30.0, (float) $this->invoice->line_items[0]->line_total);
+        $this->assertSame(30.0, (float) $calculator->getLineItems()[0]->line_total);
     }
 
     public function testExclusiveTaxAppliesAfterCoefficient(): void
@@ -101,7 +101,7 @@ class TimeCoefficientTest extends TestCase
         $this->invoice->line_items = [$header, $child];
         $calculator = (new InvoiceItemSum($this->invoice))->process();
 
-        $this->assertSame(120.0, (float) $calculator->getLineTotal());
+        $this->assertSame(120.0, (float) $calculator->getLineItems()[0]->line_total);
         $this->assertSame(60.0, (float) $calculator->getLineItems()[1]->line_total);
     }
 

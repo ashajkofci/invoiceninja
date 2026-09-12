@@ -100,6 +100,15 @@ class ProductReservationService
         bool $includeAllProducts = false
     ): array {
         [$start, $end] = $this->normalizePeriod($startDate, $endDate);
+        $today = CarbonImmutable::now($this->company->timezone()->name)->format('Y-m-d');
+
+        // Availability is an operational forecast. Historical reservations
+        // remain visible in the calendar, but must not reduce today's stock.
+        if ($end < $today) {
+            return [];
+        }
+
+        $start = max($start, $today);
         $requested = $this->quantitiesByProductKey($requestedItems);
         $used = [];
         $conflicts = [];
