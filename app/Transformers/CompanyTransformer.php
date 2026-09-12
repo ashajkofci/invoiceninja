@@ -148,6 +148,7 @@ class CompanyTransformer extends EntityTransformer
             'reservation_end_custom_field' => (int) $company->reservation_end_custom_field,
             'reservation_status_custom_field' => (int) $company->reservation_status_custom_field,
             'reservation_statuses' => (array) ($company->reservation_statuses ?? []),
+            'reservation_statuses_json' => json_encode($company->reservation_statuses ?? []),
             'updated_at' => (int) $company->updated_at,
             'archived_at' => (int) $company->deleted_at,
             'created_at' => (int) $company->created_at,
