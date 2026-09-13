@@ -1,15 +1,7 @@
-    Payment:
+    PaymentRequest:
       properties:
-        id:
-          description: 'The payment hashed id'
-          type: string
-          example: Opnel5aKBz
         client_id:
           description: 'The client hashed id'
-          type: string
-          example: Opnel5aKBz
-        invitation_id:
-          description: 'The invitation hashed id'
           type: string
           example: Opnel5aKBz
         client_contact_id:
@@ -38,38 +30,10 @@
           description: 'The private notes of the payment'
           type: string
           example: 'The payment was refunded due to error'
-        is_manual:
-          description: 'Flags whether the payment was made manually or processed via a gateway'
-          type: boolean
-          example: true
-        is_deleted:
-          description: 'Defines if the payment has been deleted'
-          type: boolean
-          example: true
         amount:
           description: 'The amount of this payment'
           type: number
           example: 10
-        refunded:
-          description: 'The refunded amount of this payment'
-          type: number
-          example: 10
-        updated_at:
-          description: Timestamp
-          type: number
-          format: integer
-          example: '1434342123'
-        archived_at:
-          description: Timestamp
-          type: number
-          format: integer
-          example: '1434342123'
-        company_gateway_id:
-          description: 'The company gateway id'
-          type: string
-          example: '3'
-        paymentables:
-          $ref: '#/components/schemas/Paymentable'
         invoices:
           description: ''
           type: array

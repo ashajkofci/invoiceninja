@@ -1,15 +1,9 @@
-    Invoice:
+    RecurringInvoiceRequest:
       properties:
-        id:
-          description: 'The invoice hashed id'
-          type: string
-          example: Opnel5aKBz
-          readOnly: true
         user_id:
           description: 'The user hashed id'
           type: string
           example: Opnel5aKBz
-          readOnly: true
         assigned_user_id:
           description: 'The assigned user hashed id'
           type: string
@@ -18,16 +12,20 @@
           description: 'The client hashed id'
           type: string
           example: Opnel5aKBz
-        status_id:
-          description: 'The invoice status variable'
-          type: string
+        frequency_id:
+          description: 'The recurring invoice frequency'
+          type: number
+          example: '4'
+        remaining_cycles:
+          description: 'The number of invoices left to be generated'
+          type: number
           example: '4'
         number:
-          description: 'The invoice number - is a unique alpha numeric number per invoice per company'
+          description: 'The recurringinvoice number - is a unique alpha numeric number per invoice per company'
           type: string
           example: INV_101
         po_number:
-          description: 'The purchase order associated with this invoice'
+          description: 'The purchase order associated with this recurring invoice'
           type: string
           example: PO-1234
         terms:
@@ -89,36 +87,10 @@
           type: number
           format: float
           example: '10.00'
-        total_taxes:
-          description: 'The total taxes for the invoice'
-          type: number
-          format: float
-          example: '10.00'
         line_items:
-          type: array
           description: 'An array of objects which define the line items of the invoice'
-          items:
-            $ref: '#/components/schemas/InvoiceItem'
-        invitations:
-          type: array
-          description: 'An array of objects which define the invitations of the invoice'
-          items:
-            $ref: '#/components/schemas/InvoiceInvitation'
-        amount:
-          description: 'The invoice amount'
-          type: number
-          format: float
-          example: '10.00'
-        balance:
-          description: 'The invoice balance'
-          type: number
-          format: float
-          example: '10.00'
-        paid_to_date:
-          description: 'The amount paid on the invoice to date'
-          type: number
-          format: float
-          example: '10.00'
+          type: object
+          example: ''
         discount:
           description: 'The invoice discount, can be an amount or a percentage'
           type: number
@@ -133,26 +105,12 @@
           description: 'Flag determining if the discount is an amount or a percentage'
           type: boolean
           example: true
-        is_deleted:
-          description: 'Defines if the invoice has been deleted'
-          type: boolean
-          example: true
         uses_inclusive_taxes:
           description: 'Defines the type of taxes used as either inclusive or exclusive'
           type: boolean
           example: true
         date:
           description: 'The Invoice Date'
-          type: string
-          format: date
-          example: '1994-07-30'
-        last_sent_date:
-          description: 'The last date the invoice was sent out'
-          type: string
-          format: date
-          example: '1994-07-30'
-        next_send_date:
-          description: 'The Next date for a reminder to be sent'
           type: string
           format: date
           example: '1994-07-30'
@@ -166,21 +124,6 @@
           type: string
           format: date
           example: '1994-07-30'
-        last_viewed:
-          description: Timestamp
-          type: number
-          format: integer
-          example: '1434342123'
-        updated_at:
-          description: Timestamp
-          type: number
-          format: integer
-          example: '1434342123'
-        archived_at:
-          description: Timestamp
-          type: number
-          format: integer
-          example: '1434342123'
         custom_surcharge1:
           description: 'First Custom Surcharge'
           type: number
@@ -217,25 +160,9 @@
           description: 'Toggles charging taxes on custom surcharge amounts'
           type: boolean
           example: true
-        project_id:
-          description: 'The project associated with this invoice'
-          type: string
-          example: Opnel5aKBz
-        auto_bill_tries:
-          description: 'The number of times the invoice has attempted to be auto billed'
-          type: integer
-          example: '1'
-          readOnly: true
-        auto_bill_enabled:
-          description: 'Boolean flag determining if the invoice is set to auto bill'
-          type: boolean
-          example: true
-        subscription_id:
-          description: 'The subscription associated with this invoice'
-          type: string
-          example: Opnel5aKBz
         location_id:
           description: 'The client location id that this invoice relates to'
           type: string
           example: Opnel5aKBz
       type: object
+      

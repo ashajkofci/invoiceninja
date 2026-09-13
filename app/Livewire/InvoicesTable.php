@@ -55,7 +55,7 @@ class InvoicesTable extends Component
                 $q->orderByRaw("REGEXP_REPLACE(number,'[^0-9]+','')+0 " . ($this->sort_asc ? 'desc' : 'asc'));
             })
             ->when($this->sort_field != 'number', function ($q){
-                $q->orderBy($this->sort_field, ($this->sort_asc ? 'desc' : 'asc'));
+                $q->orderBy($this->sort_field, ($this->sort_asc ? 'asc' : 'desc'));
             });
             // ->orderBy($this->sort_field, $this->sort_asc ? 'asc' : 'desc');
 

@@ -34,6 +34,12 @@ class CreditsTable extends Component
     {
         MultiDB::setDb($this->db);
 
+
+        $this->sort_asc = false;
+
+        $this->sort_field = 'date';
+
+
     }
 
     public function render()

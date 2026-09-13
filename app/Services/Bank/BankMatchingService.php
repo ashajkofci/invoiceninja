@@ -27,6 +27,10 @@ class BankMatchingService implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public $tries = 1;
+
+    public $timeout = 3600;
+
     public function __construct(public $company_id, public $db)
     {
     }
@@ -46,5 +50,15 @@ class BankMatchingService implements ShouldQueue
     public function middleware()
     {
         return [(new WithoutOverlapping($this->db."_".$this->company_id))->releaseAfter(60)];
+    }
+
+    public function failed($exception = null)
+    {
+        
+        if($exception) {
+            nlog("BANKMATCHINGSERVICE:: ". $exception->getMessage());
+        }
+
+        config(['queue.failed.driver' => null]);
     }
 }

@@ -20,6 +20,7 @@ use App\Factory\InvoiceFactory;
 use App\Factory\ProductFactory;
 use App\DataMapper\QuickbooksSync;
 use App\Factory\ClientContactFactory;
+use App\Services\Quickbooks\Models\QbQuote;
 use App\Services\Quickbooks\Models\QbClient;
 use QuickBooksOnline\API\Core\CoreConstants;
 use App\Services\Quickbooks\Models\QbInvoice;
@@ -43,6 +44,8 @@ class QuickbooksService
     public QbClient $client;
 
     public QbPayment $payment;
+    
+    public QbQuote $quote;
     
     public QuickbooksSync $settings;
 
@@ -79,6 +82,8 @@ class QuickbooksService
 
         $this->invoice = new QbInvoice($this);
 
+        $this->quote = new QbQuote($this);
+        
         $this->product = new QbProduct($this);
 
         $this->client = new QbClient($this);
