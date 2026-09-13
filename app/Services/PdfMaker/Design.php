@@ -948,6 +948,7 @@ class Design extends BaseDesign
                 }
             }
 
+            // Then, filter the elements array
             $element['elements'] = array_map(function ($el) {
                 if (isset($el['properties']['visi'])) {
                     if ($el['properties']['visi'] === false) {
@@ -981,7 +982,6 @@ class Design extends BaseDesign
 
 
             // $elements[] = $element;
-
         }
 
         $document = null;
