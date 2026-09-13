@@ -12,7 +12,6 @@
 namespace App\Mail;
 
 use App\Models\VendorContact;
-use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
 use App\Utils\Ninja;
 use App\Utils\VendorHtmlEngine;
 use Illuminate\Mail\Mailable;
@@ -87,7 +86,7 @@ class VendorTemplateEmail extends Mailable
 
         if ($this->build_email->getTemplate() !== 'custom') {
             $this->build_email->setBody(
-                DesignHelpers::parseMarkdownToHtml($this->build_email->getBody())
+                \App\Services\Pdf\Markdown::parse($this->build_email->getBody())
             );
         }
 

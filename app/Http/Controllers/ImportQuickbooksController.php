@@ -31,6 +31,9 @@ class ImportQuickbooksController extends BaseController
         $qb = new QuickbooksService($company);
 
         $authorizationUrl = $qb->sdk()->getAuthorizationUrl();
+
+        nlog($authorizationUrl);
+        
         $state = $qb->sdk()->getState();
 
         Cache::put($state, $token, 190);

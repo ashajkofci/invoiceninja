@@ -121,9 +121,11 @@ class TemplateService
         $function = new \Twig\TwigFunction('img', \Closure::fromCallable(function (string $image_src, string $image_style = '') {
             $html = '<img src="' . $image_src . '" style="' . $image_style . '"></img>';
 
-            return new \Twig\Markup($html, 'UTF-8');
+            return $html;
+            // return new \Twig\Markup($html, 'UTF-8');
 
         }));
+        
         $this->twig->addFunction($function);
 
         $function = new \Twig\TwigFunction('t', \Closure::fromCallable(function (string $text_key) {
@@ -374,8 +376,7 @@ class TemplateService
 
             $f = $this->document->createDocumentFragment();
 
-            $template = htmlspecialchars($template, ENT_XML1, 'UTF-8');
-
+            // $template = htmlspecialchars($template, ENT_XML1, 'UTF-8'); //2025-02-07 double encoding the entities = bad
             $f->appendXML(str_ireplace("<br>", "<br/>", html_entity_decode($template)));
 
             $replacements[] = $f;
@@ -1119,6 +1120,7 @@ class TemplateService
     {
 
         return [
+            'id' => $project->hashed_id,
             'name' => $project->name ?: '',
             'number' => $project->number ?: '',
             'created_at' => $this->translateDate($project->created_at, $project->client->date_format(), $project->client->locale()),

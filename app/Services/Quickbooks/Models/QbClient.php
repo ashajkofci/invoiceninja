@@ -39,6 +39,9 @@ class QbClient implements SyncInterface
 
             $ninja_data = $transformer->qbToNinja($record);
 
+            // nlog($ninja_data);
+            // nlog($record);
+
             if ($ninja_data[0]['terms']) {
 
                 $days =  $this->service->findEntityById('Term', $ninja_data[0]['terms']);

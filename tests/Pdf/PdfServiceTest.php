@@ -17,13 +17,17 @@ use App\Models\Client;
 use App\Models\Vendor;
 use App\Models\Company;
 use App\Models\Invoice;
+use App\Models\Payment;
 use Tests\MockAccountData;
 use App\Models\ClientContact;
+use App\Models\PurchaseOrder;
 use App\Models\VendorContact;
 use App\Services\Pdf\PdfService;
 use App\DataMapper\CompanySettings;
-use App\Models\PurchaseOrder;
 use App\Services\Pdf\PdfConfiguration;
+use App\Services\Template\TemplateAction;
+use App\Services\Template\TemplateService;
+use Str;
 
 /**
  * 
@@ -38,6 +42,33 @@ class PdfServiceTest extends TestCase
     private string $min_pdf_variables = '{"client_details":["$client.name","$client.vat_number","$client.address1","$client.city_state_postal","$client.country"],"vendor_details":["$vendor.name","$vendor.vat_number","$vendor.address1","$vendor.city_state_postal","$vendor.country"],"purchase_order_details":["$purchase_order.number","$purchase_order.date","$purchase_order.total"],"company_details":["$company.name","$company.address1","$company.city_state_postal"],"company_address":["$company.name","$company.website"],"invoice_details":["$invoice.number","$invoice.date","$invoice.due_date","$invoice.balance"],"quote_details":["$quote.number","$quote.date","$quote.valid_until"],"credit_details":["$credit.date","$credit.number","$credit.balance"],"product_columns":["$product.item","$product.description","$product.line_total"],"product_quote_columns":["$product.item","$product.description","$product.unit_cost","$product.quantity","$product.discount","$product.tax","$product.line_total"],"task_columns":["$task.description","$task.rate","$task.line_total"],"total_columns":["$total","$total_taxes","$outstanding"],"statement_invoice_columns":["$invoice.number","$invoice.date","$due_date","$total","$balance"],"statement_payment_columns":["$invoice.number","$payment.date","$method","$statement_amount"],"statement_credit_columns":["$credit.number","$credit.date","$total","$credit.balance"],"statement_details":["$statement_date","$balance"],"delivery_note_columns":["$product.item","$product.description","$product.quantity"],"statement_unapplied_columns":["$payment.number","$payment.date","$payment.amount","$payment.payment_balance"]}';
 
     private string $fake_email;
+
+    private array $template_designs = [
+        'delivery_notes' => [
+            '/views/templates/delivery_notes/td4.html',
+            '/views/templates/delivery_notes/td5.html',
+            '/views/templates/delivery_notes/td12.html',
+            '/views/templates/delivery_notes/td13.html',
+        ],
+        'payments' => [
+            '/views/templates/payments/tp6.html',
+            '/views/templates/payments/tp7.html',
+            '/views/templates/payments/tr8.html',
+            '/views/templates/payments/tr9.html',
+        ],
+        'projects' => [
+            '/views/templates/projects/tp11.html',
+        ],
+        'statements' => [
+            '/views/templates/statements/ts1.html',
+            '/views/templates/statements/ts2.html',
+            '/views/templates/statements/ts3.html',
+            '/views/templates/statements/ts4.html',
+        ],
+        'tasks' => [
+            '/views/templates/tasks/tt10.html',
+        ],
+    ];
 
     protected function setUp(): void
     {
@@ -125,6 +156,118 @@ class PdfServiceTest extends TestCase
         $po = $po->fresh();
 
         return $po;
+
+    }
+
+
+    public function testTemplateClientStatementGeneration()
+    {
+
+        
+        foreach ($this->template_designs['statements'] as $template) {
+
+            $invoice = $this->stubInvoice(CompanySettings::defaults());
+    
+            $design = \App\Factory\DesignFactory::create($invoice->company_id, $invoice->user_id);
+            $design->name = Str::random(16);
+            $dd = $design->design;
+            $dd->body = file_get_contents(resource_path($template));
+            $design->design = $dd;
+            $design->save();
+
+            $company = $invoice->company;
+            $settings = $company->settings;
+            $settings->statement_design_id = $design->hashed_id;
+            $company->settings = $settings;
+            $company->save();
+            $invoice->company->settings = $settings;
+            $invoice->push();
+
+            $invoice = $invoice->service()->markPaid()->save();
+            $invoice->load('invitations');
+
+            $this->assertGreaterThan(0, $invoice->invitations()->count());
+
+            $company = $company->fresh();
+            $client = $invoice->client;
+            $client = $client->load('invoices');
+
+
+            $statement = (new \App\Services\Client\Statement($client, [
+                            'start_date' => '1970-01-01',
+                            'end_date' => '2045-01-01',
+                            'show_payments_table' => true,
+                            'show_aging_table' => true,
+                            'show_credits_table' => true,
+                            'template' => $design->hashed_id,
+                            'status' => 'all',
+                        ]));
+
+            $pdf = $statement->run();
+
+            $this->assertNotNull($pdf);
+
+            \Illuminate\Support\Facades\Storage::put('/pdf/template_statements_' . basename($template). '.pdf', $pdf);
+
+            $design->forceDelete();
+            $company->forceDelete();
+        }
+        
+    }
+
+    public function testTemplatePaymentGeneration()
+    {
+
+        $invoice = $this->stubInvoice(CompanySettings::defaults());
+        $invoice->service()->markPaid()->save();
+
+        $payment = $invoice->fresh()->payments()->first();
+        $payment->load('invoices');        
+
+        $ts = new TemplateService();
+
+        foreach ($this->template_designs['payments'] as $template) {
+
+            $ts->setCompany($payment->company)
+                ->setRawTemplate(file_get_contents(resource_path($template)))
+                ->setEntity($payment)
+                ->addGlobal(['currency_code' => 'EUR'])
+                ->build(['payments' => collect([$payment])]);
+
+            $pdf = $ts->getPdf();
+
+            $this->assertNotNull($pdf);
+
+            \Illuminate\Support\Facades\Storage::put('/pdf/template_payments_' . basename($template). '.pdf', $pdf);
+
+        }
+        
+    }
+
+    public function testTemplateDeliveryNoteGeneration()
+    {
+        $invoice = $this->stubInvoice(CompanySettings::defaults());
+
+        $data = [
+            'invoices' => collect($invoice),
+        ];
+
+        $ts = new TemplateService();
+
+        foreach ($this->template_designs['delivery_notes'] as $template) {
+
+
+            $pdf = $ts->setCompany($invoice->company)
+            ->setRawTemplate(file_get_contents(resource_path($template)))
+            ->build([
+                'invoices' => collect([$this->invoice]),
+            ])->getPdf();
+
+            $this->assertNotNull($pdf);
+
+            \Illuminate\Support\Facades\Storage::put('/pdf/template_delivery_note_' . basename($template). '.pdf', $pdf);
+
+        }
 
     }
 

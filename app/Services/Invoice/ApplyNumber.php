@@ -36,7 +36,7 @@ class ApplyNumber extends AbstractService
 
     public function run()
     {
-        if ($this->invoice->number != '') {
+        if (is_string($this->invoice->number) && trim($this->invoice->number) !== '') {
             return $this->invoice;
         }
 

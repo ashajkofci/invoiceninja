@@ -247,7 +247,7 @@ class EmailDefaults
 
         //06-06-2023 ensure we do not parse markdown in custom templates
         if ($this->template != 'custom' && $this->template != 'email.template.custom') {
-            $this->email->email_object->body = $this->parseMarkdownToHtml($this->email->email_object->body);
+            $this->email->email_object->body = \App\Services\Pdf\Markdown::parse($this->email->email_object->body);
         }
 
         return $this;
@@ -408,18 +408,4 @@ class EmailDefaults
         return $this;
     }
 
-    /**
-     * Converts any markdown to HTML in the email
-     *
-     * @param  string $markdown The body to convert
-     * @return string           The parsed markdown response
-     */
-    private function parseMarkdownToHtml(string $markdown): string
-    {
-        $converter = new CommonMarkConverter([
-            'allow_unsafe_links' => false,
-        ]);
-
-        return $converter->convert($markdown);
-    }
 }

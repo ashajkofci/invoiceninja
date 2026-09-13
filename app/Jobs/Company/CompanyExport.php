@@ -18,6 +18,7 @@ use App\Libraries\MultiDB;
 use App\Mail\DownloadBackup;
 use App\Models\Company;
 use App\Models\CreditInvitation;
+use App\Models\EInvoicingToken;
 use App\Models\InvoiceInvitation;
 use App\Models\PurchaseOrderInvitation;
 use App\Models\QuoteInvitation;
@@ -622,10 +623,21 @@ class CompanyExport implements ShouldQueue
 
         //write to tmp and email to owner();
 
+        if(Ninja::isSelfHost()) {
+            $this->export_data['e_invoicing_tokens'] = EInvoicingToken::all()->makeHidden(['id'])->all();
+        }
+        else {
+            $this->export_data['e_invoicing_tokens'] = [];
+        }
+
+        $x = $this->writer->collection('e_invoicing_tokens');
+        $x->addItems($this->export_data['e_invoicing_tokens']);
+        $this->export_data = null;
+
+        //////////////////////////////////// fine ////////////////////////////////////
 
         $this->writer->end();
-
-
+        
         $this->zipAndSend();
 
         return true;

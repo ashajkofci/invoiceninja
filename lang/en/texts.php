@@ -5498,6 +5498,7 @@ $lang = array(
     'currency_samoan_tala' => 'Samoan Tala',
     'confirm_duplicate_gateway' => 'Are you sure you want to create another connection?',
     'clients_limit' => 'You have reached your client limit. Please upgrade your plan.',
+    'remaining_hours' => 'Remaining Hours',
 );
 
 return $lang;

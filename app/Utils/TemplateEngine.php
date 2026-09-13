@@ -25,7 +25,7 @@ use App\Models\Quote;
 use App\Models\QuoteInvitation;
 use App\Models\Vendor;
 use App\Models\VendorContact;
-use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
+use App\Services\Pdf\Markdown;
 use App\Utils\Traits\MakesHash;
 use App\Utils\Traits\MakesInvoiceHtml;
 use App\Utils\Traits\MakesTemplateData;
@@ -218,7 +218,7 @@ class TemplateEngine
         $email_style = $this->settings_entity->getSetting('email_style');
 
         if ($email_style !== 'custom') {
-            $this->body = DesignHelpers::parseMarkdownToHtml($this->body);
+            $this->body = \App\Services\Pdf\Markdown::parse($this->body);
         }
     }
 
@@ -257,7 +257,6 @@ class TemplateEngine
 
             /*If no custom design exists, send back a blank!*/
             if (strlen($wrapper) > 1) {
-                // $wrapper = $this->renderView($wrapper, $data);
             } else {
                 $wrapper = '';
             }

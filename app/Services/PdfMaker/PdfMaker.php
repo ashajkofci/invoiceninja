@@ -15,6 +15,9 @@ namespace App\Services\PdfMaker;
 use App\Services\Template\TemplateService;
 use League\CommonMark\CommonMarkConverter;
 
+/**
+ * @deprecated 2025-02-04
+ */
 class PdfMaker
 {
     use PdfMakerUtilities;

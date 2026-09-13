@@ -46,7 +46,7 @@ class UserVerified
         ];
 
         if ($this->user && ! $this->user->isVerified()) {
-            return response()->json($error, 403);
+            return response()->json($error, 401);
         }
 
         return $next($request);

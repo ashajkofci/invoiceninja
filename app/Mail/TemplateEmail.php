@@ -14,7 +14,6 @@ namespace App\Mail;
 use App\Jobs\Invoice\CreateUbl;
 use App\Models\Account;
 use App\Models\ClientContact;
-use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
 use App\Utils\HtmlEngine;
 use App\Utils\Ninja;
 use Illuminate\Mail\Mailable;
@@ -95,7 +94,7 @@ class TemplateEmail extends Mailable
 
         if ($this->build_email->getTemplate() !== 'custom') {
             $this->build_email->setBody(
-                DesignHelpers::parseMarkdownToHtml($this->build_email->getBody())
+                \App\Services\Pdf\Markdown::parse($this->build_email->getBody())
             );
         }
 

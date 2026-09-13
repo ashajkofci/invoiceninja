@@ -84,7 +84,7 @@ class QuickbooksService
 
         $this->settings = $this->company->quickbooks->settings;
 
-        $this->checkDefaultAccounts();
+        // $this->checkDefaultAccounts(); // disabled, because if OAuth not present, we don't have access to the accounts.
 
         return $this;
     }

@@ -40,7 +40,7 @@ class DesignExtractor
 
     private function getHtml(): string
     {
-        nlog($this->design);
+        // nlog($this->design);
         if($this->html) {
             return $this->html;
         }

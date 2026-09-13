@@ -405,21 +405,21 @@ class FacturaEInvoice extends AbstractService
 
         if (strlen($item->tax_name1) > 1) {
 
-            $data[$this->resolveTaxCode($item->tax_name1)] = $item->tax_rate1;
+            $data[$this->resolveTaxCode($item->tax_name1)] = abs($item->tax_rate1);
 
         }
 
         if (strlen($item->tax_name2) > 1) {
 
 
-            $data[$this->resolveTaxCode($item->tax_name2)] = $item->tax_rate2;
+            $data[$this->resolveTaxCode($item->tax_name2)] = abs($item->tax_rate2);
 
         }
 
         if (strlen($item->tax_name3) > 1) {
 
 
-            $data[$this->resolveTaxCode($item->tax_name3)] = $item->tax_rate3;
+            $data[$this->resolveTaxCode($item->tax_name3)] = abs($item->tax_rate3);
 
         }
 
