@@ -373,12 +373,6 @@ trait MockAccountData
             'company_id' => $this->company->id,
         ]);
 
-        $this->recurring_invoice = RecurringInvoice::factory()->create([
-            'user_id' => $user_id,
-            'company_id' => $this->company->id,
-            'client_id' => $this->client->id,
-        ]);
-
         $this->expense = Expense::factory()->create([
             'user_id' => $user_id,
             'company_id' => $this->company->id,
@@ -432,6 +426,20 @@ trait MockAccountData
 
         $this->client->group_settings_id = $gs->id;
         $this->client->save();
+
+        $items = $this->buildLineItems();
+
+        $this->recurring_invoice = RecurringInvoice::factory()->create([
+            'user_id' => $user_id,
+            'company_id' => $this->company->id,
+            'client_id' => $this->client->id,
+            'line_items' => $items,
+            'uses_inclusive_taxes' => false,
+        ]);
+
+        $this->recurring_invoice_calc = new InvoiceSum($this->recurring_invoice);
+        $this->recurring_invoice_calc->build();
+        $this->recurring_invoice = $this->recurring_invoice_calc->getRecurringInvoice();
 
         $this->invoice = InvoiceFactory::create($this->company->id, $user_id); //stub the company and user_id
         $this->invoice->client_id = $this->client->id;

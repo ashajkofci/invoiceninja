@@ -4973,7 +4973,7 @@ $lang = array(
     'e_invoice' => 'Factura electrónica',
     'light_dark_mode' => 'Modo claro/oscuro',
     'activities' => 'Actividades',
-    'recent_transactions' => "Estas son las transacciones más recientes de su empresa:",
+    'recent_transactions' => "Recent Transactions",
     'country_Palestine' => "Palestina",
     'country_Taiwan' => 'Taiwán',
     'duties' => 'Deberes',
@@ -5491,7 +5491,15 @@ $lang = array(
     'e_invoicing' => 'E-Invoicing',
     'einvoice_token_not_found' => 'E-invoicing token not found. Please go to Settings > E-invoice and regenerate token.',
     'regenerate' => 'Regenerate',
-
+    'subscription_unavailable' => 'This item is no longer available',
+    'currency_samoan_tala' => 'Samoan Tala',
+    'confirm_duplicate_gateway' => 'Are you sure you want to create another connection?',
+    'clients_limit' => 'You have reached your client limit. Please upgrade your plan.',
+    'remaining_hours' => 'Remaining Hours',
+    'just_now' => 'Just Now',
+    'yesterday' => 'Yesterday',
+    'enable_client_profile_update' => 'Allow clients to update their profile',
+    'enable_client_profile_update_help' => 'Allow clients to update their profile information from the client portal',
 );
 
 return $lang;

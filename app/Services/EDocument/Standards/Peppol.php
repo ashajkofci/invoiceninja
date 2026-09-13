@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -199,12 +199,12 @@ class Peppol extends AbstractService
 
             $this->p_invoice->DocumentCurrencyCode = $this->invoice->client->currency()->code;
 
-            if ($this->invoice->date && $this->invoice->due_date) {
-                $ip = new InvoicePeriod();
-                $ip->StartDate = new \DateTime($this->invoice->date);
-                $ip->EndDate = new \DateTime($this->invoice->due_date);
-                $this->p_invoice->InvoicePeriod = [$ip];
-            }
+            // if ($this->invoice->date && $this->invoice->due_date) {
+            //     $ip = new InvoicePeriod();
+            //     $ip->StartDate = new \DateTime($this->invoice->date);
+            //     $ip->EndDate = new \DateTime($this->invoice->due_date);
+            //     $this->p_invoice->InvoicePeriod = [$ip];
+            // }
 
             if ($this->invoice->project_id) {
                 $pr = new \InvoiceNinja\EInvoice\Models\Peppol\ProjectReferenceType\ProjectReference();
@@ -254,6 +254,7 @@ class Peppol extends AbstractService
      */
     public function decode(mixed $invoice): self
     {
+        
         $this->p_invoice = $this->e->decode('Peppol', json_encode($invoice), 'json');
 
         return $this;
@@ -267,7 +268,7 @@ class Peppol extends AbstractService
     private function setInvoice(): self
     {
         /** Handle Existing Document */
-        if ($this->invoice->e_invoice && isset($this->invoice->e_invoice->Invoice)) {
+        if ($this->invoice->e_invoice && isset($this->invoice->e_invoice->Invoice)  && isset($this->invoice->e_invoice->Invoice->ID)) {
 
             $this->decode($this->invoice->e_invoice->Invoice);
 
@@ -1256,6 +1257,12 @@ class Peppol extends AbstractService
             }
         }
 
+        if(isset($this->invoice->e_invoice->Invoice)) {
+            foreach(get_object_vars($this->invoice->e_invoice->Invoice) as $prop => $value) {
+                $this->p_invoice->{$prop} = $value;
+            }
+        }
+
         // Plucks special overriding properties scanning the correct settings level
         $settings = [
             'AccountingCostCode' => 7,
@@ -1280,6 +1287,13 @@ class Peppol extends AbstractService
                 $this->p_invoice->{$prop} = $prop_value;
             }
 
+        }
+
+        if(!isset($this->p_invoice->InvoicePeriod)) {
+            $ip = new InvoicePeriod();
+            $ip->StartDate = new \DateTime($this->invoice->date);
+            $ip->EndDate = new \DateTime($this->invoice->due_date ?? $this->invoice->date);
+            $this->p_invoice->InvoicePeriod = [$ip];
         }
 
         return $this;

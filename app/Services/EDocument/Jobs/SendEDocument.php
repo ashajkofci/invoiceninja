@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -93,7 +93,7 @@ class SendEDocument implements ShouldQueue
             'account_key' => $model->company->account->key,
             'e_invoicing_token' => $model->company->account->e_invoicing_token,
         ];
-nlog($payload);
+        
         //Self Hosted Sending Code Path
         if (Ninja::isSelfHost() && ($model instanceof Invoice) && $model->company->peppolSendingEnabled()) {
 

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -12,12 +12,13 @@
 namespace App\Http\Requests\Invoice;
 
 use App\Http\Requests\Request;
-use App\Http\ValidationRules\Invoice\LockedInvoiceRule;
-use App\Http\ValidationRules\Project\ValidProjectForClient;
-use App\Utils\Traits\ChecksEntityStatus;
-use App\Utils\Traits\CleanLineItems;
 use App\Utils\Traits\MakesHash;
 use Illuminate\Validation\Rule;
+use App\Utils\Traits\CleanLineItems;
+use App\Utils\Traits\ChecksEntityStatus;
+use App\Http\ValidationRules\Invoice\LockedInvoiceRule;
+use App\Http\ValidationRules\EInvoice\ValidInvoiceScheme;
+use App\Http\ValidationRules\Project\ValidProjectForClient;
 
 class UpdateInvoiceRequest extends Request
 {
@@ -94,6 +95,7 @@ class UpdateInvoiceRequest extends Request
         $rules['partial_due_date'] = ['bail', 'sometimes', 'nullable', 'exclude_if:partial,0', 'date', 'before:due_date', 'after_or_equal:date'];
         $rules['due_date'] = ['bail', 'sometimes', 'nullable', 'after:partial_due_date', 'after_or_equal:date', Rule::requiredIf(fn () => strlen($this->partial_due_date) > 1), 'date'];
 
+        $rules['e_invoice'] = ['sometimes', 'nullable', new ValidInvoiceScheme()];
         return $rules;
     }
 
