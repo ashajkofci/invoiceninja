@@ -180,12 +180,12 @@ class LicenseController extends BaseController
             nlog("Ninja Server Response");
             nlog($payload);
 
-            if ($response->successful()) {
+            if ($response->successful() && is_array($payload)) {
 
                 $account = auth()->user()->account;
 
                 $account->plan_term = Account::PLAN_TERM_YEARLY;
-                $account->plan_expires = Carbon::parse($payload['expires'])->addYear()->format('Y-m-d');
+                $account->plan_expires = Carbon::parse($payload['expires'])->format('Y-m-d');
                 $account->plan = Account::PLAN_WHITE_LABEL;
                 $account->save();
 

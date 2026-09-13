@@ -58,7 +58,8 @@ jobs:
           rm .env || true
           rm -rf ui || true
           # Set permissions: directories 755, files 644
-          chmod -R a=r,u+w,a+X .
+          find . -path ./vendor -prune -o -type f -exec chmod 644 {} \+
+          find . -path ./vendor -prune -o -type d -exec chmod 755 {} \+
 
       - name: Build project
         run: |
