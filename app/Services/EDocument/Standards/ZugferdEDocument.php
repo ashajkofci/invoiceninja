@@ -415,10 +415,13 @@ class ZugferdEDocument extends AbstractService
             ->setDocumentBuyerCommunication("EM", $this->client->present()->email())
             ->addDocumentPaymentTerm(ctrans("texts.xinvoice_payable", ['payeddue' => date_create($this->document->date ?? now()->format('Y-m-d'))->diff(date_create($this->document->due_date ?? now()->format('Y-m-d')))->format("%d"), 'paydate' => $this->document->due_date]));
 
+        if(strlen($this->client->vat_number ?? '') > 1) {
+            $this->xdocument->addDocumentBuyerTaxRegistration($this->client->vat_number);
+        }
 
         return $this;
     }
-
+    
     private function setRoutingNumber(): self
     {
         if (empty($this->client->routing_id)) {
