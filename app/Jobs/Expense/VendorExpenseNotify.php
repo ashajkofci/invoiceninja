@@ -59,6 +59,11 @@ class VendorExpenseNotify implements ShouldQueue
     private function notify(VendorContact $contact)
     {
 
+        \Illuminate\Support\Facades\App::forgetInstance('translator');
+        $t = app('translator');
+        $t->replace(\App\Utils\Ninja::transformTranslations($this->expense->company->settings));
+        \Illuminate\Support\Facades\App::setLocale($this->expense->vendor->locale());
+
         $mo = new EmailObject();
         $mo->contact = $contact;
         $mo->vendor_contact_id = $contact->id;

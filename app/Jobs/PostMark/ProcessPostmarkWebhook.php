@@ -59,7 +59,7 @@ class ProcessPostmarkWebhook implements ShouldQueue
      * Create a new job instance.
      *
      */
-    public function __construct(private array $request)
+    public function __construct(private array $request, private string $security_token)
     {
     }
 
@@ -356,9 +356,7 @@ class ProcessPostmarkWebhook implements ShouldQueue
     public function getRawMessage(string $message_id)
     {
 
-        $postmark_secret = !empty($this->company->settings->postmark_secret) ? $this->company->settings->postmark_secret : config('services.postmark.token');
-
-        $postmark = new PostmarkClient($postmark_secret);
+        $postmark = new PostmarkClient($this->security_token);
         $messageDetail = $postmark->getOutboundMessageDetails($message_id);
 
         try {
@@ -400,9 +398,7 @@ class ProcessPostmarkWebhook implements ShouldQueue
 
         try {
 
-            $postmark_secret = !empty($this->company->settings->postmark_secret) ? $this->company->settings->postmark_secret : config('services.postmark.token');
-
-            $postmark = new PostmarkClient($postmark_secret);
+            $postmark = new PostmarkClient($this->security_token);
 
             try {
                 $messageDetail = $postmark->getOutboundMessageDetails($this->request['MessageID']);

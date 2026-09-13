@@ -227,6 +227,10 @@ class UpdateCompanyRequest extends Request
             $input['enabled_item_tax_rates'] = 1;
         }
 
+        if(isset($input['session_timeout']) && $input['session_timeout'] < 0) {
+            $input['session_timeout'] = 0;
+        }
+
         $this->replace($input);
     }
 
