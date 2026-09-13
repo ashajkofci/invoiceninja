@@ -554,9 +554,6 @@ class DesignController extends BaseController
 
         $company = $user->getCompany();
 
-        nlog("Design Change {$company->id}");
-        nlog($request->all());
-
         $design = Design::where('company_id', $company->id)
                         ->orWhereNull('company_id')
                         ->where('id', $design_id)
