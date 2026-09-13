@@ -70,6 +70,18 @@ class ProductReservationServiceTest extends TestCase
         $this->assertSame(10.0, $availability[0]['available_quantity']);
     }
 
+    public function testReservationTrackingAndStockTrackingAreMutuallyExclusive(): void
+    {
+        $company = (new Company())->forceFill([
+            'enabled_modules' => Company::MODULE_PRODUCT_RESERVATIONS,
+            'track_inventory' => true,
+            'reservation_start_custom_field' => 1,
+            'reservation_end_custom_field' => 2,
+        ]);
+
+        $this->assertFalse((new ProductReservationService($company))->enabled());
+    }
+
     public function testAvailabilityOnlyReturnsProductsOnTheInvoice(): void
     {
         $company = (new Company())->forceFill([
