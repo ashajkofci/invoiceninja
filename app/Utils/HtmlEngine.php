@@ -588,7 +588,6 @@ class HtmlEngine
 
         $logo_url = $this->company->present()->logo($this->settings);
 
-
         $data['$company.logo'] = ['value' => $logo ?: ' ', 'label' => ctrans('texts.logo')];
         $data['$company_logo'] = &$data['$company.logo'];
 

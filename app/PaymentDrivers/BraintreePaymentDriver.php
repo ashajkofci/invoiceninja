@@ -222,6 +222,7 @@ class BraintreePaymentDriver extends BaseDriver
         $amount = array_sum(array_column($payment_hash->invoices(), 'amount')) + $payment_hash->fee_total;
 
         $invoice = Invoice::query()->whereIn('id', $this->transformKeys(array_column($payment_hash->invoices(), 'invoice_id')))->withTrashed()->first();
+        $total_taxes = Invoice::query()->whereIn('id', $this->transformKeys(array_column($payment_hash->invoices(), 'invoice_id')))->withTrashed()->sum('total_taxes');
 
         if ($invoice) {
             $description = "Invoice {$invoice->number} for {$amount} for client {$this->client->present()->name()}";
@@ -235,9 +236,12 @@ class BraintreePaymentDriver extends BaseDriver
             'amount' => $amount,
             'paymentMethodToken' => $cgt->token,
             'deviceData' => '',
+            'channel' => 'invoiceninja_BT',
             'options' => [
                 'submitForSettlement' => true,
             ],
+            'tax_amount' => $total_taxes,
+            'purchase_order_number' => $invoice->po_number ?? $invoice->number,
         ]);
 
         if ($result->success) {

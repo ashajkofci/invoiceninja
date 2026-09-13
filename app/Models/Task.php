@@ -373,9 +373,6 @@ class Task extends BaseModel
                 $hours = ctrans('texts.hours');
 
                 $parts = [];
-
-                // $parts[] = '<div class="task-time-details">';
-
                 $date_time = [];
 
                 if ($this->company->invoice_task_datelog) {
@@ -409,10 +406,14 @@ class Task extends BaseModel
                     $parts[] = $interval_description;
                 }
 
-                // $parts[] = '</div>';
+                //need to return early if there is nothing, otherwise we end up injecting a blank new line.
+                if(count($parts) == 1 && empty($parts[0])) {
+                    return '';
+                }
 
                 return implode(PHP_EOL, $parts);
             })
+            ->filter()//filters any empty strings.
             ->implode(PHP_EOL);
 
         $body = '';

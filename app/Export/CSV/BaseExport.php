@@ -1323,7 +1323,7 @@ class BaseExport
 
                 $this->start_date = $fin_year_start->format('Y-m-d');
                 $this->end_date = $fin_year_start->copy()->addYear()->subDay()->format('Y-m-d');
-                return $query->whereBetween($this->date_key, [now()->startOfYear(), now()])->orderBy($this->date_key, 'ASC');
+                return $query->whereBetween($this->date_key, [$this->start_date, $this->end_date])->orderBy($this->date_key, 'ASC');
             case 'last_year':
 
                 $first_month_of_year = $this->company->getSetting('first_month_of_year') ?? 1;
@@ -1336,7 +1336,7 @@ class BaseExport
 
                 $this->start_date = $fin_year_start->format('Y-m-d');
                 $this->end_date = $fin_year_start->copy()->addYear()->subDay()->format('Y-m-d');
-                return $query->whereBetween($this->date_key, [now()->startOfYear(), now()])->orderBy($this->date_key, 'ASC');
+                return $query->whereBetween($this->date_key, [$this->start_date, $this->end_date])->orderBy($this->date_key, 'ASC');
             case 'custom':
                 $this->start_date = $custom_start_date->format('Y-m-d');
                 $this->end_date = $custom_end_date->format('Y-m-d');
