@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Invoice Ninja (https://invoiceninja.com).
  *
@@ -20,14 +21,14 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use App\Utils\Traits\Invoice\Broadcasting\DefaultResourceBroadcast;
 
 /**
- * Class DownloadAvailable.
+ * Class RefetchEntity.
  */
-class DownloadAvailable implements ShouldBroadcast
+class RefetchEntity implements ShouldBroadcast
 {
     use SerializesModels;
     use InteractsWithSockets;
 
-    public function __construct(public string $url, public string $message, public User $user)
+    public function __construct(public string $entity, public ?string $entity_id, public User $user)
     {
     }
 
@@ -41,11 +42,9 @@ class DownloadAvailable implements ShouldBroadcast
     public function broadcastWith(): array
     {
 
-        // ctrans('texts.document_download_subject');
-
         return [
-            'message' => $this->message,
-            'url' => $this->url,
+            'entity' => $this->entity,
+            'entity_id' => $this->entity_id,
         ];
     }
 
