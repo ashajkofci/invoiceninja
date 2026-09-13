@@ -1,27 +1,20 @@
 {
-    "name": "Invoice Ninja",
-    "short_name": "Invoice Ninja",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Invoice Clients, Track Work-Time, Get Paid Online.",
-    "orientation": "portrait-primary",
-    "prefer_related_applications": true,
-    "related_applications": [
-        {
-            "platform": "play",
-            "id": "com.invoiceninja.app"
-        }, {
-            "platform": "itunes",
-            "url": "https://testflight.apple.com/join/MJ6WpaXh"
-        }
-    ],
-    "icons": [
-        {
-            "src": "images/logo.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        }
-    ]
+  "short_name": "Invoice Ninja (React)",
+  "name": "Invoice Ninja (React)",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo180.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
 }

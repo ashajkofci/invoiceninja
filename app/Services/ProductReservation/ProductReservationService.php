@@ -192,7 +192,7 @@ class ProductReservationService
             ->findOrFail($productId);
 
         // ponytail: line items have no stable product id; add indexed usage rows if this scan becomes slow.
-        $history = $this->reservationInvoices()
+        $history = $this->reservationInvoices(false)
             ->orderByDesc($this->startField())
             ->get()
             ->map(function (Invoice $invoice) use ($product) {
@@ -211,6 +211,12 @@ class ProductReservationService
                     return null;
                 }
 
+                $totalPrice = (float) $items->sum('line_total');
+                $pricedQuantity = (float) $items->sum(fn ($item) =>
+                    (float) data_get($item, 'quantity', 0)
+                        * (float) data_get($item, 'time_coefficient', 1)
+                );
+
                 return [
                     'invoice_id' => $invoice->hashed_id,
                     'invoice_number' => (string) $invoice->number,
@@ -219,14 +225,8 @@ class ProductReservationService
                     'end_date' => $end,
                     'days' => (int) CarbonImmutable::parse($start)->diffInDays(CarbonImmutable::parse($end)) + 1,
                     'quantity' => (float) $items->sum(fn ($item) => (float) data_get($item, 'quantity', 0)),
-                    'unit_price' => (float) data_get($items->first(), 'cost', 0),
-                    'total_price' => (float) $items->sum(fn ($item) => (float) data_get(
-                        $item,
-                        'line_total',
-                        (float) data_get($item, 'cost', 0)
-                            * (float) data_get($item, 'quantity', 0)
-                            * (float) data_get($item, 'time_coefficient', 1)
-                    )),
+                    'unit_price' => $pricedQuantity > 0 ? $totalPrice / $pricedQuantity : 0,
+                    'total_price' => $totalPrice,
                     'currency_id' => (string) (
                         $invoice->client?->getSetting('currency_id')
                         ?: data_get($this->company->settings, 'currency_id', '')
@@ -276,7 +276,7 @@ class ProductReservationService
             ->get();
     }
 
-    private function reservationInvoices()
+    private function reservationInvoices(bool $filterStatuses = true)
     {
         $query = Invoice::query()
             ->with('client')
@@ -287,7 +287,7 @@ class ProductReservationService
 
         $statusField = $this->statusField();
         $visibleStatuses = collect($this->statusRules())->pluck('value')->filter()->values();
-        if ($statusField && $visibleStatuses->isNotEmpty()) {
+        if ($filterStatuses && $statusField && $visibleStatuses->isNotEmpty()) {
             $query->whereIn($statusField, $visibleStatuses);
         }
 
