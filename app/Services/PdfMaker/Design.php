@@ -707,11 +707,17 @@ class Design extends BaseDesign
             } elseif ($column == '$product.discount' && !$this->company->enable_product_discount) {
                 $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-" . substr($column, 1) . '-th', 'style' => 'display: none;']];
             } elseif ($column == '$product.tax_rate1') {
-                $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-product.tax1-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+                $elements[] = ['element' => 'th', 'content' => '$product.tax_name1_label', 'properties' => ['data-ref' => "{$type}_table-product.tax1-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } elseif ($column == '$product.tax_rate2') {
-                $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-product.tax2-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+                $elements[] = ['element' => 'th', 'content' => '$product.tax_name2_label', 'properties' => ['data-ref' => "{$type}_table-product.tax2-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } elseif ($column == '$product.tax_rate3') {
-                $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-product.tax3-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+                $elements[] = ['element' => 'th', 'content' => '$product.tax_name3_label', 'properties' => ['data-ref' => "{$type}_table-product.tax3-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+            } elseif ($column == '$task.tax_rate1') {
+                $elements[] = ['element' => 'th', 'content' => '$task.tax_name1_label', 'properties' => ['data-ref' => "{$type}_table-task.tax1-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+            } elseif ($column == '$task.tax_rate2') {
+                $elements[] = ['element' => 'th', 'content' => '$task.tax_name2_label', 'properties' => ['data-ref' => "{$type}_table-task.tax2-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+            } elseif ($column == '$task.tax_rate3') {
+                $elements[] = ['element' => 'th', 'content' => '$task.tax_name3_label', 'properties' => ['data-ref' => "{$type}_table-task.tax3-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } else {
                 $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-" . substr($column, 1) . '-th', 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             }

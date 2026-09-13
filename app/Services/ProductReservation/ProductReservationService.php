@@ -185,6 +185,81 @@ class ProductReservationService
         })->values()->all();
     }
 
+    public function history(int $productId): array
+    {
+        $product = Product::query()
+            ->where('company_id', $this->company->id)
+            ->findOrFail($productId);
+
+        // ponytail: line items have no stable product id; add indexed usage rows if this scan becomes slow.
+        $history = $this->reservationInvoices()
+            ->orderByDesc($this->startField())
+            ->get()
+            ->map(function (Invoice $invoice) use ($product) {
+                try {
+                    [$start, $end] = $this->datesFromInvoice($invoice->toArray());
+                } catch (InvalidArgumentException) {
+                    return null;
+                }
+
+                $items = collect($invoice->line_items)->filter(fn ($item) =>
+                    (int) data_get($item, 'type_id', 1) === Product::PRODUCT_TYPE_PHYSICAL
+                    && (string) data_get($item, 'product_key') === (string) $product->product_key
+                );
+
+                if ($items->isEmpty()) {
+                    return null;
+                }
+
+                return [
+                    'invoice_id' => $invoice->hashed_id,
+                    'invoice_number' => (string) $invoice->number,
+                    'client_name' => $invoice->client ? $invoice->client->present()->name() : '',
+                    'start_date' => $start,
+                    'end_date' => $end,
+                    'days' => (int) CarbonImmutable::parse($start)->diffInDays(CarbonImmutable::parse($end)) + 1,
+                    'quantity' => (float) $items->sum(fn ($item) => (float) data_get($item, 'quantity', 0)),
+                    'unit_price' => (float) data_get($items->first(), 'cost', 0),
+                    'total_price' => (float) $items->sum(fn ($item) => (float) data_get(
+                        $item,
+                        'line_total',
+                        (float) data_get($item, 'cost', 0)
+                            * (float) data_get($item, 'quantity', 0)
+                            * (float) data_get($item, 'time_coefficient', 1)
+                    )),
+                    'currency_id' => (string) (
+                        $invoice->client?->getSetting('currency_id')
+                        ?: data_get($this->company->settings, 'currency_id', '')
+                    ),
+                    'status' => $this->statusFromInvoice($invoice->toArray()),
+                    'color' => $this->colorForStatus($this->statusFromInvoice($invoice->toArray())),
+                ];
+            })
+            ->filter()
+            ->values();
+
+        $totalsByCurrency = $history
+            ->groupBy('currency_id')
+            ->map(fn (Collection $rows, string $currencyId) => [
+                'currency_id' => $currencyId,
+                'total_price' => round((float) $rows->sum('total_price'), 6),
+                'average_price' => round((float) $rows->avg('total_price'), 6),
+            ])
+            ->values();
+
+        return [
+            'history' => $history->all(),
+            'statistics' => [
+                'total_rentals' => $history->count(),
+                'total_days' => (int) $history->sum('days'),
+                'average_days' => round((float) ($history->avg('days') ?? 0), 1),
+                'total_quantity' => (float) $history->sum('quantity'),
+                'totals_by_currency' => $totalsByCurrency->all(),
+                'by_year' => $this->historyByYear($history),
+            ],
+        ];
+    }
+
     private function overlappingInvoices(string $startDate, string $endDate, ?int $excludeInvoiceId = null): Collection
     {
         $startField = $this->startField();
@@ -194,15 +269,21 @@ class ProductReservationService
             return collect();
         }
 
+        return $this->reservationInvoices()
+            ->where($startField, '<=', $endDate)
+            ->where($endField, '>=', $startDate)
+            ->when($excludeInvoiceId, fn ($query) => $query->where('id', '!=', $excludeInvoiceId))
+            ->get();
+    }
+
+    private function reservationInvoices()
+    {
         $query = Invoice::query()
             ->with('client')
             ->where('company_id', $this->company->id)
             ->where('is_deleted', false)
             ->whereNull('deleted_at')
-            ->where('status_id', '!=', Invoice::STATUS_CANCELLED)
-            ->where($startField, '<=', $endDate)
-            ->where($endField, '>=', $startDate)
-            ->when($excludeInvoiceId, fn ($query) => $query->where('id', '!=', $excludeInvoiceId));
+            ->where('status_id', '!=', Invoice::STATUS_CANCELLED);
 
         $statusField = $this->statusField();
         $visibleStatuses = collect($this->statusRules())->pluck('value')->filter()->values();
@@ -210,7 +291,36 @@ class ProductReservationService
             $query->whereIn($statusField, $visibleStatuses);
         }
 
-        return $query->get();
+        return $query;
+    }
+
+    private function historyByYear(Collection $history): array
+    {
+        $years = [];
+
+        foreach ($history as $rental) {
+            $start = CarbonImmutable::parse($rental['start_date']);
+            $end = CarbonImmutable::parse($rental['end_date']);
+
+            for ($year = $start->year; $year <= $end->year; $year++) {
+                $from = $start->max(CarbonImmutable::create($year, 1, 1));
+                $until = $end->min(CarbonImmutable::create($year, 12, 31));
+                $years[$year]['rentals'] = ($years[$year]['rentals'] ?? 0) + 1;
+                $years[$year]['total_days'] = ($years[$year]['total_days'] ?? 0)
+                    + (int) $from->diffInDays($until) + 1;
+            }
+        }
+
+        return collect($years)
+            ->map(fn (array $values, int $year) => [
+                'year' => $year,
+                'rentals' => $values['rentals'],
+                'total_days' => $values['total_days'],
+                'average_days' => round($values['total_days'] / $values['rentals'], 1),
+            ])
+            ->sortByDesc('year')
+            ->values()
+            ->all();
     }
 
     private function quantitiesByProductKey(array $items): array

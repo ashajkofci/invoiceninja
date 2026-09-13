@@ -25,7 +25,7 @@
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/logo180.png" />
     <link rel="manifest" href="/manifest.json" />
-    <script type="module" crossorigin src="/react/index-0fYayXwJ.js"></script>
+    <script type="module" crossorigin src="/react/index-WfspEkEy.js"></script>
     <link rel="modulepreload" crossorigin href="/react/rolldown-runtime-CNC7AqOf.js">
     <link rel="modulepreload" crossorigin href="/react/@ant-design-DAiAtinM.js">
     <link rel="modulepreload" crossorigin href="/react/@docuninja-CiT7sB1w.js">
@@ -71,7 +71,7 @@
     <link rel="modulepreload" crossorigin href="/react/react-number-format-Cs46NX1-.js">
     <link rel="modulepreload" crossorigin href="/react/react-use-B3obNexs.js">
     <link rel="modulepreload" crossorigin href="/react/NumberInputField-CUTlUHom.js">
-    <link rel="modulepreload" crossorigin href="/react/product-reservation-i18n-C6woYfVV.js">
+    <link rel="modulepreload" crossorigin href="/react/product-reservation-i18n-Ba1ZmwNy.js">
     <link rel="modulepreload" crossorigin href="/react/data-table-BxvH3TdV.js">
     <link rel="modulepreload" crossorigin href="/react/Plus-DFbhciZE.js">
     <link rel="modulepreload" crossorigin href="/react/Combobox-7f-ZUVQl.js">
@@ -90,11 +90,11 @@
     <link rel="modulepreload" crossorigin href="/react/TagPillSelector-CCekkIo4.js">
     <link rel="modulepreload" crossorigin href="/react/deepmerge-COE8uOUh.js">
     <link rel="modulepreload" crossorigin href="/react/formik-B-SbFAlH.js">
+    <link rel="modulepreload" crossorigin href="/react/useEntityCustomFields-BodYEUgL.js">
     <link rel="modulepreload" crossorigin href="/react/useCurrencies-BTBmBxBN.js">
     <link rel="modulepreload" crossorigin href="/react/useCountries-Ca2I5MCr.js">
     <link rel="modulepreload" crossorigin href="/react/useResolveCountry-Dw4YPWbC.js">
     <link rel="modulepreload" crossorigin href="/react/useFormatMoney-jKw-EpMw.js">
-    <link rel="modulepreload" crossorigin href="/react/useFormatNumber-ijhx9Pln.js">
     <link rel="modulepreload" crossorigin href="/react/Tooltip-99OhfCOp.js">
     <link rel="modulepreload" crossorigin href="/react/useEntityAssigned-BMLdhJC0.js">
     <link rel="modulepreload" crossorigin href="/react/useDisableNavigation-RIX4QifB.js">
@@ -103,8 +103,9 @@
     <link rel="modulepreload" crossorigin href="/react/dompurify-DVb9C9Au.js">
     <link rel="modulepreload" crossorigin href="/react/html-string-Cvc5l8m4.js">
     <link rel="modulepreload" crossorigin href="/react/invoices-DQlBoRf5.js">
+    <link rel="modulepreload" crossorigin href="/react/useFormatNumber-DNYGaXyv.js">
     <link rel="modulepreload" crossorigin href="/react/products-JKDOo9yf.js">
-    <link rel="modulepreload" crossorigin href="/react/ProductSelector-BX_IAir8.js">
+    <link rel="modulepreload" crossorigin href="/react/ProductSelector-BBaOBJJl.js">
     <link rel="modulepreload" crossorigin href="/react/collect.js-Dg3gyr1N.js">
     <link rel="modulepreload" crossorigin href="/react/ChevronUp-GWMUeku7.js">
     <link rel="modulepreload" crossorigin href="/react/tables-CYc09fki.js">
@@ -114,7 +115,7 @@
     <link rel="modulepreload" crossorigin href="/react/hex-color-regex-CVuZZM3o.js">
     <link rel="modulepreload" crossorigin href="/react/StatusColorTheme-WmXM3WTj.js">
     <link rel="modulepreload" crossorigin href="/react/inclusive-tax-HkhZ7N2P.js">
-    <link rel="modulepreload" crossorigin href="/react/invoice-sum-inclusive-CUNdCaoW.js">
+    <link rel="modulepreload" crossorigin href="/react/invoice-sum-inclusive-Cw029J8x.js">
     <link rel="modulepreload" crossorigin href="/react/payment-terms-OOLwVviM.js">
     <link rel="modulepreload" crossorigin href="/react/CountrySelector-nd606Oc3.js">
     <link rel="modulepreload" crossorigin href="/react/CurrencySelector-Dh3_l4nV.js">
@@ -180,7 +181,7 @@
     <link rel="stylesheet" crossorigin href="/react/react-phone-number-input-Rkh5BCSq.css">
     <link rel="stylesheet" crossorigin href="/react/react-image-crop-D3R7pVxC.css">
     <link rel="stylesheet" crossorigin href="/react/monaco-editor-Rh8eNCgD.css">
-    <link rel="stylesheet" crossorigin href="/react/index-BaOfj3-4.css">
+    <link rel="stylesheet" crossorigin href="/react/index-PWHgIn7O.css">
   </head>
 
   <body class="h-full">

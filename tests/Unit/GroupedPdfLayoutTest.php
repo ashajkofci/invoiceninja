@@ -151,10 +151,14 @@ class GroupedPdfLayoutTest extends TestCase
             self::assertTrue($data[$index]['__is_group_header']);
             self::assertSame($title, $data[$index]['$product.item']);
             self::assertSame($total, $data[$index]['$product.line_total']);
-            foreach (['quantity', 'time_coefficient', 'unit_cost', 'cost', 'discount'] as $field) {
+            foreach (['quantity', 'unit_cost', 'cost', 'discount'] as $field) {
                 self::assertSame('', $data[$index]['$product.'.$field]);
             }
         }
+        self::assertSame('2', $data[0]['$product.time_coefficient']);
+        self::assertSame('Weekend', $data[0]['$product.time_coefficient_name']);
+        self::assertSame('2.5', $data[2]['$product.time_coefficient']);
+        self::assertSame('Weekly', $data[2]['$product.time_coefficient_name']);
         self::assertTrue($data[1]['__is_group_child']);
         self::assertSame('2', $data[1]['$product.quantity']);
         self::assertSame('1.5', $data[1]['$product.time_coefficient']);
@@ -179,6 +183,21 @@ class GroupedPdfLayoutTest extends TestCase
         self::assertSame('Weekend', $data[0]['$product.time_coefficient_name']);
         self::assertSame('', $data[1]['$product.time_coefficient']);
         self::assertSame('', $data[1]['$product.time_coefficient_name']);
+    }
+
+    #[DataProvider('pipelines')]
+    public function testExpandedTaxColumnsUseTranslatedNameLabels(string $pipeline): void
+    {
+        foreach (['product', 'task'] as $type) {
+            [$renderer] = $this->renderers($pipeline, ['tax_rate1', 'tax_rate2', 'tax_rate3'], $type);
+            $headers = $renderer->buildTableHeader($type);
+
+            self::assertSame([
+                "\${$type}.tax_name1_label",
+                "\${$type}.tax_name2_label",
+                "\${$type}.tax_name3_label",
+            ], array_column($headers, 'content'));
+        }
     }
 
     /** PDF_LAYOUT_OUTPUT is an optional HTML file path, not a PDF output path. */
@@ -230,7 +249,7 @@ class GroupedPdfLayoutTest extends TestCase
         }
     }
 
-    private function renderers(string $pipeline, array $fields): array
+    private function renderers(string $pipeline, array $fields, string $type = 'product'): array
     {
         $company = new Company();
         $company->custom_fields = (object) [];
@@ -246,9 +265,9 @@ class GroupedPdfLayoutTest extends TestCase
         $invoice = new Invoice();
         $invoice->setRelation('company', $company)->setRelation('client', $client);
         $invoice->line_items = [
-            $this->item(['type_id' => '7', 'group_id' => 'fixed', 'group_title' => 'Fixed package', 'group_has_price' => true, 'group_price' => 500, 'group_hide_item_prices' => true, 'cost' => 500, 'quantity' => 1, 'line_total' => 500]),
+            $this->item(['type_id' => '7', 'group_id' => 'fixed', 'group_title' => 'Fixed package', 'group_has_price' => true, 'group_price' => 500, 'group_hide_item_prices' => true, 'cost' => 500, 'quantity' => 1, 'time_coefficient' => 2, 'time_coefficient_name' => 'Weekend', 'line_total' => 500]),
             $this->item(['group_id' => 'fixed', 'product_key' => 'Included equipment with a long wrapping label', 'cost' => 100, 'quantity' => 2, 'time_coefficient' => 1.5, 'line_total' => 300, 'gross_line_total' => 324, 'tax_amount' => 24, 'discount' => 5, 'tax_rate1' => 8, 'tax_rate2' => 2, 'tax_rate3' => 1]),
-            $this->item(['type_id' => '7', 'group_id' => 'auto', 'group_title' => 'Automatic package', 'cost' => 150, 'quantity' => 1, 'line_total' => 150]),
+            $this->item(['type_id' => '7', 'group_id' => 'auto', 'group_title' => 'Automatic package', 'cost' => 150, 'quantity' => 1, 'time_coefficient' => 2.5, 'time_coefficient_name' => 'Weekly', 'line_total' => 150]),
             $this->item(['group_id' => 'auto', 'product_key' => 'Metered equipment', 'cost' => 50, 'quantity' => 2, 'time_coefficient' => 1.5, 'line_total' => 150]),
             $this->item(['product_key' => 'Standalone delivery', 'cost' => 25, 'quantity' => 1, 'line_total' => 25]),
         ];
@@ -261,7 +280,7 @@ class GroupedPdfLayoutTest extends TestCase
         $config->currency = $currency;
         $config->country = $country;
         $config->settings = (object) ['show_currency_code' => false, 'hide_empty_columns_on_pdf' => false];
-        $config->pdf_variables = ['product_columns' => array_map(fn ($field) => '$product.'.$field, $fields)];
+        $config->pdf_variables = ["{$type}_columns" => array_map(fn ($field) => "\${$type}.{$field}", $fields)];
         $service->config = $config;
         $builder = new PdfBuilder($service);
         $legacy = new Design('clean');

@@ -170,6 +170,7 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
     Route::post('charts/chart_summary', [ChartController::class, 'chart_summary'])->name('chart.chart_summary');
     Route::get('product_reservations/calendar', [ProductReservationController::class, 'calendar'])->name('product_reservations.calendar');
     Route::get('product_reservations/availability', [ProductReservationController::class, 'availability'])->name('product_reservations.availability');
+    Route::get('product_reservations/history', [ProductReservationController::class, 'history'])->name('product_reservations.history');
     Route::post('product_reservations/check', [ProductReservationController::class, 'check'])->name('product_reservations.check');
 
     Route::post('charts/totals_v2', [ChartController::class, 'totalsV2'])->name('chart.totals_v2');

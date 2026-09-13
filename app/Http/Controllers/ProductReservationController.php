@@ -54,6 +54,29 @@ class ProductReservationController extends BaseController
         )]);
     }
 
+    public function history(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'product_id' => ['required', 'string'],
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        abort_unless(
+            $user->isAdmin()
+                || $user->hasPermission('view_invoice')
+                || $user->hasPermission('edit_invoice'),
+            403
+        );
+
+        $service = $this->service();
+        $this->ensureEnabled($service);
+
+        return response()->json(['data' => $service->history(
+            $this->decodePrimaryKey($validated['product_id'])
+        )]);
+    }
+
     public function check(Request $request): JsonResponse
     {
         $validated = $request->validate([

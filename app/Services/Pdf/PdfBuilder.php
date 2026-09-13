@@ -1054,8 +1054,6 @@ class PdfBuilder
 
             if ($is_group_header) {
                 $data[$key][$table_type.'.quantity'] = '';
-                $data[$key][$table_type.'.time_coefficient'] = '';
-                $data[$key][$table_type.'.time_coefficient_name'] = '';
                 $data[$key][$table_type.'.unit_cost'] = '';
                 $data[$key][$table_type.'.cost'] = '';
                 $data[$key][$table_type.'.discount'] = '';
@@ -1160,19 +1158,19 @@ class PdfBuilder
             } elseif ($column == '$product.discount' && !$this->service->company->enable_product_discount) {
                 $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-" . substr($column, 1) . '-th', 'style' => 'display: none;']];
             } elseif ($column == '$product.tax_rate1') {
-                $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-product.tax1-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+                $elements[] = ['element' => 'th', 'content' => '$product.tax_name1_label', 'properties' => ['data-ref' => "{$type}_table-product.tax1-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } elseif ($column == '$product.tax_rate2') {
-                $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-product.tax2-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+                $elements[] = ['element' => 'th', 'content' => '$product.tax_name2_label', 'properties' => ['data-ref' => "{$type}_table-product.tax2-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } elseif ($column == '$product.tax_rate3') {
-                $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-product.tax3-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+                $elements[] = ['element' => 'th', 'content' => '$product.tax_name3_label', 'properties' => ['data-ref' => "{$type}_table-product.tax3-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } elseif ($column == '$task.discount' && !$this->service->company->enable_product_discount) {
                 $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-" . substr($column, 1) . '-th', 'style' => 'display: none;']];
             } elseif ($column == '$task.tax_rate1') {
                 $elements[] = ['element' => 'th', 'content' => '$task.tax_name1_label', 'properties' => ['data-ref' => "{$type}_table-task.tax1-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } elseif ($column == '$task.tax_rate2') {
-                $elements[] = ['element' => 'th', 'content' => '$task.tax_name1_label', 'properties' => ['data-ref' => "{$type}_table-task.tax2-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+                $elements[] = ['element' => 'th', 'content' => '$task.tax_name2_label', 'properties' => ['data-ref' => "{$type}_table-task.tax2-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } elseif ($column == '$task.tax_rate3') {
-                $elements[] = ['element' => 'th', 'content' => '$task.tax_name1_label', 'properties' => ['data-ref' => "{$type}_table-task.tax3-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
+                $elements[] = ['element' => 'th', 'content' => '$task.tax_name3_label', 'properties' => ['data-ref' => "{$type}_table-task.tax3-th", 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             } else {
                 $elements[] = ['element' => 'th', 'content' => $column . '_label', 'properties' => ['data-ref' => "{$type}_table-" . substr($column, 1) . '-th', 'visi' => $this->visibilityCheck($column_visibility, $column)]];
             }
