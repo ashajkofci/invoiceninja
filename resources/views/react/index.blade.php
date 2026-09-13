@@ -25,7 +25,7 @@
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/logo180.png" />
     <link rel="manifest" href="/manifest.json" />
-    <script type="module" crossorigin src="/react/index-BVksWkHS.js"></script>
+    <script type="module" crossorigin src="/react/index-C8ZuPbi6.js"></script>
     <link rel="modulepreload" crossorigin href="/react/rolldown-runtime-CNC7AqOf.js">
     <link rel="modulepreload" crossorigin href="/react/@ant-design-DAiAtinM.js">
     <link rel="modulepreload" crossorigin href="/react/@docuninja-CiT7sB1w.js">
@@ -105,17 +105,16 @@
     <link rel="modulepreload" crossorigin href="/react/invoices-DQlBoRf5.js">
     <link rel="modulepreload" crossorigin href="/react/useFormatNumber-DNYGaXyv.js">
     <link rel="modulepreload" crossorigin href="/react/products-JKDOo9yf.js">
-    <link rel="modulepreload" crossorigin href="/react/ProductSelector-9MO5LtDY.js">
+    <link rel="modulepreload" crossorigin href="/react/ProductSelector-CDboH-1M.js">
     <link rel="modulepreload" crossorigin href="/react/collect.js-Dg3gyr1N.js">
     <link rel="modulepreload" crossorigin href="/react/ChevronUp-GWMUeku7.js">
     <link rel="modulepreload" crossorigin href="/react/tables-CYc09fki.js">
-    <link rel="modulepreload" crossorigin href="/react/array-move-CY2MJUig.js">
     <link rel="modulepreload" crossorigin href="/react/useClientResolver-DXiW7wEd.js">
     <link rel="modulepreload" crossorigin href="/react/CircleXMark-BAY-7Qkk.js">
     <link rel="modulepreload" crossorigin href="/react/hex-color-regex-CVuZZM3o.js">
     <link rel="modulepreload" crossorigin href="/react/StatusColorTheme-WmXM3WTj.js">
     <link rel="modulepreload" crossorigin href="/react/inclusive-tax-HkhZ7N2P.js">
-    <link rel="modulepreload" crossorigin href="/react/invoice-sum-inclusive-R4iM4QG9.js">
+    <link rel="modulepreload" crossorigin href="/react/invoice-sum-inclusive-CjyIhOO6.js">
     <link rel="modulepreload" crossorigin href="/react/payment-terms-OOLwVviM.js">
     <link rel="modulepreload" crossorigin href="/react/CountrySelector-nd606Oc3.js">
     <link rel="modulepreload" crossorigin href="/react/CurrencySelector-Dh3_l4nV.js">
@@ -144,6 +143,7 @@
     <link rel="modulepreload" crossorigin href="/react/@tiptap-CuEbLttD.js">
     <link rel="modulepreload" crossorigin href="/react/react-image-crop-BLDA_e6h.js">
     <link rel="modulepreload" crossorigin href="/react/pretty-bytes-kgGzlb9J.js">
+    <link rel="modulepreload" crossorigin href="/react/array-move-CY2MJUig.js">
     <link rel="modulepreload" crossorigin href="/react/devlop-DMI-Tsal.js">
     <link rel="modulepreload" crossorigin href="/react/comma-separated-tokens-5hSDIsfP.js">
     <link rel="modulepreload" crossorigin href="/react/estree-util-is-identifier-name-DFFAHCcT.js">
