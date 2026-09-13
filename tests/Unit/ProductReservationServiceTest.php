@@ -23,6 +23,7 @@ class ProductReservationServiceTest extends TestCase
             $table->unsignedTinyInteger('status_id');
             $table->string('number')->nullable();
             $table->boolean('is_deleted')->default(false);
+            $table->boolean('uses_inclusive_taxes')->default(false);
             $table->json('line_items');
             $table->string('custom_value1')->nullable();
             $table->string('custom_value2')->nullable();
@@ -343,6 +344,7 @@ class ProductReservationServiceTest extends TestCase
                 'company_id' => $company->id,
                 'status_id' => 2,
                 'number' => '0001',
+                'uses_inclusive_taxes' => false,
                 'line_items' => json_encode([[
                     'type_id' => 1,
                     'product_key' => 'calendar-item',
@@ -353,6 +355,7 @@ class ProductReservationServiceTest extends TestCase
                     'time_coefficient' => 2,
                     'line_total' => 90,
                     'gross_line_total' => 99,
+                    'tax_amount' => 9,
                 ]]),
                 'custom_value1' => '2025-12-30',
                 'custom_value2' => '2026-01-02',
@@ -362,6 +365,7 @@ class ProductReservationServiceTest extends TestCase
                 'company_id' => $company->id,
                 'status_id' => 2,
                 'number' => '0002',
+                'uses_inclusive_taxes' => true,
                 'line_items' => json_encode([[
                     'type_id' => 1,
                     'product_key' => 'calendar-item',
@@ -369,8 +373,9 @@ class ProductReservationServiceTest extends TestCase
                     'cost' => 40,
                     'discount' => 5,
                     'is_amount_discount' => true,
-                    'line_total' => 35,
+                    'line_total' => 38.5,
                     'gross_line_total' => 38.5,
+                    'tax_amount' => 3.5,
                 ]]),
                 'custom_value1' => '2026-02-01',
                 'custom_value2' => '2026-02-03',
