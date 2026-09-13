@@ -21,6 +21,8 @@ class InvoiceItem
     /** The user-facing name of the selected time coefficient. */
     public $time_coefficient_name = '';
 
+    public $net_cost = 0;
+
     public $cost = 0;
 
     public $product_key = '';
@@ -86,6 +88,7 @@ class InvoiceItem
     public $group_price = 0;
 
     public static $casts = [
+        'net_cost' => 'float',
         'task_id' => 'string',
         'expense_id' => 'string',
         'tax_id' => 'string',
