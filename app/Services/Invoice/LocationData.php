@@ -171,7 +171,6 @@ class LocationData extends AbstractService
 
         return $str;
 
-
     }
     
     private function getBusinessAddress1(): string
@@ -225,7 +224,7 @@ class LocationData extends AbstractService
             return $this->businessLocation->country->name;
         }
 
-        return $this->entity->client->country->name;
+        return $this->entity->client->country->name ?? $this->entity->company->country()->name;
     }
 
     private function getBusinessCountryCode(): string
@@ -234,7 +233,7 @@ class LocationData extends AbstractService
             return $this->businessLocation->country->iso_3166_2;
         }
 
-        return $this->entity->client->country->iso_3166_2;
+        return $this->entity->client->country->iso_3166_2 ?? $this->entity->company->country()->iso_3166_2;
     }
 
     private function getShippingAddress1(): string

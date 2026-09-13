@@ -59,15 +59,17 @@ class UpdateTaxData implements ShouldQueue
 
         try {
 
-            $tax_provider->updateClientTaxData();
-
+            
             if (!$this->client->state && $this->client->postal_code) {
-
+                
                 $this->client->update(['state' => USStates::getState($this->client->postal_code)]);
-                // $this->client->saveQuietly();
-
+                $this->client->refresh();
+                
             }
 
+            $tax_provider->setBillingAddress($this->getBillingAddress())
+                         ->setShippingAddress($this->getShippingAddress())
+                         ->updateClientTaxData();
 
         } catch (\Exception $e) {
             nlog("Exception:: UpdateTaxData::" . $e->getMessage());
@@ -76,9 +78,41 @@ class UpdateTaxData implements ShouldQueue
 
     }
 
+    private function getBillingAddress(): array
+    {
+
+        return [
+            'address2' => $this->client->address2,
+            'address1' => $this->client->address1,
+            'city' => $this->client->city,
+            'state' => $this->client->state,
+            'postal_code' => $this->client->postal_code,
+            'country' => $this->client->country->name,
+        ];
+
+    }
+
+    private function getShippingAddress(): array
+    {
+        if(strlen($this->client->shipping_address1 ?? '') < 3) {
+            return $this->getBillingAddress();
+        }
+
+        return 
+        [
+            'address2' => $this->client->shipping_address2,
+            'address1' => $this->client->shipping_address1,
+            'city' => $this->client->shipping_city,
+            'state' => $this->client->shipping_state,
+            'postal_code' => $this->client->shipping_postal_code,
+            'country' => $this->client->shipping_country()->exists() ? $this->client->shipping_country->name : $this->client->country->name,
+        ];
+    
+    }
+
     public function middleware()
     {
-        return [new WithoutOverlapping($this->client->id.$this->company->id)];
+        return [new WithoutOverlapping($this->client->id.$this->company->company_key)];
     }
 
     public function failed($exception)

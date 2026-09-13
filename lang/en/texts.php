@@ -5512,6 +5512,9 @@ $lang = array(
     'disable_emails' => 'Disable Emails',
     'disable_emails_error' => 'You are not authorized to send emails',
     'disable_emails_help' => 'Prevents a user from sending emails from the system',
+    'add_location' => 'Add Location',
+    'updated_location' => 'Updated Location',
+    'created_location' => 'Created Location',
 );
 
 return $lang;
