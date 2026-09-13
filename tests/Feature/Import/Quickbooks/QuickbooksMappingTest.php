@@ -94,6 +94,33 @@ class QuickbooksMappingTest extends TestCase
 
         $this->assertGreaterThan($pre_count, $post_count);
                 
+
+        //loop and check every single invoice amount/balance
+        $qb_invoices = collect($this->qb_data['invoices']);
+
+        Invoice::where('company_id', $this->company->id)->cursor()->each(function ($invoice) use ($qb_invoices) {
+            $qb_invoice = $qb_invoices->where('Id', $invoice->sync->qb_id)->first();
+
+            if(!$qb_invoice) {
+                nlog("Borked trying to find invoice {$invoice->sync->qb_id} in qb_invoices");
+            }
+
+            $this->assertNotNull($qb_invoice);
+
+            $total_amount = $qb_invoice['TotalAmt'];
+            $total_balance = $qb_invoice['Balance'];
+
+            $delta_amount = abs(round($total_amount - $invoice->amount,2));
+            $delta_balance = abs(round($total_balance - $invoice->balance,2));
+
+            $this->assertLessThanOrEqual(0.01, $delta_amount);
+            $this->assertLessThanOrEqual(0.01, $delta_balance);
+
+        });
+
+
+
+
         Client::where('company_id', $this->company->id)->cursor()->each(function ($client) {
             $client->forceDelete();
         });

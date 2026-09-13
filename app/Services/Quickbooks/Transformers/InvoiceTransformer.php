@@ -17,6 +17,7 @@ use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\DataMapper\InvoiceItem;
+use App\Models\TaxRate;
 
 /**
  * Class InvoiceTransformer.
@@ -35,6 +36,7 @@ class InvoiceTransformer extends BaseTransformer
     public function transform($qb_data)
     {
         $client_id = $this->getClientId(data_get($qb_data, 'CustomerRef', null));
+        $tax_array = $this->calculateTotalTax($qb_data);
 
         return $client_id ? [
             'id' => data_get($qb_data, 'Id', false),
@@ -46,12 +48,13 @@ class InvoiceTransformer extends BaseTransformer
             'due_date' => data_get($qb_data, 'DueDate', null),
             'po_number' => data_get($qb_data, 'PONumber', ""),
             'partial' => (float)data_get($qb_data, 'Deposit', 0),
-            'line_items' => $this->getLineItems(data_get($qb_data, 'Line', []), data_get($qb_data, 'ApplyTaxAfterDiscount', 'true')),
+            'line_items' => $this->getLineItems($qb_data, $tax_array),
             'payment_ids' => $this->getPayments($qb_data),
             'status_id' => Invoice::STATUS_SENT,
-            'tax_rate1' => $rate = $this->calculateTotalTax($qb_data),
-            'tax_name1' => $rate > 0 ? "Sales Tax" : "",
+            // 'tax_rate1' => $rate = $this->calculateTotalTax($qb_data),
+            // 'tax_name1' => $rate > 0 ? "Sales Tax" : "",
             'custom_surcharge1' => $this->checkIfDiscountAfterTax($qb_data),
+            'balance' => data_get($qb_data, 'Balance', 0),
 
         ] : false;
     }
@@ -81,9 +84,18 @@ class InvoiceTransformer extends BaseTransformer
 
     private function calculateTotalTax($qb_data)
     {
-        $taxLines = data_get($qb_data, 'TxnTaxDetail.TaxLine', []);
+        $total_tax = data_get($qb_data,'TxnTaxDetail.TotalTax', false);
 
-        if (!is_array($taxLines)) {
+        $tax_rate = 0;
+        $tax_name = '';
+
+        if($total_tax == "0") {
+            return [$tax_rate, $tax_name];
+        }
+
+        $taxLines = data_get($qb_data, 'TxnTaxDetail.TaxLine', []) ?? [];
+    
+        if (!empty($taxLines) && !isset($taxLines[0])) {
             $taxLines = [$taxLines];
         }
 
@@ -94,7 +106,31 @@ class InvoiceTransformer extends BaseTransformer
             $totalTaxRate += $taxRate;
         }
 
-        return (float)$totalTaxRate;
+
+        if ($totalTaxRate > 0) {
+            $formattedTaxRate = rtrim(rtrim(number_format($totalTaxRate, 6), '0'), '.');
+            $formattedTaxRate = trim($formattedTaxRate);
+
+            $tr = \App\Models\TaxRate::firstOrNew(
+                [
+                'company_id' => $this->company->id,
+                'rate' => $formattedTaxRate,
+                ],
+                [
+                'name' => "Sales Tax [{$formattedTaxRate}]",
+                'rate' => $formattedTaxRate,
+                ]
+            );
+            $tr->company_id = $this->company->id;
+            $tr->user_id = $this->company->owner()->id;
+            $tr->save();
+
+            $tax_rate = $tr->rate;
+            $tax_name = $tr->name;
+        }
+        
+        return [$tax_rate, $tax_name];
+
     }
 
 
@@ -102,16 +138,11 @@ class InvoiceTransformer extends BaseTransformer
     {
         $payments = [];
 
-        $qb_payments = data_get($qb_data, 'LinkedTxn', false);
+        $qb_payments = data_get($qb_data, 'LinkedTxn', false) ?? [];
 
-        if (!$qb_payments) {
-            return [];
+        if(!empty($qb_payments) && !isset($qb_payments[0])) {
+            $qb_payments = [$qb_payments];
         }
-
-        if (!is_array($qb_payments) && data_get($qb_payments, 'TxnType', false) == 'Payment') {
-            return [data_get($qb_payments, 'TxnId', false)];
-        }
-
 
         foreach ($qb_payments as $payment) {
             if (data_get($payment, 'TxnType', false) == 'Payment') {
@@ -123,24 +154,54 @@ class InvoiceTransformer extends BaseTransformer
 
     }
 
-    private function getLineItems(mixed $qb_items, string $include_discount = 'true')
+    private function getLineItems(mixed $qb_data, array $tax_array)
     {
+        $qb_items = data_get($qb_data, 'Line', []);
+
+        $include_discount = data_get($qb_data, 'ApplyTaxAfterDiscount', 'true');
+
         $items = [];
 
+        if(!empty($qb_items) && !isset($qb_items[0])) {
+        
+            //handle weird statement charges
+            $tax_rate = (float)data_get($qb_data, 'TxnTaxDetail.TaxLine.TaxLineDetail.TaxPercent', 0);
+            $tax_name = $tax_rate > 0 ? "Sales Tax [{$tax_rate}]" : '';
+
+            $item = new InvoiceItem();
+            $item->product_key = '';
+            $item->notes = 'Recurring Charge';
+            $item->quantity = 1;
+            $item->cost = (float)data_get($qb_items, 'Amount', 0);
+            $item->discount = 0;
+            $item->is_amount_discount = false;
+            $item->type_id = '1';
+            $item->tax_id = '1';
+            $item->tax_rate1 = $tax_rate;
+            $item->tax_name1 = $tax_name;
+
+            $items[] = (object)$item;
+
+            return $items;
+        }
+
         foreach ($qb_items as $qb_item) {
+
+            $taxCodeRef = data_get($qb_item, 'TaxCodeRef', data_get($qb_item, 'SalesItemLineDetail.TaxCodeRef', 'TAX'));      
 
             if (data_get($qb_item, 'DetailType') == 'SalesItemLineDetail') {
                 $item = new InvoiceItem();
                 $item->product_key = data_get($qb_item, 'SalesItemLineDetail.ItemRef.name', '');
                 $item->notes = data_get($qb_item, 'Description', '');
-                $item->quantity = (float)data_get($qb_item, 'SalesItemLineDetail.Qty', 0);
-                $item->cost = (float)data_get($qb_item, 'SalesItemLineDetail.UnitPrice', 0);
+                $item->quantity = (float)(data_get($qb_item, 'SalesItemLineDetail.Qty') ?? 1);
+                $item->cost = (float)(data_get($qb_item, 'SalesItemLineDetail.UnitPrice') ?? data_get($qb_item,'SalesItemLineDetail.MarkupInfo.Value', 0));
                 $item->discount = (float)data_get($item, 'DiscountRate', data_get($qb_item, 'DiscountAmount', 0));
                 $item->is_amount_discount = data_get($qb_item, 'DiscountAmount', 0) > 0 ? true : false;
                 $item->type_id = stripos(data_get($qb_item, 'ItemAccountRef.name') ?? '', 'Service') !== false ? '2' : '1';
-                $item->tax_id = data_get($qb_item, 'TaxCodeRef', '') == 'NON' ? Product::PRODUCT_TYPE_EXEMPT : $item->type_id;
-                $item->tax_rate1 = (float)data_get($qb_item, 'TxnTaxDetail.TaxLine.TaxLineDetail.TaxPercent', 0);
-                $item->tax_name1 = $item->tax_rate1 > 0 ? "Sales Tax" : "";
+                $item->tax_id = $taxCodeRef == 'NON' ? Product::PRODUCT_TYPE_EXEMPT : $item->type_id;
+                $item->tax_rate1 = $taxCodeRef == 'NON' ? 0 : $tax_array[0];
+                $item->tax_name1 = $taxCodeRef == 'NON' ? '' : $tax_array[1];
+
                 $items[] = (object)$item;
             }
 
@@ -153,6 +214,10 @@ class InvoiceTransformer extends BaseTransformer
                 $item->cost = (float)data_get($qb_item, 'Amount', 0) * -1;
                 $item->discount = 0;
                 $item->is_amount_discount = true;
+                
+                $item->tax_rate1 = $include_discount == 'true' ? $tax_array[0] : 0;
+                $item->tax_name1 = $include_discount == 'true' ? $tax_array[1] : '';
+
                 $item->type_id = '1';
                 $item->tax_id = Product::PRODUCT_TYPE_PHYSICAL;
                 $items[] = (object)$item;
