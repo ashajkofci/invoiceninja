@@ -208,6 +208,7 @@ class BaseExport
         "assigned_user" => "recurring_invoice.assigned_user_id",
         "user" => "recurring_invoice.user_id",
         "frequency_id" => "recurring_invoice.frequency_id",
+        "remaining_cycles" => "recurring_invoice.remaining_cycles",
         "next_send_date" => "recurring_invoice.next_send_date",
         "custom_value1" => "recurring_invoice.custom_value1",
         "custom_value2" => "recurring_invoice.custom_value2",

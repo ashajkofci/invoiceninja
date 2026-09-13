@@ -182,6 +182,7 @@ class ContactLoginController extends Controller
     {
         Auth::guard('contact')->logout();
         request()->session()->invalidate();
+        request()->session()->regenerate(true);
         request()->session()->regenerateToken();
 
         return redirect('/client/login');

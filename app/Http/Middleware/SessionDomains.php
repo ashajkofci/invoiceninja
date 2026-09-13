@@ -38,5 +38,6 @@ class SessionDomains
         }
 
         return $next($request);
+
     }
 }

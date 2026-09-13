@@ -39,7 +39,7 @@ $lang = array(
     'description' => 'Description',
     'unit_cost' => 'Coût unitaire',
     'quantity' => 'Quantité',
-    'line_total' => 'Total de la ligne',
+    'line_total' => 'Total HT',
     'subtotal' => 'Total',
     'net_subtotal' => 'Filet',
     'paid_to_date' => 'Payé à ce jour',
@@ -5515,6 +5515,11 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'sync_send_time' => 'Sync Send Time',
     'sync_send_time_help' => 'Update all reminders / recurring invoices to use this new send time',
     'edit_location' => 'Edit Location',
+    'downgrade' => 'Downgrade',
+    'downgrade_to_free' => 'Downgrade to Free Plan',
+    'downgrade_to_free_description' => 'Downgrade to the free plan, note this will remove all paid features from your account.',
+    'delete_location' => 'Delete Location',
+    'delete_location_confirmation' => 'This will remove the location from the clients record.',
     'add_card_reminder' => 'You can add a card again at any time.',
     'free_trial_then' => 'Free trial, then',
     'days_left' => ':days days left',
@@ -5561,6 +5566,9 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'upgrade_plan' => 'Upgrade Plan',
     'upgrade_popup_premium_business_plus_pricing' => 'Pricing? Let\'s talk!',
     'plan_selected' => 'Plan Selected',
+    'invalid_date_create_syntax' => 'Invalid date syntax',
+    'start_and_end_date_required' => 'Start and end date are required',
+    'project_value' => 'Project Value',
 );
 
 return $lang;

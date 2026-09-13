@@ -2380,7 +2380,7 @@ $lang = array(
     'contact_custom2' => 'Contact Second Custom',
     'currency' => 'Currency',
     'ofx_help' => 'To troubleshoot check for comments on :ofxhome_link and test with :ofxget_link.',
-    'comments' => 'comments',
+    'comments' => 'Comments',
 
     'item_product' => 'Item Product',
     'item_notes' => 'Item Notes',
@@ -2887,7 +2887,7 @@ $lang = array(
     'reopened' => 'Reopened',
     'priority' => 'Priority',
     'last_updated' => 'Last Updated',
-    'comment' => 'Comments',
+    'comment' => 'Comment',
     'tags' => 'Tags',
     'linked_objects' => 'Linked Objects',
     'low' => 'Low',
@@ -5572,6 +5572,7 @@ $lang = array(
     'invalid_date_create_syntax' => 'Invalid date syntax',
     'start_and_end_date_required' => 'Start and end date are required',
     'project_value' => 'Project Value',
+    'invalid_csv_data' => 'Invalid CSV data, your import was cancelled.',
 );
 
 return $lang;

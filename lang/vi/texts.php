@@ -5567,6 +5567,9 @@ $lang = array(
     'upgrade_plan' => 'Kế hoạch nâng cấp',
     'upgrade_popup_premium_business_plus_pricing' => 'Giá cả? Chúng ta hãy nói chuyện!',
     'plan_selected' => 'Kế hoạch đã chọn',
+    'invalid_date_create_syntax' => 'Cú pháp ngày không hợp lệ',
+    'start_and_end_date_required' => 'Bắt đầu và ngày kết thúc là bắt buộc',
+    'project_value' => 'Giá trị dự án',
 );
 
 return $lang;

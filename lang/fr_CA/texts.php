@@ -5565,6 +5565,9 @@ Développe automatiquement la section des notes dans le tableau de produits pour
     'upgrade_plan' => 'Mettre à jour votre plan',
     'upgrade_popup_premium_business_plus_pricing' => 'Prix ? Discutons-en !',
     'plan_selected' => 'Plan sélectionné',
+    'invalid_date_create_syntax' => 'Syntaxe de date non valide',
+    'start_and_end_date_required' => 'Date de départ et de fin requises',
+    'project_value' => 'Valeur du projet',
 );
 
 return $lang;

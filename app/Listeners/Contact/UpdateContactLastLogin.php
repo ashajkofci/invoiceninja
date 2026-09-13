@@ -36,10 +36,6 @@ class UpdateContactLastLogin implements ShouldQueue
         MultiDB::setDb($event->company->db);
 
         $client_contact = $event->client_contact;
-        // $client_contact->last_login = now();
-        // $client_contact->save();
-        // $client_contact->client->last_login = now();
-        // $client_contact->client->save();
 
         $contacts = \App\Models\ClientContact::where('company_id', $client_contact->company_id)
                                  ->where('email', $client_contact->email);    
