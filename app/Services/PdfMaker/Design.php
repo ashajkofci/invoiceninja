@@ -85,138 +85,11 @@ class Design extends BaseDesign
     public const STATEMENT = 'statement';
     public const PURCHASE_ORDER = 'purchase_order';
 
-
     public function __construct(string $design = null, array $options = [])
     {
         Str::endsWith('.html', $design) ? $this->design = $design : $this->design = "{$design}.html";
 
         $this->options = $options;
-    }
-
-    public function html(): ?string
-    {
-        if ($this->design == 'custom.html') {
-            $design = $this->composeFromPartials(
-                $this->options['custom_partials']
-            );
-            
-            // Remove NULL bytes
-            $design = str_replace("\0", '', $design);
-            // Remove UTF-7 BOM
-            $design = preg_replace('/^\\+ADw-/', '', $design);
-
-            return $design;
-
-        }
-
-        $path = $this->options['custom_path'] ?? config('ninja.designs.base_path');
-
-        $design = file_get_contents(
-            $path . $this->design
-        );
-
-        
-        // Remove NULL bytes
-        $design = str_replace("\0", '', $design);
-        // Remove UTF-7 BOM
-        $design = preg_replace('/^\\+ADw-/', '', $design);
-
-        return $design;
-
-    }
-
-    public function elements(array $context, string $type = 'product'): array
-    {
-        $this->context = $context;
-
-        $this->type = $type;
-
-        $this->setup();
-
-        return [
-            'company-details' => [
-                'id' => 'company-details',
-                'elements' => $this->companyDetails(),
-            ],
-            'company-address' => [
-                'id' => 'company-address',
-                'elements' => $this->companyAddress(),
-            ],
-            'client-details' => [
-                'id' => 'client-details',
-                'elements' => $this->clientDetails(),
-            ],
-            'shipping-details' => [
-                'id' => 'shipping-details',
-                'elements' => $this->shippingDetails(),
-            ],
-            'vendor-details' => [
-                'id' => 'vendor-details',
-                'elements' => $this->vendorDetails(),
-            ],
-            'entity-details' => [
-                'id' => 'entity-details',
-                'elements' => $this->entityDetails(),
-            ],
-            'delivery-note-table' => [
-                'id' => 'delivery-note-table',
-                'elements' => $this->deliveryNoteTable(),
-            ],
-            'product-table' => [
-                'id' => 'product-table',
-                'elements' => $this->productTable(),
-            ],
-            'task-table' => [
-                'id' => 'task-table',
-                'elements' => $this->taskTable(),
-            ],
-            'statement-credit-table' => [
-                'id' => 'statement-credit-table',
-                'elements' => $this->statementCreditTable(),
-            ],
-            'statement-credit-table-totals' => [
-                'id' => 'statement-credit-table-totals',
-                'elements' => $this->statementCreditTableTotals(),
-            ],
-            'statement-invoice-table' => [
-                'id' => 'statement-invoice-table',
-                'elements' => $this->statementInvoiceTable(),
-            ],
-            'statement-unapplied-payment-table' => [
-                'id' => 'statement-unapplied-payment-table',
-                'elements' => $this->statementUnappliedPaymentTable(),
-            ],
-            'statement-unapplied-payment-table-totals' => [
-                'id' => 'statement-unapplied-payment-table-totals',
-                'elements' => $this->statementUnappliedPaymentTableTotals(),
-            ],
-            'statement-invoice-table-totals' => [
-                'id' => 'statement-invoice-table-totals',
-                'elements' => $this->statementInvoiceTableTotals(),
-            ],
-            'statement-payment-table' => [
-                'id' => 'statement-payment-table',
-                'elements' => $this->statementPaymentTable(),
-            ],
-            'statement-payment-table-totals' => [
-                'id' => 'statement-payment-table-totals',
-                'elements' => $this->statementPaymentTableTotals(),
-            ],
-            'statement-aging-table' => [
-                'id' => 'statement-aging-table',
-                'elements' => $this->statementAgingTable(),
-            ],
-            'table-totals' => [
-                'id' => 'table-totals',
-                'elements' => $this->tableTotals(),
-            ],
-            'footer-elements' => [
-                'id' => 'footer',
-                'elements' => [
-                    // $this->sharedFooterElements(),
-                ],
-            ],
-        ];
     }
 
 
@@ -859,7 +732,7 @@ class Design extends BaseDesign
             if (!isset($elements[$last_visible]['properties']['class'])) {
                 $elements[$last_visible]['properties']['class'] = 'right-radius';
             } else {
-                $elements[$last_visible]['properties']['class'] .= 'right-radius';
+                $elements[$last_visible]['properties']['class'] .= ' right-radius';
             }
         }
 
@@ -1054,7 +927,27 @@ class Design extends BaseDesign
                 }
             }
 
-            // Then, filter the elements array
+            $visible_elements = array_filter($element['elements'], function ($el) {
+                return isset($el['properties']['visi']) && $el['properties']['visi'];
+            });
+
+            if (! empty($visible_elements)) {
+                $first_visible = array_key_first($visible_elements);
+                $last_visible = array_key_last($visible_elements);
+
+                if (! isset($element['elements'][$first_visible]['properties']['class'])) {
+                    $element['elements'][$first_visible]['properties']['class'] = 'left-radius';
+                } else {
+                    $element['elements'][$first_visible]['properties']['class'] .= ' left-radius';
+                }
+
+                if (! isset($element['elements'][$last_visible]['properties']['class'])) {
+                    $element['elements'][$last_visible]['properties']['class'] = 'right-radius';
+                } else {
+                    $element['elements'][$last_visible]['properties']['class'] .= ' right-radius';
+                }
+            }
+
             $element['elements'] = array_map(function ($el) {
                 if (isset($el['properties']['visi'])) {
                     if ($el['properties']['visi'] === false) {
@@ -1066,6 +959,28 @@ class Design extends BaseDesign
             }, $element['elements']);
 
             $elements[] = \App\Services\Pdf\GroupTableStyle::row($element);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            // $elements[] = $element;
 
         }
 
