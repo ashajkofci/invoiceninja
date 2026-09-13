@@ -5496,6 +5496,9 @@ Développe automatiquement la section des notes dans le tableau de produits pour
     'currency_samoan_tala' => 'Tala samoane',
     'confirm_duplicate_gateway' => 'Êtes-vous sûr de vouloir créer une autre connexion ?',
     'clients_limit' => 'Vous avez atteint la limite de clients. Veuillez mettre à niveau votre plan.',
+    'remaining_hours' => 'Heures restantes',
+    'just_now' => 'À l\'instant',
+    'yesterday' => 'Hier',
 );
 
 return $lang;
