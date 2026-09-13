@@ -96,6 +96,36 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Expense extends BaseModel
 {
+    public function yearlyExchangeRate(): ?float
+    {
+        if (!$this->date || !$this->currency_id || (string) $this->currency_id === (string) $this->company->settings->currency_id) {
+            return null;
+        }
+
+        foreach ($this->company->yearly_exchange_rates ?? [] as $rate) {
+            if ((int) $rate['year'] === (int) substr($this->date, 0, 4)
+                && (string) $rate['currency_id'] === (string) $this->currency_id
+                && (string) $rate['base_currency_id'] === (string) $this->company->settings->currency_id) {
+                return (float) $rate['rate'];
+            }
+        }
+
+        return null;
+    }
+
+    public function save(array $options = [])
+    {
+        if ((!$this->exists && (!$this->exchange_rate || $this->exchange_rate == 1))
+            || ($this->exists && $this->isDirty(['currency_id', 'date']))) {
+            if (($rate = $this->yearlyExchangeRate()) !== null) {
+                $this->exchange_rate = $rate;
+                $this->invoice_currency_id = $this->company->settings->currency_id;
+            }
+        }
+
+        return parent::save($options);
+    }
+
     use SoftDeletes;
     use Filterable;
     use Searchable;

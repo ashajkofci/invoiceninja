@@ -764,15 +764,7 @@ class PdfBuilder
                 }
             }
 
-            if ($row_class && isset($element['elements'][0])) {
-                $style = $element['elements'][0]['properties']['style'] ?? '';
-                $style .= $row_class === 'group-header'
-                    ? ' font-weight: bold;'
-                    : ' padding-left: 1.5rem;';
-                $element['elements'][0]['properties']['style'] = trim($style);
-            }
-
-            $elements[] = $element;
+            $elements[] = GroupTableStyle::row($element);
         }
 
         $document = null;
@@ -827,9 +819,6 @@ class PdfBuilder
 
             if ($is_group_header) {
                 $data[$key][$table_type.'.product_key'] = $item->group_title ?: $item->product_key;
-                $data[$key][$table_type.'.item'] = $data[$key][$table_type.'.product_key'];
-            } elseif ($is_group_child) {
-                $data[$key][$table_type.'.product_key'] = '&nbsp;&nbsp;↳ '.$data[$key][$table_type.'.product_key'];
                 $data[$key][$table_type.'.item'] = $data[$key][$table_type.'.product_key'];
             }
 
@@ -993,7 +982,7 @@ class PdfBuilder
             }
         }
 
-        return $elements;
+        return GroupTableStyle::columns($elements);
     }
 
     /**

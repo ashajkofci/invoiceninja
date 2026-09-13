@@ -181,11 +181,31 @@ class PdfServiceTest extends TestCase
         $rows = $builder->buildTableBody('$product');
 
         $this->assertSame('group-header', $rows[0]['properties']['class']);
-        $this->assertSame('font-weight: bold;', $rows[0]['elements'][0]['properties']['style']);
+        foreach ($rows[0]['elements'] as $cell) {
+            $this->assertStringContainsString('font-weight: 700 !important;', $cell['properties']['style']);
+        }
         $this->assertSame('group-item', $rows[1]['properties']['class']);
-        $this->assertSame('padding-left: 1.5rem;', $rows[1]['elements'][0]['properties']['style']);
+        $this->assertStringContainsString('font-style: italic;', $rows[1]['elements'][0]['elements'][0]['properties']['style']);
         $this->assertSame('', $builder->transformLineItems([$header, $child])[1]['$product.line_total']);
         $this->assertSame('$80.00', $service->html_variables['values']['$subtotal']);
+
+        $columns = ['$product.quantity', '$product.product_key', '$product.notes', '$product.unit_cost', '$product.line_total'];
+        $service->config->pdf_variables['product_columns'] = $columns;
+        $rows = $builder->buildTableBody('$product');
+        $this->assertStringNotContainsString('<div', $rows[1]['elements'][0]['content']);
+        $this->assertStringContainsString('font-style: italic;', $rows[1]['elements'][1]['elements'][0]['properties']['style']);
+        $this->assertStringContainsString('text-align: right', $rows[1]['elements'][0]['properties']['style']);
+        $this->assertCount(count($builder->buildTableHeader('product')), $rows[1]['elements']);
+
+        $design = new Design();
+        $design->entity = $this->invoice;
+        $design->client = $this->client;
+        $design->company = $this->company;
+        $design->context = ['pdf_variables' => ['product_columns' => $columns]];
+        $legacy_rows = $design->buildTableBody('$product');
+        $this->assertSame('group-header', $legacy_rows[0]['properties']['class']);
+        $this->assertSame('group-item', $legacy_rows[1]['properties']['class']);
+        $this->assertStringContainsString('font-style: italic;', $legacy_rows[1]['elements'][1]['elements'][0]['properties']['style']);
     }
 
     public function testPdfLineTotalRoundsOnlyForDisplay()

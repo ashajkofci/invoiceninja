@@ -75,6 +75,7 @@ class UpdateCompanyRequest extends Request
         $rules['time_coefficients.*.name'] = 'required|string|max:100';
         $rules['time_coefficients.*.coefficient'] = 'required|numeric|min:0|max:1000000';
         $rules['time_coefficients_json'] = 'sometimes|string|json';
+        $rules += self::yearlyExchangeRateRules();
         $rules['e_invoice_certificate_passphrase'] = 'sometimes|nullable';
         $rules['e_invoice_certificate'] = 'sometimes|nullable|file|mimes:p12,pfx,pem,cer,crt,der,txt,p7b,spc,bin';
 
@@ -124,6 +125,31 @@ class UpdateCompanyRequest extends Request
         return $rules;
     }
 
+    public static function yearlyExchangeRateRules(): array
+    {
+        return [
+            'yearly_exchange_rates_json' => 'sometimes|string|json',
+            'yearly_exchange_rates' => ['sometimes', 'bail', 'array', function ($attribute, $rates, $fail) {
+                $keys = [];
+                foreach ($rates as $rate) {
+                    if (!is_array($rate)) {
+                        continue;
+                    }
+                    $key = (int) ($rate['year'] ?? 0) . ':' . (int) ($rate['currency_id'] ?? 0) . ':' . (int) ($rate['base_currency_id'] ?? 0);
+                    if (isset($keys[$key]) || ($rate['currency_id'] ?? null) == ($rate['base_currency_id'] ?? null)) {
+                        $fail('Each year and currency pair must be unique and use different currencies.');
+                    }
+                    $keys[$key] = true;
+                }
+            }],
+            'yearly_exchange_rates.*' => 'array:year,currency_id,base_currency_id,rate',
+            'yearly_exchange_rates.*.year' => 'required|integer|between:2026,9999',
+            'yearly_exchange_rates.*.currency_id' => 'required|integer|exists:currencies,id',
+            'yearly_exchange_rates.*.base_currency_id' => 'required|integer|exists:currencies,id',
+            'yearly_exchange_rates.*.rate' => 'required|numeric|min:0.000001|max:1000000',
+        ];
+    }
+
     public function prepareForValidation()
     {
         $input = $this->all();
@@ -131,6 +157,10 @@ class UpdateCompanyRequest extends Request
         if (isset($input['reservation_statuses_json'])) {
             $input['reservation_statuses'] = json_decode($input['reservation_statuses_json'], true) ?? [];
             unset($input['reservation_statuses_json']);
+        }
+
+        if (isset($input['yearly_exchange_rates_json']) && !array_key_exists('yearly_exchange_rates', $input)) {
+            $input['yearly_exchange_rates'] = json_decode($input['yearly_exchange_rates_json'], true);
         }
 
         if (isset($input['time_coefficients_json'])) {
