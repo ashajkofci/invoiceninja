@@ -180,7 +180,8 @@ class BaseDriver extends AbstractPaymentDriver
         return $fields;
     }
 
-    public function setHeadless($headless): self
+
+    public function setHeadless(bool $headless): self 
     {
         $this->headless = $headless;
 
