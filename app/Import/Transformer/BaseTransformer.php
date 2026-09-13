@@ -380,6 +380,7 @@ class BaseTransformer
 
         // Convert to float and apply negative sign if necessary
         $result = (float) $amount;
+        
         return $isNegative ? -$result : $result;
 
 

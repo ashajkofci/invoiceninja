@@ -158,29 +158,6 @@ class ClientPresenter extends EntityPresenter
         return $str;
     }
 
-    // public function getCityState()
-    // {
-    //     $settings = $this->entity->getMergedSettings();
-
-    //     $country = false;
-
-    //     if ($settings->country_id) {
-    //         $country = Country::find($settings->country_id);
-    //     }
-
-    //     $swap = $country && $country->swap_postal_code;
-
-    //     $city = e($settings->city ?: '');
-    //     $state = e($settings->state ?: '');
-    //     $postalCode = e($settings->postal_code ?: '');
-
-    //     if ($city || $state || $postalCode) {
-    //         return $this->cityStateZip($city, $state, $postalCode, $swap);
-    //     } else {
-    //         return false;
-    //     }
-    // }
-
     public function getCityState()
     {
         $client = $this->entity;

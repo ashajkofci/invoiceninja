@@ -414,6 +414,10 @@ class RecurringInvoiceController extends BaseController
         /** @var \App\Models\User $user */
         $user = auth()->user();
 
+        if((stripos($request->action, 'send_now') !== false) && $user->hasExactPermission('disable_emails')){
+            return response(['message' => ctrans('texts.disable_emails_error')], 400);
+        }
+
         $percentage_increase = request()->has('percentage_increase') ? request()->input('percentage_increase') : 0;
 
         if (in_array($request->action, ['increase_prices', 'update_prices'])) {

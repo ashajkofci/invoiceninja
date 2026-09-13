@@ -134,6 +134,7 @@ class ActivityRepository extends BaseRepository
     {
         $entity_design_id = '';
         $entity_type = '';
+        $document_type = 'product';
 
         $settings = $entity->client ? $entity->client->getMergedSettings() : $entity->vendor->getMergedSettings();
 

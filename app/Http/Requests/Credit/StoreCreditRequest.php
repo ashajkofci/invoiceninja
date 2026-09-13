@@ -94,6 +94,8 @@ class StoreCreditRequest extends Request
 
         $rules['line_items'] = 'array';
 
+        $rules['location_id'] = ['nullable', 'sometimes','bail',Rule::exists('locations', 'id')->where('company_id', $user->company()->id)->where('client_id', $this->client_id)];
+
         return $rules;
     }
 

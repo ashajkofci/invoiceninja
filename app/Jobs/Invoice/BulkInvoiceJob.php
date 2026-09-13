@@ -84,7 +84,7 @@ class BulkInvoiceJob implements ShouldQueue
 
                         $template = $this->resolveTemplateString($this->reminder_template);
 
-                        if ($invitation->contact->email) {
+                        if ($invitation->contact->email && !$invitation->contact->is_locked) {
                             $this->contact_has_email = true;
 
                             $mo = new EmailObject();

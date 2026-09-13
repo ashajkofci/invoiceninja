@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
 use App\Utils\Traits\MakesHash;
 use App\Models\RecurringExpense;
 use App\Models\RecurringInvoice;
+use App\Services\Invoice\LocationData;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\RecurringInvoice\SendRecurring;
 
@@ -176,6 +177,11 @@ class RecurringService
 
         return $this;
 
+    }
+    
+    public function location(): array
+    {
+        return (new LocationData($this->recurring_entity))->run();       
     }
 
     public function save()

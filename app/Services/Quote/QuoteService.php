@@ -11,15 +11,16 @@
 
 namespace App\Services\Quote;
 
-use App\Events\Quote\QuoteWasApproved;
-use App\Exceptions\QuoteConversion;
-use App\Jobs\EDocument\CreateEDocument;
-use App\Models\Project;
-use App\Models\Quote;
-use App\Repositories\QuoteRepository;
-use App\Services\Quote\UpdateReminder;
 use App\Utils\Ninja;
+use App\Models\Quote;
+use App\Models\Project;
 use App\Utils\Traits\MakesHash;
+use App\Exceptions\QuoteConversion;
+use App\Repositories\QuoteRepository;
+use App\Events\Quote\QuoteWasApproved;
+use App\Services\Invoice\LocationData;
+use App\Services\Quote\UpdateReminder;
+use App\Jobs\EDocument\CreateEDocument;
 use Illuminate\Support\Facades\Storage;
 
 class QuoteService
@@ -33,6 +34,11 @@ class QuoteService
     public function __construct($quote)
     {
         $this->quote = $quote;
+    }
+
+    public function location(): array
+    {
+        return (new LocationData($this->quote))->run();       
     }
 
     public function createInvitations()

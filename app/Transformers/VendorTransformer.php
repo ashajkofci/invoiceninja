@@ -11,9 +11,10 @@
 
 namespace App\Transformers;
 
+use App\Models\Vendor;
 use App\Models\Activity;
 use App\Models\Document;
-use App\Models\Vendor;
+use App\Models\Location;
 use App\Models\VendorContact;
 use App\Utils\Traits\MakesHash;
 
@@ -34,6 +35,7 @@ class VendorTransformer extends EntityTransformer
      */
     protected array $availableIncludes = [
         'activities',
+        'locations',
     ];
 
     /**
@@ -65,6 +67,18 @@ class VendorTransformer extends EntityTransformer
         $transformer = new DocumentTransformer($this->serializer);
 
         return $this->includeCollection($vendor->documents, $transformer, Document::class);
+    }
+
+    /**
+     * @param Vendor $vendor
+     *
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     */
+    public function includeLocations(Vendor $vendor)
+    {
+        $transformer = new LocationTransformer($this->serializer);
+
+        return $this->includeCollection($vendor->locations, $transformer, Location::class);
     }
 
     /**

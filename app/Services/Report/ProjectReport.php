@@ -74,7 +74,8 @@ class ProjectReport extends BaseExport
             'company_name' => $this->company->present()->name(),
             'created_on' => $this->translateDate(now()->format('Y-m-d'), $this->company->date_format(), $this->company->locale()),
             'created_by' => $user_name,
-            'charts' => $this->getCharts($projects),
+            
+            // 'charts' => $this->getCharts($projects),
         ];
 
         $ts = new TemplateService();
@@ -88,48 +89,48 @@ class ProjectReport extends BaseExport
         return $ts_instance->getPdf();
     }
 
-    private function getTaskAllocationData(Project $project)
-    {
-        $tasks = $project->tasks()->withTrashed()->map(function ($task) {
+    // private function getTaskAllocationData(Project $project)
+    // {
+    //     $tasks = $project->tasks()->withTrashed()->map(function ($task) {
             
-            return [
-                'label' => strlen($task->description ?? '') > 0 ? $task->description : $task->number,
-                'hours' => ($task->calcDuration() / 3600)
-            ];
+    //         return [
+    //             'label' => strlen($task->description ?? '') > 0 ? $task->description : $task->number,
+    //             'hours' => ($task->calcDuration() / 3600)
+    //         ];
 
-        });
+    //     });
 
-        $taskAllocationData = [
-            'labels' => $tasks->pluck('label'), 
-            'datasets' => [
-                [
-                    'label' => 'Hours Spent',
-                    'data' => $tasks->pluck('hours'), 
-                    'backgroundColor' => 'rgba(54, 162, 235, 0.2)',
-                    'borderColor' => 'rgba(54, 162, 235, 1)',
-                    'borderWidth' => 1
-                ]
-            ]
-        ];
+    //     $taskAllocationData = [
+    //         'labels' => $tasks->pluck('label'), 
+    //         'datasets' => [
+    //             [
+    //                 'label' => 'Hours Spent',
+    //                 'data' => $tasks->pluck('hours'), 
+    //                 'backgroundColor' => 'rgba(54, 162, 235, 0.2)',
+    //                 'borderColor' => 'rgba(54, 162, 235, 1)',
+    //                 'borderWidth' => 1
+    //             ]
+    //         ]
+    //     ];
 
-        return $taskAllocationData;
+    //     return $taskAllocationData;
 
-    }
+    // }
 
-    private function getCharts(array $projects)
-    {
+    // private function getCharts(array $projects)
+    // {
 
-        if(!class_exists(Modules\Admin\Services\ChartService::class)) {
-            return [];
-        }
+    //     if(!class_exists(Modules\Admin\Services\ChartService::class)) {
+    //         return [];
+    //     }
 
-        $chartService = new Modules\Admin\Services\ChartService();
+    //     $chartService = new Modules\Admin\Services\ChartService();
 
-        return $projects->map(function ($project) use ($chartService) {
-            return [
-                'id' => $project->hashed_id,
-                'budgeted_hours' => $chartService->getBudgetedHours($project),
-            ];
-        });
-    }
+    //     return $projects->map(function ($project) use ($chartService) {
+    //         return [
+    //             'id' => $project->hashed_id,
+    //             'budgeted_hours' => $chartService->getBudgetedHours($project),
+    //         ];
+    //     });
+    // }
 }

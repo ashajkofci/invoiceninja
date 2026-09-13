@@ -122,6 +122,10 @@ class Request extends FormRequest
             $input['vendor_id'] = $this->decodePrimaryKey($input['vendor_id']);
         }
 
+        if (array_key_exists('location_id', $input) && is_string($input['location_id'])) {
+            $input['location_id'] = $this->decodePrimaryKey($input['location_id']);
+        }
+        
         if (array_key_exists('client_id', $input) && is_string($input['client_id'])) {
             $input['client_id'] = $this->decodePrimaryKey($input['client_id']);
         }

@@ -73,7 +73,8 @@ class ApplyPaymentAmount extends AbstractService
                 ->updateBalance($payment->amount * -1)
                 ->updatePaidToDate($payment->amount)
                 ->setCalculatedStatus()
-                ->applyNumber();
+                ->applyNumber()
+                ->unlockDocuments();
 
 
         if ($has_partial) {

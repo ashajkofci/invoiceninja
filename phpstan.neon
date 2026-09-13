@@ -6,7 +6,6 @@ parameters:
     level: 5
     paths:
         - app
-        - vendor/invoiceninja/admin-api
         - Modules
     excludePaths:
         analyseAndScan:

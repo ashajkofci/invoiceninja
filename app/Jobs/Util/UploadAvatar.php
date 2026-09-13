@@ -11,13 +11,14 @@
 
 namespace App\Jobs\Util;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
+use App\Utils\Ninja;
 use Illuminate\Http\File;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 
 class UploadAvatar implements ShouldQueue
 {
@@ -40,14 +41,16 @@ class UploadAvatar implements ShouldQueue
     {
         $tmp_file = sha1(time()).'.png'; //@phpstan-ignore-line
 
+        $disk = Ninja::isHosted() ? 'backup' : config('filesystems.default');
+
         $im = imagecreatefromstring(file_get_contents($this->file));
         imagealphablending($im, false);
         imagesavealpha($im, true);
         $file_png = imagepng($im, sys_get_temp_dir().'/'.$tmp_file);
 
-        $path = Storage::putFile($this->directory, new File(sys_get_temp_dir().'/'.$tmp_file));
+        $path = Storage::disk($disk)->putFile($this->directory, new File(sys_get_temp_dir().'/'.$tmp_file));
 
-        $url = Storage::url($path);
+        $url = Storage::disk($disk)->url($path);
 
         //return file path
         if ($url) {

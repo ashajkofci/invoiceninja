@@ -78,13 +78,16 @@ class UpdateInvoicePayment
             //caution what if we amount paid was less than partial - we wipe it!
             $invoice->balance -= $paid_amount;
             $invoice->paid_to_date += $paid_amount;
+
             $invoice->saveQuietly();
 
             $invoice = $invoice->service()
                                ->clearPartial()
                                ->updateStatus()
                                ->workFlow()
+                               ->unlockDocuments()
                                ->save();
+
 
             if ($has_partial) {
                 $invoice->service()->checkReminderStatus()->save();

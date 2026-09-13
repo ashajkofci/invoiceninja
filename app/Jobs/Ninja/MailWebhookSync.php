@@ -121,14 +121,16 @@ class MailWebhookSync implements ShouldQueue
         ->orderBy('id','desc')
         ->each(function ($invite) {
 
-            $postmark = new \Postmark\PostmarkClient(config('services.postmark.token'));
+            $token = config('services.postmark.token');
+            $postmark = new \Postmark\PostmarkClient($token);
             
             $messageDetail = false;
 
             try {
                 $messageDetail = $postmark->getOutboundMessageDetails($invite->message_id);
             } catch (\Throwable $th) {
-                $postmark = new \Postmark\PostmarkClient(config('services.postmark-outlook.token'));
+                $token = config('services.postmark-outlook.token');
+                $postmark = new \Postmark\PostmarkClient($token);
                 $messageDetail = $postmark->getOutboundMessageDetails($invite->message_id);
             }
 
@@ -151,7 +153,7 @@ class MailWebhookSync implements ShouldQueue
                     ]
                 ];
 
-                (new \App\Jobs\PostMark\ProcessPostmarkWebhook($data))->handle();
+                (new \App\Jobs\PostMark\ProcessPostmarkWebhook($data, $token))->handle();
 
                 $invite->sent_date = now();
                 $invite->save();

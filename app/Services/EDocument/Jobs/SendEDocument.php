@@ -100,13 +100,14 @@ class SendEDocument implements ShouldQueue
             $r = Http::withHeaders([...$this->getHeaders(), 'X-EInvoice-Token' => $model->company->account->e_invoicing_token])
                 ->post(config('ninja.hosted_ninja_url')."/api/einvoice/submission", $payload);
 
-            if ($r->hasHeader('X-EINVOICE-QUOTA')) {
-                $account = $model->company->account;
-                $account->e_invoice_quota = (int) $r->header('X-EINVOICE-QUOTA');
-                $account->save();
-            }
-
             if ($r->successful()) {
+                
+                if ($r->hasHeader('X-EINVOICE-QUOTA')) {
+                    $account = $model->company->account;
+                    $account->e_invoice_quota = (int) $r->header('X-EINVOICE-QUOTA');
+                    $account->save();
+                }
+
                 nlog("Model {$model->number} was successfully sent for third party processing via hosted Invoice Ninja");
                 $data = $r->json();
                 return $this->writeActivity($model, Activity::EINVOICE_DELIVERY_SUCCESS, $data['guid']);

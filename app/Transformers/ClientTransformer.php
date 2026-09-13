@@ -11,16 +11,17 @@
 
 namespace App\Transformers;
 
-use App\Models\Activity;
-use App\Models\Client;
-use App\Models\ClientContact;
-use App\Models\ClientGatewayToken;
-use App\Models\CompanyLedger;
-use App\Models\Document;
-use App\Models\GroupSetting;
-use App\Models\SystemLog;
-use App\Utils\Traits\MakesHash;
 use stdClass;
+use App\Models\Client;
+use App\Models\Activity;
+use App\Models\Document;
+use App\Models\Location;
+use App\Models\SystemLog;
+use App\Models\GroupSetting;
+use App\Models\ClientContact;
+use App\Models\CompanyLedger;
+use App\Utils\Traits\MakesHash;
+use App\Models\ClientGatewayToken;
 
 /**
  * class ClientTransformer.
@@ -33,6 +34,7 @@ class ClientTransformer extends EntityTransformer
         'contacts',
         'documents',
         'gateway_tokens',
+        'locations',
     ];
 
     /**
@@ -74,6 +76,18 @@ class ClientTransformer extends EntityTransformer
         $transformer = new ClientContactTransformer($this->serializer);
 
         return $this->includeCollection($client->contacts, $transformer, ClientContact::class);
+    }
+
+    /**
+     * @param Client $client
+     *
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     */
+    public function includeLocations(Client $client)
+    {
+        $transformer = new LocationTransformer($this->serializer);
+
+        return $this->includeCollection($client->locations, $transformer, Location::class);
     }
 
     public function includeGatewayTokens(Client $client)

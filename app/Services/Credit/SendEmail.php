@@ -58,7 +58,7 @@ class SendEmail
             $mo->email_template_body = 'email_template_credit';
             $mo->email_template_subject = 'email_subject_credit';
 
-            if (! $invitation->contact->trashed() && $invitation->contact->email) {
+            if (! $invitation->contact->trashed() && $invitation->contact->email && !$invitation->contact->is_locked) {
                 \App\Services\Email\Email::dispatch($mo, $invitation->company);
                 $this->credit->entityEmailEvent($invitation, 'credit', 'credit');
             }

@@ -97,10 +97,38 @@ class CreateRawPdf
 
     }
 
-    /**
-     * @throws FilePermissionsFailure
-     */
     public function handle()
+    {
+        nlog("Generating PDF for {$this->entity_string}");
+
+        $pdf = $this->generatePdf();
+
+        if($this->isBlankPdf($pdf)) {
+      
+            nlog("Blank PDF detected, generating again");
+            $pdf = $this->generatePdf();
+        }
+
+        return $pdf;
+
+    }
+
+    private function isBlankPdf($pdf): bool
+    {
+
+        $size = mb_strlen($pdf, '8bit'); 
+
+        $blankPdfSize = 12 * 1024; 
+        $tolerance = 100; 
+
+        if($size <= $blankPdfSize) 
+            nlog("PDF EXCEPTION:: size: {$size}, blank PDF size: {$blankPdfSize}, tolerance: {$tolerance}");
+
+        return abs($size) <= $blankPdfSize;
+
+    }
+
+    public function generatePdf()
     {
         $ps = new PdfService($this->invitation, $this->resolveType(), [
             'client' => $this->entity->client ?? false,
@@ -110,9 +138,9 @@ class CreateRawPdf
 
         try {
             $pdf = $ps->boot()->getPdf();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             nlog($e->getMessage());
-            throw new FilePermissionsFailure('Unable to generate the raw PDF');
+            throw new FilePermissionsFailure('Unable to generate the raw PDF => '.$e->getMessage());
         }
 
         if ($this->entity_string == "invoice" && $this->entity->client->getSetting("merge_e_invoice_to_pdf")) {
@@ -127,6 +155,8 @@ class CreateRawPdf
 
         return $pdf;
     }
+
+
 
     public function failed($e)
     {

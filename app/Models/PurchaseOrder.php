@@ -183,6 +183,7 @@ class PurchaseOrder extends BaseModel
         'vendor_id',
         'last_viewed',
         'currency_id',
+        'location_id',
     ];
 
     protected $casts = [
@@ -305,6 +306,11 @@ class PurchaseOrder extends BaseModel
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class)->withTrashed();
+    }
+
+    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Location::class)->withTrashed();
     }
 
     public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo

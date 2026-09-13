@@ -108,7 +108,7 @@ class CompanyExport implements ShouldQueue
         $this->export_data = null;
 
         $this->export_data['backups'] = $this->company->backups()->cursor()->map(function ($backup) {
-            $backup->activity_id = $this->encodePrimaryKey($backup->activity_id);
+            $backup->activity_id = $this->encodePrimaryKey($backup->activity_id); //@phpstan-ignore-line
             return $backup;
         })->all();
 

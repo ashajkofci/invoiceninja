@@ -673,7 +673,12 @@ class CompanyImport implements ShouldQueue
     {
 
         if(file_exists("{$this->root_file_path}company_logo.png")) {
-            $logo = file_get_contents("{$this->root_file_path}company_logo.png");
+            $logo = @file_get_contents("{$this->root_file_path}company_logo.png");
+
+
+            if(!$logo) {
+                return $this;
+            }
 
             $path = (new \App\Jobs\Util\UploadAvatar($logo, $this->company->company_key))->handle();
             

@@ -107,7 +107,7 @@ class Gateway extends StaticModel
             $link = 'https://docs.btcpayserver.org/InvoiceNinja/';
         } elseif ($this->id == 63) {
             $link = 'https://rotessa.com';
-        } elseif ($this->id == 64) {
+        } elseif ($this->id == 65) {
             $link = 'https://help.blockonomics.co/a/solutions/articles/33000291849';
         }
 

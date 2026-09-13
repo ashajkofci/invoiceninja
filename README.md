@@ -185,6 +185,13 @@ Also, if you plan any additions for the main repository, you may want to discuss
 * [Benjamin Beganović](https://github.com/beganovich)
 * [All Contributors](https://github.com/invoiceninja/invoiceninja/graphs/contributors)
 
+
+## Want More?
+Checkout our other projects here!
+
+[Event Schedule](https://www.eventschedule.com/)
+
+
 ## Security
 
 If you find a security issue with this application, please send an email to contact@invoiceninja.com.

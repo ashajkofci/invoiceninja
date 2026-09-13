@@ -517,6 +517,14 @@ class CreditController extends BaseController
             return response(['message' => 'Please verify your account to send emails.'], 400);
         }
 
+        if (Ninja::isHosted()  && $user->account->emailQuotaExceeded()) {
+            return response(['message' => ctrans('texts.email_quota_exceeded_subject')], 400);
+        }
+        
+        if ($user->hasExactPermission('disable_emails') && (stripos($action, 'email') !== false)) {
+            return response(['message' => ctrans('texts.disable_emails_error')], 400);
+        }
+
         $credits = Credit::withTrashed()
                          ->whereIn('id', $request->ids)
                          ->company()

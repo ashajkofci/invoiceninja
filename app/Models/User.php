@@ -528,7 +528,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function hasExactPermission(string $permission = '___'): bool
     {
-        return  (stripos($this->token()->cu->permissions, $permission) !== false);
+        return  (stripos($this->token()->cu->permissions ?? '', $permission) !== false);
     }
 
 

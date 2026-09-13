@@ -56,6 +56,7 @@ class MarkPaid extends AbstractService
                     ->updateBalance($this->payable_balance * -1)
                     ->updatePaidToDate($this->payable_balance)
                     ->setStatus(Invoice::STATUS_PAID)
+                    ->unlockDocuments()
                     ->save();
             }
         }, 1);

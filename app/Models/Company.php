@@ -499,6 +499,11 @@ class Company extends BaseModel
         return $this->hasMany(ClientContact::class)->withTrashed();
     }
 
+    public function locations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Location::class)->withTrashed();
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
      */
@@ -898,7 +903,13 @@ class Company extends BaseModel
 
     public function notification(Notification $notification)
     {
-        return new NotificationService($this, $notification);
+        try{
+            return new NotificationService($this, $notification);
+        } catch(\Throwable $th){
+            nlog("Could not access notification service");
+            nlog($th->getMessage());
+            return null;
+        }
     }
 
     public function routeNotificationForSlack($notification): string

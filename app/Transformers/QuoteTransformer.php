@@ -32,8 +32,21 @@ class QuoteTransformer extends EntityTransformer
     protected array $availableIncludes = [
         'activities',
         'client',
+        'location',
     ];
 
+
+    public function includeLocation(Quote $quote)
+    {
+        $transformer = new LocationTransformer($this->serializer);
+
+        if (!$quote->location) {
+            return null;
+        }
+
+        return $this->includeItem($quote->location, $transformer, \App\Models\Location::class);
+    }
+    
     public function includeActivities(Quote $quote)
     {
         $transformer = new ActivityTransformer($this->serializer);
@@ -150,6 +163,7 @@ class QuoteTransformer extends EntityTransformer
             'subscription_id' => $this->encodePrimaryKey($quote->subscription_id),
             'tax_info' => $quote->tax_data ?: new \stdClass(),
             'e_invoice' => $quote->e_invoice ?: new \stdClass(),
+            'location_id' => $this->encodePrimaryKey($quote->location_id),
 
         ];
     }

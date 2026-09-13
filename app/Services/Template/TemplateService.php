@@ -1074,12 +1074,11 @@ class TemplateService
 
     /**
      *
-     * @param  \App\Models\Expense[] $expenses
+     * @param  array | \Illuminate\Support\Collection $expenses
      * @return array
      */
     public function processExpenses($expenses, bool $nested = false): array
     {
-
         return collect($expenses)->map(function ($expense) use ($nested) {
             /** @var \App\Models\Expense $expense */
             return [

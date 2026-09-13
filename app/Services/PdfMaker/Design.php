@@ -826,10 +826,7 @@ class Design extends BaseDesign
                 }
 
                 $visible_elements = array_filter($element['elements'], function ($el) {
-                    if (isset($el['properties']['visi']) && $el['properties']['visi']) {
-                        return true;
-                    }
-                    return false;
+                    return isset($el['properties']['visi']) && $el['properties']['visi'] === true; //@phpstan-ignore-line
                 });
 
                 if (!empty($visible_elements)) {
@@ -853,7 +850,7 @@ class Design extends BaseDesign
 
                     // Then, filter the elements array
                     $element['elements'] = array_map(function ($el) {
-                        if (isset($el['properties']['visi'])) {
+                        if (isset($el['properties']['visi'])) { //@phpstan-ignore-line
                             if ($el['properties']['visi'] === false) {
                                 $el['properties']['style'] = 'display: none;';
                             }
