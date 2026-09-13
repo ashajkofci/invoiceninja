@@ -272,6 +272,10 @@ class ZugferdEDocument extends AbstractService
             $this->tax_code = ZugferdDutyTaxFeeCategories::VAT_EXEMPT_FOR_EEA_INTRACOMMUNITY_SUPPLY_OF_GOODS_AND_SERVICES;
             $this->exemption_reason_code = "VATEX-EU-IC";
         }
+        else {
+            $this->tax_code = ZugferdDutyTaxFeeCategories::EXEMPT_FROM_TAX;
+            $this->exemption_reason_code = "VATNOTREG";
+        }
 
         return $this;
 
