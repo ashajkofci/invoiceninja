@@ -416,7 +416,7 @@ class ZugferdEDocument extends AbstractService
             ->addDocumentPaymentTerm(ctrans("texts.xinvoice_payable", ['payeddue' => date_create($this->document->date ?? now()->format('Y-m-d'))->diff(date_create($this->document->due_date ?? now()->format('Y-m-d')))->format("%d"), 'paydate' => $this->document->due_date]));
 
         if(strlen($this->client->vat_number ?? '') > 1) {
-            $this->xdocument->addDocumentBuyerTaxRegistration($this->client->vat_number);
+            $this->xdocument->addDocumentBuyerTaxRegistration($this->getDocumentLevelTaxRegistration(), $this->client->vat_number);
         }
 
         return $this;
@@ -466,6 +466,14 @@ class ZugferdEDocument extends AbstractService
     private function getDocumentCurrency(): string
     {
         return $this->client->getCurrencyCode();
+    }
+
+    private function getDocumentLevelTaxRegistration(): string
+    {
+        $items = $this->document->line_items;
+        $tax_id = $items[0]->tax_id ?? '1';
+        return $this->getTaxType($tax_id);
+
     }
 
     private function getTaxType(string $tax_id): string
