@@ -1135,25 +1135,25 @@ class Peppol extends AbstractService
         $id->schemeID = $this->resolveScheme(true);
         $party->EndpointID = $id;
         
-
-
         $party->PartyName[] = $party_name;
 
-        $address = new Address();
-        $address->CityName = $this->invoice->client->city;
-        $address->StreetName = $this->invoice->client->address1;
+        $locationData = $this->invoice->service()->location();
 
-        if (strlen($this->invoice->client->address2 ?? '') > 1) {
-            $address->AdditionalStreetName = $this->invoice->client->address2;
+        $address = new Address();
+        $address->CityName = $locationData['city'];
+        $address->StreetName = $locationData['address1'];
+
+        if (strlen($locationData['address2'] ?? '') > 1) {
+            $address->AdditionalStreetName = $locationData['address2'];
         }
 
-        $address->PostalZone = $this->invoice->client->postal_code;
+        $address->PostalZone = $locationData['postal_code'];
         // $address->CountrySubentity = $this->invoice->client->state;
 
         $country = new Country();
 
         $ic = new IdentificationCode();
-        $ic->value = substr($this->invoice->client->country->iso_3166_2, 0, 2);
+        $ic->value = substr($locationData['country_code'], 0, 2);
 
         $country->IdentificationCode = $ic;
         $address->Country = $country;
@@ -1180,24 +1180,28 @@ class Peppol extends AbstractService
 
     private function getDelivery(): array
     {
+        $locationData = $this->invoice->service()->location();
         $delivery = new \InvoiceNinja\EInvoice\Models\Peppol\DeliveryType\Delivery();
         $location = new \InvoiceNinja\EInvoice\Models\Peppol\LocationType\DeliveryLocation();
 
         $address = new Address();
-        // $address->CityName = $this->invoice->client->city;
-        // $address->StreetName = $this->invoice->client->address1;
+        $address->CityName = $locationData['shipping_city'];
+        $address->StreetName = $locationData['shipping_address1'];
 
-        // if (strlen($this->invoice->client->address2 ?? '') > 1) {
-        //     $address->AdditionalStreetName = $this->invoice->client->address2;
-        // }
+        if (strlen($locationData['shipping_address2'] ?? '') > 1) {
+            $address->AdditionalStreetName = $locationData['shipping_address2'];
+        }
 
-        // $address->PostalZone = $this->invoice->client->postal_code;
-        // $address->CountrySubentity = $this->invoice->client->state;
-
+        $address->PostalZone = $locationData['shipping_postal_code'];
+        
         $country = new Country();
 
         $ic = new IdentificationCode();
-        $shipping = $this->invoice->client->shipping_country ? $this->invoice->client->shipping_country->iso_3166_2 : $this->invoice->client->country->iso_3166_2;
+        $ic->value = substr($locationData['shipping_country_code'], 0, 2);
+        $country->IdentificationCode = $ic;
+
+        $ic = new IdentificationCode();
+        $shipping = $locationData['shipping_country_code'];
         $ic->value = $shipping;
 
         $country->IdentificationCode = $ic;

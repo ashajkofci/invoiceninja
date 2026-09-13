@@ -302,6 +302,23 @@ class LocationApiTest extends TestCase
             'X-API-TOKEN' => $this->token,
         ])->postJson('/api/v1/locations', $data);
 
+        $response->assertStatus(422);
+
+         $data = [
+            'name' => 'Test Location',
+            'address1' => '123 Test St',
+            'address2' => 'Suite 100',
+            'city' => 'Test City',
+            'state' => 'TS',
+            'postal_code' => '12345',
+            'country_id' => '840', // USA
+            'client_id' => $this->client->id,
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-TOKEN' => $this->token,
+        ])->postJson('/api/v1/locations', $data);
+
         $response->assertStatus(200);
 
         $arr = $response->json();
@@ -314,6 +331,7 @@ class LocationApiTest extends TestCase
         $location = Location::factory()->create([
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
+            'country_id' => '840',
         ]);
 
         $response = $this->withHeaders([
@@ -331,11 +349,13 @@ class LocationApiTest extends TestCase
         $location = Location::factory()->create([
             'company_id' => $this->company->id,
             'user_id' => $this->user->id,
+            'client_id' => $this->client->id,
         ]);
 
         $data = [
             'name' => 'Updated Location',
             'address1' => '456 Update St',
+            'client_id' => $this->client->id,
         ];
 
         $response = $this->withHeaders([

@@ -35,7 +35,7 @@ class LocationFactory extends Factory
             'city' => $this->faker->city(),
             'state' => $this->faker->state(),
             'postal_code' => $this->faker->postcode(),
-            'country_id' => 4,
+            'country_id' => 840,
         ];
     }
 }
