@@ -29,6 +29,14 @@ class CheckClientExistence
     public function handle(Request $request, Closure $next)
     {
         if (session()->has('multiple_contacts')) {
+            session()->put(
+                'multiple_contacts',
+                session()->get('multiple_contacts')->where(
+                    'company_id',
+                    auth()->guard('contact')->user()->company_id
+                )->values()
+            );
+
             return $next($request);
         }
 
@@ -39,12 +47,9 @@ class CheckClientExistence
             ->whereNotNull('email')
             ->where('email', '<>', '')
             ->distinct('client_id')
-            ->whereNotNull('company_id')
+            ->where('company_id', auth()->guard('contact')->user()->company_id)
             ->whereHas('client', function ($query) {
                 return $query->where('is_deleted', false);
-            })
-            ->whereHas('company', function ($query) {
-                return $query->where('companies.account_id', auth()->guard('contact')->user()->company->account_id);
             })
             ->get();
 
@@ -56,7 +61,7 @@ class CheckClientExistence
         }
 
         if (count($multiple_contacts) == 1 && ! Auth::guard('contact')->check()) {
-            
+
             request()->session()->invalidate();
             request()->session()->regenerateToken();
             Auth::guard('contact')->loginUsingId($multiple_contacts[0]->id, true);
