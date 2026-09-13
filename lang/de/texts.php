@@ -34,7 +34,7 @@ $lang = array(
     'frequency_id' => 'Wie oft',
     'discount' => 'Rabatt',
     'taxes' => 'Steuern',
-    'tax' => 'Steuer',
+    'tax' => 'USt',
     'item' => 'Artikel',
     'description' => 'Beschreibung',
     'unit_cost' => 'Einzelpreis',
@@ -5494,7 +5494,12 @@ Leistungsempfängers',
     'activity_149' => ':user hat Gutschrift :credit für :client an :contact gesendet',
     'email_history_empty' => 'Kein E-Mail-Verlauf gefunden, diese Funktion ist nur beim Senden mit Postmark/Mailgun verfügbar.',
     'e_invoicing' => 'E-Rechnung',
-    'einvoice_token_not_found' => 'E-Rechnung Token nicht gefunden. Senden Sie eine Mail an contact@invoiceninja.com, um weitere Informationen zu erhalten.',
+    'einvoice_token_not_found' => 'Token für E-Rechnung nicht gefunden. Bitte gehen Sie zu Einstellungen > E-Rechnung und generieren Sie den Token erneut.',
+    'regenerate' => 'Erneut generieren',
+    'subscription_unavailable' => 'Dieser Artikel ist nicht mehr verfügbar',
+    'currency_samoan_tala' => 'Samoan Tala',
+    'confirm_duplicate_gateway' => 'Möchten Sie wirklich eine weitere Verbindung erstellen?',
+    'clients_limit' => 'Sie haben Ihr Kundenlimit erreicht. Bitte aktualisieren Sie Ihren Plan.',
 );
 
 return $lang;

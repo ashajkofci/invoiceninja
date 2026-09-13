@@ -34,7 +34,7 @@ class TaxSummaryReport extends BaseExport
 
     public Writer $csv;
 
-    public string $date_key = 'created_at';
+    public string $date_key = 'date';
 
     private array $taxes = [];
 

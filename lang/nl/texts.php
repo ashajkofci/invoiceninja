@@ -43,7 +43,7 @@ $lang = array(
     'subtotal' => 'Subtotaal',
     'net_subtotal' => 'Netto',
     'paid_to_date' => 'Reeds betaald',
-    'balance_due' => 'Te voldaan',
+    'balance_due' => 'Te voldoen',
     'invoice_design_id' => 'Ontwerp',
     'terms' => 'Voorwaarden',
     'your_invoice' => 'Uw factuur',
@@ -5492,7 +5492,10 @@ E-mail: :email<b><br><b>',
     'e_invoicing' => 'E-Invoicing',
     'einvoice_token_not_found' => 'E-invoicing token not found. Please go to Settings > E-invoice and regenerate token.',
     'regenerate' => 'Regenerate',
-
+    'subscription_unavailable' => 'This item is no longer available',
+    'currency_samoan_tala' => 'Samoan Tala',
+    'confirm_duplicate_gateway' => 'Are you sure you want to create another connection?',
+    'clients_limit' => 'You have reached your client limit. Please upgrade your plan.',
 );
 
 return $lang;

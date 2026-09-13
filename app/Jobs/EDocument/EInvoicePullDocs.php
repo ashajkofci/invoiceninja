@@ -102,23 +102,33 @@ class EInvoicePullDocs implements ShouldQueue
             $storecove_invoice = $storecove->expense->getStorecoveInvoice(json_encode($document['document']['invoice']));
             $expense = $storecove->expense->createExpense($storecove_invoice, $company);
 
-            $file_name = \Illuminate\Support\Str::ascii(substr($expense->private_notes, 0, 255));
+            $file_name = $document['guid'];
 
             if(strlen($document['html'] ?? '') > 5)
             {
 
-                $document = TempFile::UploadedFileFromRaw($document['html'], "{$file_name}.html", 'text/html');
-                $this->saveDocument($document, $expense);
-
+                $upload_document = TempFile::UploadedFileFromRaw($document['html'], "{$file_name}.html", 'text/html');
+                $this->saveDocument($upload_document, $expense);
+                $upload_document = null;
             }
 
             if(strlen($document['original_base64_xml'] ?? '') > 5)
             {
                 
-                $document = TempFile::UploadedFileFromBase64($document['original_base64_xml'], "{$file_name}.xml", 'application/xml');
-                $this->saveDocument($document, $expense);
+                $upload_document = TempFile::UploadedFileFromBase64($document['original_base64_xml'], "{$file_name}.xml", 'application/xml');
+                $this->saveDocument($upload_document, $expense);
+                $upload_document = null;
+            }
+
+            foreach ($document['document']['invoice']['attachments'] as $attachment) {
+
+                $upload_document = TempFile::UploadedFileFromBase64($attachment['document'], $attachment['filename'], $attachment['mime_type']);
+                $this->saveDocument($upload_document, $expense);
+                $upload_document = null;
 
             }
+
+
         }
 
         $response = \Illuminate\Support\Facades\Http::baseUrl(config('ninja.hosted_ninja_url'))
@@ -138,5 +148,10 @@ class EInvoicePullDocs implements ShouldQueue
         if($response->successful()){
         }
 
+    }
+
+    public function failed(Throwable $exception)
+    {
+        nlog($exception->getMessage());
     }
 }

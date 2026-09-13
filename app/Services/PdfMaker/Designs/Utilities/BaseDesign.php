@@ -12,6 +12,10 @@
 
 namespace App\Services\PdfMaker\Designs\Utilities;
 
+/**
+ * @deprecated 2025-02-04
+ */
+
 class BaseDesign
 {
     // ..

@@ -30,7 +30,6 @@ class ClientTransformer extends BaseTransformer
 
     public function transform(mixed $data): array
     {
-        nlog($data);
 
         $contact = [
             'first_name' => data_get($data, 'GivenName'),
@@ -40,7 +39,7 @@ class ClientTransformer extends BaseTransformer
         ];
 
         $client = [
-            'id' => data_get($data, 'Id.value', null),
+            'id' => data_get($data, 'Id.value', null) ?? data_get($data, 'Id', null),
             'name' => data_get($data, 'CompanyName', ''),
             'address1' => data_get($data, 'BillAddr.Line1', ''),
             'address2' => data_get($data, 'BillAddr.Line2', ''),
@@ -63,7 +62,7 @@ class ClientTransformer extends BaseTransformer
         ];
 
         $settings = ClientSettings::defaults();
-        $settings->currency_id = (string) $this->resolveCurrency(data_get($data, 'CurrencyRef.value'));
+        $settings->currency_id = (string) $this->resolveCurrency(data_get($data, 'CurrencyRef.value', $this->company->settings->currency_id));
 
         $client['settings'] = $settings;
 

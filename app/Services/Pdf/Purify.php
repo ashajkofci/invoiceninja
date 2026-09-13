@@ -114,7 +114,7 @@ class Purify
         'charset' => ['*'],
         'name' => ['*'],
         'content' => ['*'],
-        'http-equiv' => ['*'],
+        'http-equiv' => ['cache-control'],
         'viewport' => ['*'],
         'xmlns' => ['http://www.w3.org/2000/svg'],
 

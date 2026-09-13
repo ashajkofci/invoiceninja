@@ -5490,7 +5490,12 @@ $lang = array(
     'activity_149' => ':user đã gửi email ghi rõ :credit cho :client đến :contact',
     'email_history_empty' => 'Không tìm thấy lịch sử email , tính năng này chỉ khả dụng khi gửi bằng Postmark/Mailgun.',
     'e_invoicing' => 'E- lập hóa đơn',
-    'einvoice_token_not_found' => 'Không tìm thấy mã thông báo lập hóa đơn . email contact@invoiceninja.com để biết thêm thông tin.',
+    'einvoice_token_not_found' => 'Không tìm thấy mã thông báo lập hóa đơn . Vui lòng đến Cài đặt &gt; E- Hóa đơn và tạo lại token.',
+    'regenerate' => 'Tái tạo',
+    'subscription_unavailable' => 'Mục này không còn nữa',
+    'currency_samoan_tala' => 'Samoa Tala',
+    'confirm_duplicate_gateway' => 'Bạn có chắc chắn Tạo đến nối khác không?',
+    'clients_limit' => 'Bạn đã đạt đến giới hạn khách hàng của mình. Vui lòng nâng cấp gói của bạn.',
 );
 
 return $lang;

@@ -333,4 +333,70 @@ class Expense extends BaseModel
         return $tax_rate;
 
     }
+
+    public function getNetAmount()
+    {
+
+        $precision = $expense->currency->precision ?? 2;
+
+        if ($this->calculate_tax_by_amount) {
+
+            $total_tax_amount = round($this->tax_amount1 + $this->tax_amount2 + $this->tax_amount3, $precision);
+
+            if ($this->uses_inclusive_taxes) {
+                return round($this->amount, $precision) - $total_tax_amount;
+            } else {
+                return round($this->amount, $precision);
+            }
+
+        } else {
+
+            if ($this->uses_inclusive_taxes) {
+                $total_tax_amount = ($this->calcInclusiveLineTax($this->tax_rate1 ?? 0, $this->amount, $precision)) + ($this->calcInclusiveLineTax($this->tax_rate2 ?? 0, $this->amount, $precision)) + ($this->calcInclusiveLineTax($this->tax_rate3 ?? 0, $this->amount, $precision));
+                return round(($this->amount - round($total_tax_amount, $precision)), $precision);
+            } else {
+                $total_tax_amount = ($this->amount * (($this->tax_rate1 ?? 0) / 100)) + ($this->amount * (($this->tax_rate2 ?? 0) / 100)) + ($this->amount * (($this->tax_rate3 ?? 0) / 100));
+                return round(($this->amount + round($total_tax_amount, $precision)), $precision);
+            }
+        }
+
+    }
+    
+    /**
+     * getTaxAmount
+     *
+     * @return float
+     */
+    public function getTaxAmount(): float
+    {
+
+         $precision = $expense->currency->precision ?? 2;
+
+        if ($this->calculate_tax_by_amount) {
+
+            return round($this->tax_amount1 + $this->tax_amount2 + $this->tax_amount3, $precision);
+
+
+        } else {
+
+            if ($this->uses_inclusive_taxes) {
+                return ($this->calcInclusiveLineTax($this->tax_rate1 ?? 0, $this->amount, $precision)) + ($this->calcInclusiveLineTax($this->tax_rate2 ?? 0, $this->amount, $precision)) + ($this->calcInclusiveLineTax($this->tax_rate3 ?? 0, $this->amount, $precision));
+            } else {
+                return ($this->amount * (($this->tax_rate1 ?? 0) / 100)) + ($this->amount * (($this->tax_rate2 ?? 0) / 100)) + ($this->amount * (($this->tax_rate3 ?? 0) / 100));
+            }
+        }
+    }
+    
+    /**
+     * calcInclusiveLineTax
+     *
+     * @param  mixed $tax_rate
+     * @param  mixed $amount
+     * @param  mixed $precision
+     * @return float
+     */
+    private function calcInclusiveLineTax($tax_rate, $amount, $precision): float
+    {
+        return round($amount - ($amount / (1 + ($tax_rate / 100))), $precision);
+    }
 }

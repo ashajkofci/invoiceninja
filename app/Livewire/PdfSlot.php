@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Jobs\EDocument\CreateEDocument;
 use App\Models\PurchaseOrderInvitation;
 use App\Models\RecurringInvoiceInvitation;
-use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
+use App\Services\Pdf\Markdown;
 
 class PdfSlot extends Component
 {
@@ -292,7 +292,7 @@ class PdfSlot extends Component
             return [
                 'quantity' => $item->quantity,
                 'cost' => Number::formatMoney($item->cost, $this->entity()->client ?: $this->entity()->vendor),
-                'notes' => $this->invitation()->company->markdown_enabled ? DesignHelpers::parseMarkdownToHtml($notes) : $notes,
+                'notes' => $this->invitation()->company->markdown_enabled ? Markdown::parse($notes) : $notes,
                 'line_total' => Number::formatMoney($item->line_total, $this->entity()->client ?: $this->entity()->vendor),
             ];
         });
@@ -308,7 +308,7 @@ class PdfSlot extends Component
             return [
                 'quantity' => $item->quantity,
                 'cost' => Number::formatMoney($item->cost, $this->entity()->client ?: $this->entity()->vendor),
-                'notes' => $this->invitation()->company->markdown_enabled ? DesignHelpers::parseMarkdownToHtml($item->notes) : $item->notes,
+                'notes' => $this->invitation()->company->markdown_enabled ? Markdown::parse($item->notes) : $item->notes,
                 'line_total' => Number::formatMoney($item->line_total, $this->entity()->client ?: $this->entity()->vendor),
             ];
         });

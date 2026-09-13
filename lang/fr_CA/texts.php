@@ -5488,9 +5488,12 @@ Développe automatiquement la section des notes dans le tableau de produits pour
     'activity_149' => ':user a envoyé par courriel le crédit :credit pour :client à :contact',
     'email_history_empty' => 'Aucun historique de courriel trouvé. Cette fonctionnalité est uniquement disponible lors de l\'envoi avec Postmark/Mailgun.',
     'e_invoicing' => 'Facture électronique',
-    'einvoice_token_not_found' => 'Le jeton de facturation électronique est introuvable. Veuillez vous rendre dans Réglages > Facturation électronique et régénérer le jeton.',
+    'einvoice_token_not_found' => 'Jeton de facturation électronique introuvable. Veuillez aller dans Paramètres > Facture électronique et régénérer le jeton.',
     'regenerate' => 'Régénérer',
-
+    'subscription_unavailable' => 'Cet item n\'est plus disponible',
+    'currency_samoan_tala' => 'Tala samoane',
+    'confirm_duplicate_gateway' => 'Êtes-vous sûr de vouloir créer une autre connexion ?',
+    'clients_limit' => 'Vous avez atteint la limite de clients. Veuillez mettre à niveau votre plan.',
 );
 
 return $lang;

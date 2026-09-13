@@ -31,7 +31,7 @@ class ProductTransformer extends BaseTransformer
     {
 
         return [
-            'id' => data_get($data, 'Id.value', null),
+            'id' => data_get($data, 'Id.value', null) ?? data_get($data, 'Id', null),
             'product_key' => data_get($data, 'Name', data_get($data, 'FullyQualifiedName', '')),
             'notes' => data_get($data, 'Description', ''),
             'cost' => data_get($data, 'PurchaseCost', 0),

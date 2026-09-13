@@ -22,7 +22,10 @@ use horstoeko\zugferd\codelists\ZugferdDutyTaxFeeCategories;
 use horstoeko\zugferd\ZugferdDocumentBuilder;
 use horstoeko\zugferd\ZugferdProfiles;
 
-class ZugferdEDokument extends AbstractService
+/**
+ * @deprecated 2025-02-04
+ */
+ class ZugferdEDokument extends AbstractService
 {
     public ZugferdDocumentBuilder $xdocument;
 

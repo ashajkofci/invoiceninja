@@ -19,6 +19,8 @@ use Illuminate\Support\Str;
 
 /**
  * Class MakesInvoiceValues.
+ * 
+ * Quite possibly this is now @deprecated 2025-02-04
  */
 trait MakesInvoiceValues
 {

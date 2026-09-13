@@ -218,20 +218,12 @@ class ZugferdEDocument extends AbstractService
 
         $subtotal = $this->document->uses_inclusive_taxes ? ($this->calc->getTotal() - $total_tax - $this->calc->getTotalNetSurcharges() + $this->calc->getTotalDiscount()) : ($this->calc->getSubTotal());
 
-        
-        // $subtotal = $this->document->uses_inclusive_taxes ? ($taxable_amount - $this->calc->getTotalNetSurcharges()) : ($this->calc->getSubTotal());
+        // nlog($this->calc->getTotalTaxes());
+        // nlog($this->calc->getSubTotal());
+        // nlog($this->calc->getTotalSurcharges());
 
-        nlog($this->calc->getTotalTaxes());
-        nlog($this->calc->getSubTotal());
-        nlog($this->calc->getTotalSurcharges());
-
-        nlog($this->calc->getSubTotal() - $this->calc->getTotalSurcharges() - $this->calc->getTotalTaxes());
-        nlog($this->document->total_taxes);
-
-// $subtotal = $this->document->uses_inclusive_taxes ? ($this->calc->getNetSubTotal() - $total_tax) : ($this->calc->getSubTotal());
-
-        // Calculate amounts after discount
-
+        // nlog($this->calc->getSubTotal() - $this->calc->getTotalSurcharges() - $this->calc->getTotalTaxes());
+        // nlog($this->document->total_taxes);
         
         nlog([
              $this->document->amount,                    // Total amount with VAT

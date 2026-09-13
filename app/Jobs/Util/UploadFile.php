@@ -188,4 +188,9 @@ class UploadFile implements ShouldQueue
 
         return $preview;
     }
+
+    public function failed(\Throwable $exception)
+    {
+        nlog('UploadFile failed: ' . $exception->getMessage());
+    }
 }

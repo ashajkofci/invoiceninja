@@ -125,6 +125,11 @@ class SendEmailRequest extends Request
         /** @var \App\Models\User $user */
         $user = auth()->user();
 
+        if (Ninja::isHosted() && !$user->email_verified_at) {
+            $this->error_message = ctrans('texts.verify_email');
+            return false;
+        }
+
         if (Ninja::isHosted() && !$user->account->account_sms_verified) {
             $this->error_message = ctrans('texts.authorization_sms_failure');
             return false;
