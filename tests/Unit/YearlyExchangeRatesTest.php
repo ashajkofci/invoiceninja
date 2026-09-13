@@ -45,7 +45,8 @@ class YearlyExchangeRatesTest extends TestCase
         $rate = ['year' => 2026, 'currency_id' => '2', 'base_currency_id' => '1', 'rate' => 0.95];
         $rules = UpdateCompanyRequest::yearlyExchangeRateRules();
         $this->assertTrue(Validator::make(['yearly_exchange_rates' => [$rate]], $rules)->passes());
-        foreach ([['year' => 2025], ['rate' => 0], ['rate' => -1], ['rate' => 0.0000001], ['currency_id' => 999], ['currency_id' => 1]] as $invalid) {
+        $this->assertTrue(Validator::make(['yearly_exchange_rates' => [array_replace($rate, ['year' => 2025])]], $rules)->passes());
+        foreach ([['year' => 2024], ['rate' => 0], ['rate' => -1], ['rate' => 0.0000001], ['currency_id' => 999], ['currency_id' => 1]] as $invalid) {
             $this->assertTrue(Validator::make(['yearly_exchange_rates' => [array_replace($rate, $invalid)]], $rules)->fails());
         }
         $this->assertTrue(Validator::make(['yearly_exchange_rates' => [$rate, $rate]], $rules)->fails());

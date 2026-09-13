@@ -143,7 +143,7 @@ class UpdateCompanyRequest extends Request
                 }
             }],
             'yearly_exchange_rates.*' => 'array:year,currency_id,base_currency_id,rate',
-            'yearly_exchange_rates.*.year' => 'required|integer|between:2026,9999',
+            'yearly_exchange_rates.*.year' => 'required|integer|between:2025,9999',
             'yearly_exchange_rates.*.currency_id' => 'required|integer|exists:currencies,id',
             'yearly_exchange_rates.*.base_currency_id' => 'required|integer|exists:currencies,id',
             'yearly_exchange_rates.*.rate' => 'required|numeric|min:0.000001|max:1000000',
