@@ -57,6 +57,13 @@ class BaseDriver extends AbstractPaymentDriver
     public $invitation;
 
     /**
+     * Indicates if returning responses should be headless or classic redirect.
+     * 
+     * @var bool
+     */
+    public bool $headless = false;
+
+    /**
      * The Client
      *
      * @var \App\Models\Client|null $client
@@ -171,6 +178,13 @@ class BaseDriver extends AbstractPaymentDriver
         }
 
         return $fields;
+    }
+
+    public function setHeadless($headless): self
+    {
+        $this->headless = $headless;
+
+        return $this;
     }
 
     /**

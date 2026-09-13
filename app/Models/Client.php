@@ -322,7 +322,7 @@ class Client extends BaseModel implements HasLocalePreference
 
     public function locations(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Location::class)->withTrashed();
+        return $this->hasMany(Location::class);
     }
 
     /**
