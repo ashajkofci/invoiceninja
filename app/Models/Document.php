@@ -205,7 +205,7 @@ class Document extends BaseModel
 
     public function getFile()
     {
-        return Storage::get($this->url);
+        return Storage::disk($this->disk)->get($this->url);
     }
 
     public function translate_entity()

@@ -550,15 +550,6 @@ class InvoiceController extends BaseController
         if ($action == 'bulk_print' && $user->can('view', $invoices->first())) {
             $start = microtime(true);
 
-            // 2025-01-22 Legacy implementation of bulk print
-            // $paths = $invoices->map(function ($invoice) {
-            //     return (new \App\Jobs\Entity\CreateRawPdf($invoice->invitations->first()))->handle();
-            // });
-
-            // return response()->streamDownload(function () use ($paths) {
-            //     echo $merge = (new PdfMerge($paths->toArray()))->run();
-            // }, 'print.pdf', ['Content-Type' => 'application/pdf']);
-
             $batch_id = (new \App\Jobs\Invoice\PrintEntityBatch(Invoice::class, $invoices->pluck('id')->toArray(), $user->company()->db))->handle();
             $batch = \Illuminate\Support\Facades\Bus::findBatch($batch_id);
             $batch_key = $batch->name;          
@@ -566,7 +557,7 @@ class InvoiceController extends BaseController
             $finished = false;
 
             do{
-                usleep(500000);
+                usleep(300000);
                 $batch = \Illuminate\Support\Facades\Bus::findBatch($batch_id);
                 $finished = $batch->finished();
             }while(!$finished);

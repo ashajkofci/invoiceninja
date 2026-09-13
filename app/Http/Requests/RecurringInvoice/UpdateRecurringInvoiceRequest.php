@@ -80,6 +80,7 @@ class UpdateRecurringInvoiceRequest extends Request
         $rules['e_invoice'] = ['sometimes', 'nullable', new ValidInvoiceScheme()];
 
         $rules['location_id'] = ['nullable', 'sometimes','bail', Rule::exists('locations', 'id')->where('company_id', $user->company()->id)->where('client_id', $this->recurring_invoice->client_id)];
+        $rules['vendor_id'] = ['nullable', 'sometimes','bail', Rule::exists('vendors', 'id')->where('company_id', $user->company()->id)];
 
         return $rules;
     }
@@ -106,6 +107,10 @@ class UpdateRecurringInvoiceRequest extends Request
 
         if (isset($input['client_id'])) {
             $input['client_id'] = $this->decodePrimaryKey($input['client_id']);
+        }
+
+        if (isset($input['vendor_id'])) {
+            $input['vendor_id'] = $this->decodePrimaryKey($input['vendor_id']);
         }
 
         if (array_key_exists('assigned_user_id', $input) && is_string($input['assigned_user_id'])) {
