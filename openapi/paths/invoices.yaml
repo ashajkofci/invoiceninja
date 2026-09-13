@@ -70,7 +70,7 @@
           required: false
           schema:
             type: string
-          example: ?over_due=
+          example: ?overdue=
         - name: payable
           in: query
           description: |
@@ -94,6 +94,22 @@
           schema:
             type: string
           example: ?private_notes=super secret
+        - name: date
+          in: query
+          description: |
+            Filters the invoices by invoice date returns a list of invoices after (and including) the date
+          required: false
+          schema:
+            type: string
+          example: ?date=2022-01-01
+        - name: date_range
+          in: query
+          description: |
+            Filters the invoices by invoice date returns a list of invoices between two dates
+          required: false
+          schema:
+            type: string
+          example: ?date_range=2022-01-01,2022-01-31
       responses:
         200:
           description: "A list of invoices"
