@@ -25,7 +25,7 @@
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/logo180.png" />
     <link rel="manifest" href="/manifest.json" />
-    <script type="module" crossorigin src="/react/index-BSL_Frs7.js"></script>
+    <script type="module" crossorigin src="/react/index-DM0ISt0s.js"></script>
     <link rel="modulepreload" crossorigin href="/react/rolldown-runtime-CNC7AqOf.js">
     <link rel="modulepreload" crossorigin href="/react/@ant-design-DAiAtinM.js">
     <link rel="modulepreload" crossorigin href="/react/@docuninja-CiT7sB1w.js">
