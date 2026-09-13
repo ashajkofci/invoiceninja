@@ -165,6 +165,81 @@ class ProductReservationServiceTest extends TestCase
         $this->assertSame(9.0, $availability[0]['total_quantity']);
     }
 
+    public function testAvailabilityRejectsEmptyDatesInsteadOfUsingToday(): void
+    {
+        $company = (new Company())->forceFill([
+            'id' => 1,
+            'reservation_start_custom_field' => 1,
+            'reservation_end_custom_field' => 2,
+        ]);
+        DB::table('products')->insert([
+            'company_id' => $company->id,
+            'product_key' => 'calendar-item',
+            'in_stock_quantity' => 10,
+        ]);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Reservation dates must be valid dates.');
+
+        (new ProductReservationService($company))->availability(
+            '',
+            '',
+            [['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 1]]
+        );
+    }
+
+    public function testAvailabilityPeakIsClippedToTheRequestedInterval(): void
+    {
+        $company = (new Company())->forceFill([
+            'id' => 1,
+            'reservation_start_custom_field' => 1,
+            'reservation_end_custom_field' => 2,
+        ]);
+        DB::table('products')->insert([
+            'company_id' => $company->id,
+            'product_key' => 'calendar-item',
+            'in_stock_quantity' => 20,
+        ]);
+        DB::table('invoices')->insert([
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'line_items' => json_encode([['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 6]]),
+                'custom_value1' => '2026-09-01',
+                'custom_value2' => '2026-09-10',
+            ],
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'line_items' => json_encode([['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 2]]),
+                'custom_value1' => '2026-09-10',
+                'custom_value2' => '2026-09-20',
+            ],
+        ]);
+
+        // Both invoices overlap 2026-09-01..10, but only within the requested
+        // interval do they peak at 6 and 6+2=8 respectively.
+        $first = (new ProductReservationService($company))->availability(
+            '2026-09-01',
+            '2026-09-10',
+            [['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 1]]
+        );
+
+        $this->assertSame(8.0, $first[0]['reserved_quantity']);
+        $this->assertSame(12.0, $first[0]['available_quantity']);
+
+        // Requested interval 2026-09-11..20: only the second invoice overlaps,
+        // the first invoice's peak outside the interval must not count.
+        $second = (new ProductReservationService($company))->availability(
+            '2026-09-11',
+            '2026-09-20',
+            [['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 1]]
+        );
+
+        $this->assertSame(2.0, $second[0]['reserved_quantity']);
+        $this->assertSame(18.0, $second[0]['available_quantity']);
+    }
+
     public function testSingleDayAvailabilityUsesConfiguredStockCapacity(): void
     {
         $company = (new Company())->forceFill([
