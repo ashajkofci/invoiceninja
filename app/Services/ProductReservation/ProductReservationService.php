@@ -105,13 +105,15 @@ class ProductReservationService
         $used = [];
         $conflicts = [];
 
-        $this->overlappingInvoices($start, $end, $excludeInvoiceId)->each(function (Invoice $invoice) use (&$used, &$conflicts) {
+        $this->overlappingInvoices($start, $end, $excludeInvoiceId)->each(function (Invoice $invoice) use (&$used, &$conflicts, $start, $end) {
             [$invoiceStart, $invoiceEnd] = $this->datesFromInvoice($invoice->toArray());
             $status = $this->statusFromInvoice($invoice->toArray());
+            // Clip to the requested interval so the peak matches the availability during it.
+            $reservedFrom = max($invoiceStart, $start);
+            $dayAfterReservedUntil = CarbonImmutable::parse(min($invoiceEnd, $end))->addDay()->format('Y-m-d');
             foreach ($this->quantitiesByProductKey((array) $invoice->line_items) as $key => $quantity) {
-                $dayAfterInvoice = CarbonImmutable::parse($invoiceEnd)->addDay()->format('Y-m-d');
-                $used[$key][$invoiceStart] = ($used[$key][$invoiceStart] ?? 0) + $quantity;
-                $used[$key][$dayAfterInvoice] = ($used[$key][$dayAfterInvoice] ?? 0) - $quantity;
+                $used[$key][$reservedFrom] = ($used[$key][$reservedFrom] ?? 0) + $quantity;
+                $used[$key][$dayAfterReservedUntil] = ($used[$key][$dayAfterReservedUntil] ?? 0) - $quantity;
                 $conflicts[$key][] = [
                     'invoice_id' => $invoice->hashed_id,
                     'invoice_number' => (string) $invoice->number,
