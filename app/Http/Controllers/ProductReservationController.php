@@ -65,20 +65,24 @@ class ProductReservationController extends BaseController
         $service = $this->service();
         $this->ensureEnabled($service);
 
+        // $validated['invoice'] only contains the explicitly validated keys, so
+        // the reservation date custom fields would be lost. Read the full payload.
+        $invoice = (array) $request->input('invoice', []);
+
         try {
-            [$start, $end] = $service->datesFromInvoice($validated['invoice']);
+            [$start, $end] = $service->datesFromInvoice($invoice);
         } catch (InvalidArgumentException $exception) {
             return response()->json(['message' => $exception->getMessage(), 'data' => []], 422);
         }
 
         $invoiceId = ($validated['entity_type'] ?? 'invoice') === 'invoice'
-            ? data_get($validated, 'invoice.id')
+            ? data_get($invoice, 'id')
             : null;
         $invoiceId = $invoiceId ? $this->decodePrimaryKey($invoiceId) : null;
         $availability = $service->availability(
             $start,
             $end,
-            data_get($validated, 'invoice.line_items', []),
+            (array) data_get($invoice, 'line_items', []),
             $invoiceId
         );
 
