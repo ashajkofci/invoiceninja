@@ -588,8 +588,8 @@ class TemplateService
                     $poids_total = $this->poidsTotal($invoice);
 
                     if ($invoice->payments ?? false) {
-                        $payments = $invoice->payments->map(function ($payment) {
-                            return $this->transformPayment($payment);
+                        $payments = $invoice->payments->map(function ($payment) use($invoice) {
+                            return $this->transformPayment($payment, $invoice);
                         })->toArray();
                     }
 
@@ -714,12 +714,16 @@ class TemplateService
      * @param  Payment $payment
      * @return array
      */
-    private function transformPayment(Payment $payment): array
+    private function transformPayment(Payment $payment, $entity = null): array
     {
 
         $this->payment = $payment;
 
-        $credits = $payment->credits->map(function ($credit) use ($payment) {
+        $credits = $payment->credits
+        ->when($entity instanceof Credit, function($collection) use ($entity) {
+            return $collection->where('number', $entity->number);
+        })
+        ->map(function ($credit) use ($payment) {
             return [
                 'credit' => $credit->number,
                 'amount_raw' => $credit->pivot->amount,
@@ -736,7 +740,11 @@ class TemplateService
             ];
         });
 
-        $pivot = $payment->invoices->map(function ($invoice) use ($payment) {
+        $pivot = $payment->invoices
+        ->when($entity instanceof Invoice, function($collection) use ($entity) {
+            return $collection->where('number', $entity->number);
+        })  
+        ->map(function ($invoice) use ($payment) {
             return [
                 'invoice' => $invoice->number,
                 'amount_raw' => $invoice->pivot->amount,
@@ -916,8 +924,8 @@ class TemplateService
                     $this->entity = $credit;
 
                     if ($credit->payments ?? false) {
-                        $payments = $credit->payments->map(function ($payment) {
-                            return $this->transformPayment($payment);
+                        $payments = $credit->payments->map(function ($payment) use($credit) {
+                            return $this->transformPayment($payment, $credit);
                         })->toArray();
                     }
 

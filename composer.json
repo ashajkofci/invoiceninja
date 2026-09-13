@@ -101,7 +101,7 @@
         "socialiteproviders/microsoft": "^4.1",
         "sprain/swiss-qr-bill": "^4.3",
         "square/square": "30.0.0.*",
-        "stripe/stripe-php": "^12",
+        "stripe/stripe-php": "^13",
         "symfony/brevo-mailer": "^7.1",
         "symfony/http-client": "^7.0.3",
         "symfony/mailer": "7.1.6",
