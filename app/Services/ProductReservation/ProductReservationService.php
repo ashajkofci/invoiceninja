@@ -225,9 +225,16 @@ class ProductReservationService
 
     private function normalizePeriod(mixed $startDate, mixed $endDate): array
     {
+        $startString = trim((string) $startDate);
+        $endString = trim((string) $endDate);
+
+        if ($startString === '' || $endString === '') {
+            throw new InvalidArgumentException('Reservation dates must be valid dates.');
+        }
+
         try {
-            $start = CarbonImmutable::parse((string) $startDate)->startOfDay();
-            $end = CarbonImmutable::parse((string) $endDate)->startOfDay();
+            $start = CarbonImmutable::parse($startString)->startOfDay();
+            $end = CarbonImmutable::parse($endString)->startOfDay();
         } catch (\Throwable) {
             throw new InvalidArgumentException('Reservation dates must be valid dates.');
         }
