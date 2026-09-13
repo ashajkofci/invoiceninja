@@ -98,6 +98,7 @@ class AccountTransformer implements AccountTransformerInterface
             $dataset = $account->dataset[0];
             $status = false;
             $update = false;
+            $update_eligible = $dataset->updateEligibility ?? '';
 
             match($dataset->additionalStatus ?? '') {
                 'LOGIN_IN_PROGRESS' => $status =  'Data retrieval in progress.',
@@ -118,8 +119,8 @@ class AccountTransformer implements AccountTransformerInterface
                 $account_status = $status;
             }
 
-            match($dataset->updateEligibility ?? '') {
-                'ALLOW_UPDATE' => $update = 'Account connection stable.',
+            match($update_eligible) {
+                'ALLOW_UPDATE' => $update = "Account connection stable. Next Update @ {$dataset->nextUpdateScheduled}",
                 'ALLOW_UPDATE_WITH_CREDENTIALS' => $update = 'Please reconnect your account with updated credentials.',
                 'DISALLOW_UPDATE' => $update = 'Update not available due to technical issues.',
                 default => $update = false,
@@ -146,6 +147,7 @@ class AccountTransformer implements AccountTransformerInterface
             'nickname' => property_exists($account, 'nickname') ? $account->nickname : '',
             'current_balance' => $current_balance,
             'account_currency' => $account_currency,
+            'disabled_upstream' => $update_eligible == 'ALLOW_UPDATE' ? false : true,
         ];
     }
 }
