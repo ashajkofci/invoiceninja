@@ -120,16 +120,6 @@ class ClientTransformer extends BaseTransformer
 
         $client['contacts'] = $contacts;
 
-        if(isset($client_data['qb_id']) && !$this->getClientId($client_data['qb_id'])){
-
-            $sync = new \App\DataMapper\ClientSync();
-            $sync->qb_id = $client_data['qb_id'];
-            $client['sync'] = $sync;
-
-        }
-
-        nlog($client);
-
         return $client;
 
     }

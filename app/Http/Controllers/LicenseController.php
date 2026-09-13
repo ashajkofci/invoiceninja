@@ -110,7 +110,7 @@ class LicenseController extends BaseController
 
                 return response()->json($error, 400);
             } elseif ($data) {
-                $date = date_create($data)->modify('+1 year');
+                $date = date_create($data);
 
                 if ($date < date_create()) {
                     $error = [

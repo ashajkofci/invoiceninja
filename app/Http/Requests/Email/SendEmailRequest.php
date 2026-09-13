@@ -98,6 +98,10 @@ class SendEmailRequest extends Request
             $input['entity'] = "App\Models\\".ucfirst(Str::camel($input['entity']));
         }
 
+        if($input['entity'] == 'purchaseOrder'){
+            $this->entity_plural = "purchase_orders";
+        }
+
         if (isset($input['cc_email'])) {
             $input['cc_email'] = collect(explode(",", $input['cc_email']))->map(function ($email) {
                 return trim($email);

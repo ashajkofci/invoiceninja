@@ -40,8 +40,8 @@ class PaymentTransformer extends BaseTransformer
             'applied' => data_get($qb_data, 'TotalAmt', 0) - data_get($qb_data, 'UnappliedAmt', 0),
             'number' => data_get($qb_data, 'DocNumber', null),
             'private_notes' => data_get($qb_data, 'PrivateNote', null),
-            'currency_id' => (string) $this->resolveCurrency(data_get($qb_data, 'CurrencyRef.value')),
-            'client_id' => $this->getClientId(data_get($qb_data, 'CustomerRef.value', null)),
+            'currency_id' => (string) $this->resolveCurrency(data_get($qb_data, 'CurrencyRef')),
+            'client_id' => $this->getClientId(data_get($qb_data, 'CustomerRef', null)),
         ];
     }
 
@@ -125,7 +125,7 @@ class PaymentTransformer extends BaseTransformer
         if (is_null($invoice) || $invoice !== 'Invoice') {
             return $invoices;
         }
-        if (is_null(($invoice_id = $this->getInvoiceId($this->getString($data, 'Line.LinkedTxn.TxnId.value'))))) {
+        if (is_null(($invoice_id = $this->getInvoiceId($this->getString($data, 'Line.LinkedTxn.TxnId'))))) {
             return $invoices;
         }
 
