@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -71,9 +71,7 @@ class QuickbooksService
 
         $this->sdk = DataService::Configure($merged);
 
-        // $this->sdk->setLogLocation(storage_path("logs/quickbooks.log"));
         $this->sdk->enableLog();
-
         $this->sdk->setMinorVersion("73");
         $this->sdk->throwExceptionOnError(true);
 

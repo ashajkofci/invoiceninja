@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -119,6 +119,7 @@ class TemplateService
         });
 
         $function = new \Twig\TwigFunction('img', \Closure::fromCallable(function (string $image_src, string $image_style = '') {
+            
             $html = '<img src="' . $image_src . '" style="' . $image_style . '"></img>';
 
             return $html;
@@ -1022,6 +1023,27 @@ class TemplateService
             ] : [];
     }
 
+    private function getVendor($entity): array
+    {
+
+        return $entity->vendor ? [
+            'name' => $entity->vendor->present()->name(),
+            'phone' => $entity->vendor->present()->phone(),
+            'website' => $entity->vendor->website ?? '',
+            'number' => $entity->vendor->number ?? '',
+            'id_number' => $entity->vendor->id_number ?? '',
+            'vat_number' => $entity->vendor->vat_number ?? '',
+            'currency' => $entity->vendor->currency()->code ?? 'USD',
+            'custom_value1' => $entity->vendor->custom_value1 ?? '',
+            'custom_value2' => $entity->vendor->custom_value2 ?? '',
+            'custom_value3' => $entity->vendor->custom_value3 ?? '',
+            'custom_value4' => $entity->vendor->custom_value4 ?? '',
+            'address' => $entity->vendor->present()->address(),
+            'shipping_address' => $entity->vendor->present()->shipping_address(),
+            'locale' => substr($entity->vendor->locale(), 0, 2),
+            ] : [];
+    }
+
     private function processInvoiceTask(string $task_id): array
     {
         $task = Task::where('company_id', $this->company->id)
@@ -1050,6 +1072,47 @@ class TemplateService
         ] : [];
     }
 
+    /**
+     *
+     * @param  \App\Models\Expense[] $expenses
+     * @return array
+     */
+    public function processExpenses($expenses, bool $nested = false): array
+    {
+
+        return collect($expenses)->map(function ($expense) use ($nested) {
+            /** @var \App\Models\Expense $expense */
+            return [
+                'category' => $expense->category ? $expense->category->name : '',
+                'amount' => Number::formatMoney($expense->amount, $expense->client ?? $expense->company),
+                'amount_raw' => $expense->amount,
+                'date' => $expense->date ? $this->translateDate($expense->date, $expense->client->date_format(), $expense->client->locale()) : '',
+                'private_notes' => (string) $expense->private_notes ?: '',
+                'public_notes' => (string) $expense->public_notes ?: '',
+                'exchange_rate' => (float) $expense->exchange_rate,
+                'tax_name1' => $expense->tax_name1 ?: '',
+                'tax_rate1' => (float) $expense->tax_rate1,
+                'tax_name2' => $expense->tax_name2 ?: '',
+                'tax_rate2' => (float) $expense->tax_rate2,
+                'tax_name3' => $expense->tax_name3 ?: '',
+                'tax_rate3' => (float) $expense->tax_rate3,
+                'tax_amount1' => (float) $expense->tax_amount1,
+                'tax_amount2' => (float) $expense->tax_amount2,
+                'tax_amount3' => (float) $expense->tax_amount3,
+                'payment_date' => $expense->payment_date ? $this->translateDate($expense->payment_date, $expense->client->date_format(), $expense->client->locale()) : '',
+                'transaction_reference' => $expense->transaction_reference ?: '',
+                'custom_value1' => $expense->custom_value1 ?: '',
+                'custom_value2' => $expense->custom_value2 ?: '',
+                'custom_value3' => $expense->custom_value3 ?: '',
+                'custom_value4' => $expense->custom_value4 ?: '',
+                'calculate_tax_by_amount' => (bool) $expense->calculate_tax_by_amount,
+                'uses_inclusive_taxes' => (bool) $expense->uses_inclusive_taxes,
+                'client' => $this->getClient($expense),
+                'vendor' => $this->getVendor($expense),
+                'project' => ($expense->project && !$nested) ? $this->transformProject($expense->project, true) : [],
+            ];
+         })->toArray();
+    }
 
     /**
      * @todo refactor
@@ -1141,7 +1204,8 @@ class TemplateService
             'client' => $this->getClient($project),
             'user' => $this->userInfo($project->user),
             'assigned_user' => $project->assigned_user ? $this->userInfo($project->assigned_user) : [],
-            'invoices' => $this->processInvoices($project->invoices)
+            'invoices' => $this->processInvoices($project->invoices),
+            'expenses' => ($project->expenses && !$nested) ? $this->processExpenses($project->expenses, true) : [],
         ];
 
     }

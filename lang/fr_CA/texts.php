@@ -1177,7 +1177,7 @@ $lang = array(
     // Payment updates
     'refund_payment' => 'Remboursement',
     'refund_max' => 'Max:',
-    'refund' => 'Rembousement',
+    'refund' => 'Remboursement',
     'are_you_sure_refund' => 'Rembourser les paiements sélectionnés?',
     'status_pending' => 'En attente',
     'status_completed' => 'Complété',
@@ -4173,8 +4173,6 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'payment_type_BECS' => 'BECS',
     'payment_type_ACSS' => 'ACSS',
     'gross_line_total' => 'Ligne du total brut',
-    'time_coefficient' => 'Coefficient de temps',
-    'time_coefficient_name' => 'Nom du coefficient de temps',
     'lang_Slovak' => 'Slovaque',
     'normal' => 'Normal',
     'large' => 'Large',
@@ -4973,7 +4971,7 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'e_invoice' => 'Facture électronique',
     'light_dark_mode' => 'Mode clair/sombre',
     'activities' => 'Activités',
-    'recent_transactions' => "Voici les transations les plus récentes de votre entreprise:",
+    'recent_transactions' => "Transactions récentes",
     'country_Palestine' => "Palestine",
     'country_Taiwan' => 'Taiwan',
     'duties' => 'Droits',
@@ -5499,6 +5497,8 @@ Développe automatiquement la section des notes dans le tableau de produits pour
     'remaining_hours' => 'Heures restantes',
     'just_now' => 'À l\'instant',
     'yesterday' => 'Hier',
+    'enable_client_profile_update' => 'Autoriser les clients à mettre à jour leur profil',
+    'enable_client_profile_update_help' => 'Autoriser les vlients à mettre à jour leur profil à partir du portail client',
 );
 
 return $lang;

@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -52,5 +52,12 @@ class CreditWasCreated implements ShouldBroadcast
     public function broadcastModel(): BaseModel
     {
         return $this->credit;
+    }
+
+    public function broadcastIncludes(): array
+    {
+        return [
+            'client',
+        ];
     }
 }

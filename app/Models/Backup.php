@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -82,6 +82,17 @@ class Backup extends BaseModel
         $this->save();
     }
     
+    public function storeBackupFile($file)
+    {
+            
+        $disk = Ninja::isHosted() ? 'backup' : config('filesystems.default');
+
+        Storage::disk($disk)->put($this->filename, $file);
+
+        $this->disk = $disk;
+        $this->save();
+
+    }
     /**
      * getFile
      *

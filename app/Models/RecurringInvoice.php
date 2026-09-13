@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -226,6 +226,7 @@ class RecurringInvoice extends BaseModel
         'vendor_id',
         'next_send_date_client',
         'uses_inclusive_taxes',
+        'e_invoice',
     ];
 
     protected $casts = [
@@ -235,6 +236,7 @@ class RecurringInvoice extends BaseModel
         'updated_at' => 'timestamp',
         'created_at' => 'timestamp',
         'deleted_at' => 'timestamp',
+        'e_invoice' => 'object',
     ];
 
     protected $appends = [

@@ -2,6 +2,7 @@
 
 namespace App\Import\Providers;
 
+use App\Models\Company;
 use App\Models\Invoice;
 use Illuminate\Support\Facades\Cache;
 use App\Services\Quickbooks\QuickbooksService;
@@ -19,9 +20,21 @@ class QBBackup extends BaseImport implements ImportInterface
     {
         parent::__construct($request, $company);
 
-        $_base64_encoded_qb_data = Cache::get($this->request['hash'].'-qb_backup');
-        $qb_json = base64_decode($_base64_encoded_qb_data);
-        $this->qb_data = json_decode($qb_json, true);
+        $base64_zip = Cache::get($request['hash'].'-backup');
+        $zip_content = base64_decode($base64_zip);
+                
+        $temp_file = tempnam(sys_get_temp_dir(), 'zip_');
+        file_put_contents($temp_file, $zip_content);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($temp_file) === true) {
+                        
+            $qb_json = $zip->getFromName('backup.json'); 
+            $this->qb_data = json_decode($qb_json, true);
+
+            $zip->close();
+        }
+        unlink($temp_file); 
 
         $this->qb = new QuickbooksService($this->company);
         
@@ -45,7 +58,7 @@ class QBBackup extends BaseImport implements ImportInterface
 
     public function product()
     {
-        $this->qb->product->importToNinja($this->qb_data['products']);
+        $this->qb->product->syncToNinja($this->qb_data['products']);
     }
 
     public function invoice()

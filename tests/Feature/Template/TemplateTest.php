@@ -285,6 +285,37 @@ class TemplateTest extends TestCase
         $this->assertIsArray($ts->getData());
     }
 
+    public function testProjectExpenseDataParse()
+    {
+        $data = [];
+
+        $p = \App\Models\Project::factory()->create([
+            'user_id' => $this->user->id,
+            'company_id' => $this->company->id,
+            'client_id' => $this->client->id,
+        ]);
+
+        $e = \App\Models\Expense::factory()->create([
+            'user_id' => $this->user->id,
+            'company_id' => $this->company->id,
+            'client_id' => $this->client->id,
+            'project_id' => $p->id,
+        ]);
+
+        $data['projects'][] = $p;
+        
+        $ts = new TemplateService();
+        $ts->processData($data);
+
+        $this->assertNotNull($ts);
+        $this->assertIsArray($ts->getData());
+
+        nlog($ts->getData());
+
+    }
+
+
+
     public function testQuoteDataParse()
     {
         $data = [];

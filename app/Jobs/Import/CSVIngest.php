@@ -4,7 +4,7 @@
  *
  * @link https://github.com/invoiceninja/invoiceninja source repository
  *
- * @copyright Copyright (c) 2024. Invoice Ninja LLC (https://invoiceninja.com)
+ * @copyright Copyright (c) 2025. Invoice Ninja LLC (https://invoiceninja.com)
  *
  * @license https://www.elastic.co/licensing/elastic-license
  */
@@ -137,7 +137,7 @@ class CSVIngest implements ShouldQueue
                 return new Zoho($this->request, $this->company);
             case 'freshbooks':
                 return new Freshbooks($this->request, $this->company);
-            case 'qbbackup':
+            case 'quickbooks':
                 return new QBBackup($this->request, $this->company);
             default:
                 nlog("could not return provider");
