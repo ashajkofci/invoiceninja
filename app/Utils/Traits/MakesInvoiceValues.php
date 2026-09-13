@@ -294,15 +294,15 @@ trait MakesInvoiceValues
             $is_group_child = \App\Helpers\Invoice\InvoiceItemGroup::isChild($item, $group_headers);
             $group_header = $is_group_child ? $group_headers[(string) $item->group_id] : null;
 
+            $data[$key]['__is_group_header'] = $is_group_header;
+            $data[$key]['__is_group_child'] = $is_group_child;
+
             $data[$key][$table_type.'.product_key'] = is_null(optional($item)->product_key) ? $item->item : $item->product_key;
             $data[$key][$table_type.'.item'] = is_null(optional($item)->item) ? $item->product_key : $item->item;
             $data[$key][$table_type.'.service'] = is_null(optional($item)->service) ? $item->product_key : $item->service;
 
             if ($is_group_header) {
                 $data[$key][$table_type.'.product_key'] = $item->group_title ?: $item->product_key;
-                $data[$key][$table_type.'.item'] = $data[$key][$table_type.'.product_key'];
-            } elseif ($is_group_child) {
-                $data[$key][$table_type.'.product_key'] = '&nbsp;&nbsp;↳ '.$data[$key][$table_type.'.product_key'];
                 $data[$key][$table_type.'.item'] = $data[$key][$table_type.'.product_key'];
             }
 

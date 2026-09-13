@@ -42,6 +42,7 @@ class StoreCompanyRequest extends Request
         $input = $this->all();
 
         $rules = [];
+        $rules += UpdateCompanyRequest::yearlyExchangeRateRules();
 
         $rules['name'] = new ValidCompanyQuantity();
         $rules['company_logo'] = 'mimes:jpeg,jpg,png,gif|max:10000'; // max 10000kb
@@ -74,6 +75,9 @@ class StoreCompanyRequest extends Request
     public function prepareForValidation()
     {
         $input = $this->all();
+        if (isset($input['yearly_exchange_rates_json']) && !array_key_exists('yearly_exchange_rates', $input)) {
+            $input['yearly_exchange_rates'] = json_decode($input['yearly_exchange_rates_json'], true);
+        }
 
         if (!isset($input['name'])) {
             $input['name'] = 'Untitled Company';

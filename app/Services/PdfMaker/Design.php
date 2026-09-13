@@ -822,7 +822,7 @@ class Design extends BaseDesign
             }
         }
 
-        return $elements;
+        return \App\Services\Pdf\GroupTableStyle::columns($elements);
     }
 
     /**
@@ -941,15 +941,7 @@ class Design extends BaseDesign
                 }
             }
 
-            if ($row_class && isset($element['elements'][0])) {
-                $style = $element['elements'][0]['properties']['style'] ?? '';
-                $style .= $row_class === 'group-header'
-                    ? ' font-weight: bold;'
-                    : ' padding-left: 1.5rem;';
-                $element['elements'][0]['properties']['style'] = trim($style);
-            }
-
-            $elements[] = $element;
+            $elements[] = \App\Services\Pdf\GroupTableStyle::row($element);
         }
 
         $document = null;

@@ -306,6 +306,7 @@ class Company extends BaseModel
         'enable_product_quantity',
         'enable_time_coefficient',
         'time_coefficients',
+        'yearly_exchange_rates',
         'enabled_modules',
         'reservation_start_custom_field',
         'reservation_end_custom_field',
@@ -410,6 +411,7 @@ class Company extends BaseModel
         'reservation_status_custom_field' => 'int',
         'reservation_statuses' => 'array',
         'time_coefficients' => 'array',
+        'yearly_exchange_rates' => 'array',
     ];
 
     protected $with = [];

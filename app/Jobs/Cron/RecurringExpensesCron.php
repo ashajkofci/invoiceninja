@@ -113,7 +113,8 @@ class RecurringExpensesCron
         if ((int)$expense->company->settings->currency_id != $expense->currency_id) {
             $exchange_rate = new CurrencyApi();
 
-            $expense->exchange_rate = $exchange_rate->exchangeRate($expense->currency_id, (int)$expense->company->settings->currency_id, Carbon::parse($expense->date));
+            $expense->exchange_rate = $expense->yearlyExchangeRate() ?? $exchange_rate->exchangeRate($expense->currency_id, (int)$expense->company->settings->currency_id, Carbon::parse($expense->date));
+            $expense->invoice_currency_id = $expense->company->settings->currency_id;
         } else {
             $expense->exchange_rate = 1;
         }

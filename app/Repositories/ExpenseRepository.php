@@ -56,7 +56,7 @@ class ExpenseRepository extends BaseRepository
 
         $expense->fill($data);
 
-        if (!$expense->id) {
+        if (!$expense->id || $expense->isDirty(['currency_id', 'date'])) {
             $expense = $this->processExchangeRates($data, $expense);
         }
 
@@ -110,11 +110,26 @@ class ExpenseRepository extends BaseRepository
      */
     public function processExchangeRates($data, $expense): Expense
     {
-        if (array_key_exists('exchange_rate', $data) && isset($data['exchange_rate']) && $data['exchange_rate'] != 1) {
+        if ((string) $expense->currency_id === (string) $expense->company->settings->currency_id) {
+            $expense->exchange_rate = 1;
+            $expense->invoice_currency_id = $expense->company->settings->currency_id;
             return $expense;
         }
 
-        $expense_currency = $data['currency_id'];
+        $rate = $expense->yearlyExchangeRate();
+        if ($rate !== null && ((!$expense->exists && (!isset($data['exchange_rate']) || $data['exchange_rate'] == 1))
+            || ($expense->exists && $expense->isDirty(['currency_id', 'date'])))) {
+            $expense->exchange_rate = $rate;
+            $expense->invoice_currency_id = $expense->company->settings->currency_id;
+            return $expense;
+        }
+
+        if (array_key_exists('exchange_rate', $data) && isset($data['exchange_rate']) && $data['exchange_rate'] != 1
+            && (!$expense->exists || !$expense->isDirty(['currency_id', 'date']))) {
+            return $expense;
+        }
+
+        $expense_currency = $expense->currency_id;
         $company_currency = $expense->company->settings->currency_id;
 
         if ($company_currency != $expense_currency) {

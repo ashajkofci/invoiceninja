@@ -34,6 +34,12 @@ class CompanyRepository extends BaseRepository
      */
     public function save(array $data, Company $company): ?Company
     {
+        return $company->getConnection()->transaction(fn () => $this->saveCompany($data, $company));
+    }
+
+    private function saveCompany(array $data, Company $company): ?Company
+    {
+        $previous_rates = $company->yearly_exchange_rates ?? [];
 
         if (isset($data['custom_fields']) && is_array($data['custom_fields'])) {
             $data['custom_fields'] = $this->parseCustomFields($data['custom_fields']);
@@ -64,6 +70,18 @@ class CompanyRepository extends BaseRepository
         }
 
         $company->save();
+
+        foreach ($company->yearly_exchange_rates ?? [] as $rate) {
+            if (in_array($rate, $previous_rates) || (string) $rate['base_currency_id'] !== (string) $company->settings->currency_id) {
+                continue;
+            }
+
+            $company->expenses()->withTrashed()
+                ->where('is_deleted', false)
+                ->where('currency_id', $rate['currency_id'])
+                ->whereBetween('date', [$rate['year'] . '-01-01', $rate['year'] . '-12-31'])
+                ->update(['exchange_rate' => $rate['rate'], 'invoice_currency_id' => $rate['base_currency_id'], 'updated_at' => now()]);
+        }
 
         return $company;
     }
