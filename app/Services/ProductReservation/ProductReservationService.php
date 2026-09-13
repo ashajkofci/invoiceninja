@@ -103,14 +103,6 @@ class ProductReservationService
         $requested = $this->quantitiesByProductKey($requestedItems);
         $used = [];
         $conflicts = [];
-        $currentlyReserved = [];
-
-        $today = CarbonImmutable::now($this->company->timezone()->name)->format('Y-m-d');
-        $this->overlappingInvoices($today, $today)->each(function (Invoice $invoice) use (&$currentlyReserved) {
-            foreach ($this->quantitiesByProductKey((array) $invoice->line_items) as $key => $quantity) {
-                $currentlyReserved[$key] = ($currentlyReserved[$key] ?? 0) + $quantity;
-            }
-        });
 
         $this->overlappingInvoices($start, $end, $excludeInvoiceId)->each(function (Invoice $invoice) use (&$used, &$conflicts) {
             [$invoiceStart, $invoiceEnd] = $this->datesFromInvoice($invoice->toArray());
@@ -158,10 +150,10 @@ class ProductReservationService
             ->when(! $includeAllProducts && ! $productId, fn ($query) => $query->whereIn('product_key', $keys))
             ->get();
 
-        return $products->map(function (Product $product) use ($used, $requested, $conflicts, $currentlyReserved) {
+        return $products->map(function (Product $product) use ($used, $requested, $conflicts) {
             $reserved = (float) ($used[$product->product_key] ?? 0);
             $quantity = (float) ($requested[$product->product_key] ?? 0);
-            $stock = (float) $product->in_stock_quantity + ($currentlyReserved[$product->product_key] ?? 0);
+            $stock = (float) $product->in_stock_quantity;
             $tracked = $stock > 0;
             $reservations = $conflicts[$product->product_key] ?? [];
 

@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Models\Company;
 use App\Services\ProductReservation\ProductReservationService;
-use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -35,17 +34,6 @@ class ProductReservationServiceTest extends TestCase
             $table->boolean('is_deleted')->default(false);
             $table->timestamp('deleted_at')->nullable();
         });
-        Schema::create('timezones', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('location');
-            $table->integer('utc_offset')->default(0);
-        });
-        DB::table('timezones')->insert([
-            'id' => 1,
-            'name' => 'UTC',
-            'location' => 'UTC',
-        ]);
     }
 
     public function testEditAvailabilityUsesTheInvoiceCalendarDates(): void
@@ -165,19 +153,17 @@ class ProductReservationServiceTest extends TestCase
         $this->assertSame(9.0, $availability[0]['total_quantity']);
     }
 
-    public function testAvailabilityRestoresCurrentlyReservedInventoryToStockCapacity(): void
+    public function testSingleDayAvailabilityUsesConfiguredStockCapacity(): void
     {
-        $this->travelTo(Carbon::parse('2026-09-13'));
         $company = (new Company())->forceFill([
             'id' => 1,
-            'settings' => (object) ['timezone_id' => '1'],
             'reservation_start_custom_field' => 1,
             'reservation_end_custom_field' => 2,
         ]);
         DB::table('products')->insert([
             'company_id' => $company->id,
             'product_key' => 'calendar-item',
-            'in_stock_quantity' => 8,
+            'in_stock_quantity' => 12,
         ]);
         DB::table('invoices')->insert([
             'company_id' => $company->id,
