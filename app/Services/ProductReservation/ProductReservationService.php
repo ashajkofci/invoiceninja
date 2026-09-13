@@ -18,6 +18,7 @@ class ProductReservationService
     public function enabled(): bool
     {
         return (bool) ($this->company->enabled_modules & Company::MODULE_PRODUCT_RESERVATIONS)
+            && ! $this->company->track_inventory
             && $this->startField() !== null
             && $this->endField() !== null
             && $this->startField() !== $this->endField();

@@ -11,6 +11,7 @@
 
 namespace App\Http\Requests\Company;
 
+use App\Models\Company;
 use App\Utils\Ninja;
 use App\Http\Requests\Request;
 use App\Utils\Traits\MakesHash;
@@ -153,6 +154,10 @@ class UpdateCompanyRequest extends Request
     public function prepareForValidation()
     {
         $input = $this->all();
+
+        if (($input['track_inventory'] ?? $this->company->track_inventory) && isset($input['enabled_modules'])) {
+            $input['enabled_modules'] &= ~Company::MODULE_PRODUCT_RESERVATIONS;
+        }
 
         if (isset($input['reservation_statuses_json'])) {
             $input['reservation_statuses'] = json_decode($input['reservation_statuses_json'], true) ?? [];
