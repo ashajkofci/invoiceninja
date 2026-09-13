@@ -1673,7 +1673,8 @@ class PdfBuilder
      */
     public function statementDetails(): array
     {
-        $s_date = $this->translateDate(now(), $this->service->config->date_format, $this->service->config->locale);
+
+        $s_date = $this->translateDate($this->service->options['start_date'], $this->service->config->date_format, $this->service->config->locale) . " - " . $this->translateDate($this->service->options['end_date'], $this->service->config->date_format, $this->service->config->locale);
 
         return [
             ['element' => 'tr', 'properties' => ['data-ref' => 'statement-label'], 'elements' => [
@@ -1889,6 +1890,7 @@ class PdfBuilder
 
         $elements = [
             ['element' => 'div', 'content' => ctrans('texts.shipping_address'), 'properties' => ['data-ref' => 'shipping_address-label', 'style' => 'font-weight: bold; text-transform: uppercase']],
+            ['element' => 'div', 'content' => $this->service->html_variables['values']['$client.shipping_location_name'], 'show_empty' => false, 'properties' => ['data-ref' => 'shipping_address-client.shipping_location_name']],
             ['element' => 'div', 'content' => $this->service->html_variables['values']['$client.shipping_address1'], 'show_empty' => false, 'properties' => ['data-ref' => 'shipping_address-client.shipping_address1']],
             ['element' => 'div', 'content' => $this->service->html_variables['values']['$client.shipping_address2'], 'show_empty' => false, 'properties' => ['data-ref' => 'shipping_address-client.shipping_address2']],
             ['element' => 'div', 'content' => "{$this->service->html_variables['values']['$client.shipping_city']} {$this->service->html_variables['values']['$client.shipping_state']} {$this->service->html_variables['values']['$client.shipping_postal_code']}", 'properties' => ['data-ref' => 'shipping_address-client.city_state_postal']],

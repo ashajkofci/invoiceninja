@@ -621,12 +621,12 @@ class CheckData extends Command
 
             $credits_from_reversal = Credit::withTrashed()->where('client_id', $client->id)->where('is_deleted', 0)->whereNotNull('invoice_id')->sum('amount');
 
-            // $credits_used_for_payments = $this->clientCreditPaymentables($client);
-            // $total_paid_to_date = $_client->payments_applied + $credits_used_for_payments[0]->credit_payment - $credits_from_reversal;
+            $credits_used_for_payments = $this->clientCreditPaymentables($client);
+            $total_paid_to_date = $_client->payments_applied + $credits_used_for_payments[0]->credit_payment - $credits_from_reversal;
 
             //2025-03-06 - new method
-            $credits_used_for_payments = $this->clientCreditPaymentablesNew($client);
-            $total_paid_to_date = $credits_used_for_payments[0]->credit_payment;
+            // $credits_used_for_payments = $this->clientCreditPaymentablesNew($client);
+            // $total_paid_to_date = $credits_used_for_payments[0]->credit_payment;
 
             if (round($total_paid_to_date, 2) != round($_client->client_paid_to_date, 2)) {
                 $this->wrong_paid_to_dates++;

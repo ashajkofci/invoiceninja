@@ -33,24 +33,25 @@ class UploadAvatar implements ShouldQueue
     public function handle(): ?string
     {
 
-        $tmp_file = sha1(time()).'.png'; //@phpstan-ignore-line
+        $url = null;
 
-        $disk = Ninja::isHosted() ? 'backup' : config('filesystems.default');
+        try {
+            $tmp_file = sha1(time()).'.png'; //@phpstan-ignore-line
 
-        $im = imagecreatefromstring(file_get_contents($this->file));
-        imagealphablending($im, false);
-        imagesavealpha($im, true);
-        $file_png = imagepng($im, sys_get_temp_dir().'/'.$tmp_file);
+            $disk = Ninja::isHosted() ? 'backup' : config('filesystems.default');
 
-        $path = Storage::disk($disk)->putFile($this->directory, new File(sys_get_temp_dir().'/'.$tmp_file));
+            $im = imagecreatefromstring(file_get_contents($this->file));
+            imagealphablending($im, false);
+            imagesavealpha($im, true);
+            $file_png = imagepng($im, sys_get_temp_dir().'/'.$tmp_file);
 
-        $url = Storage::disk($disk)->url($path);
+            $path = Storage::disk($disk)->putFile($this->directory, new File(sys_get_temp_dir().'/'.$tmp_file));
 
-        //return file path
-        if ($url) {
-            return $url;
-        } else {
-            return null;
+            $url = Storage::disk($disk)->url($path);
+        } catch (\Exception $e) {
+            nlog($e->getMessage());
         }
+
+        return $url;
     }
 }

@@ -5571,6 +5571,7 @@ $lang = array(
     'plan_selected' => 'Plan Selected',
     'invalid_date_create_syntax' => 'Invalid date syntax',
     'start_and_end_date_required' => 'Start and end date are required',
+    'project_value' => 'Project Value',
 );
 
 return $lang;

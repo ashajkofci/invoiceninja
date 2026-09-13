@@ -83,6 +83,11 @@ class UpdateClientRequest extends Request
             //'regex:/[@$!%*#?&.]/', // must contain a special character
         ];
 
+        $rules['custom_value1'] = 'bail|nullable|sometimes|string';
+        $rules['custom_value2'] = 'bail|nullable|sometimes|string';
+        $rules['custom_value3'] = 'bail|nullable|sometimes|string';
+        $rules['custom_value4'] = 'bail|nullable|sometimes|string';
+
         return $rules;
     }
 

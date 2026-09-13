@@ -372,6 +372,7 @@ class TemplateService
                 throw ($e);
             }
 
+            // nlog($template->getSourceContext()->getCode()); //this is a nice way to access the twig template
             $template = $template->render($this->data);
 
             $f = $this->document->createDocumentFragment();
@@ -1103,6 +1104,7 @@ class TemplateService
                 'custom_value2' => $expense->custom_value2 ?: '',
                 'custom_value3' => $expense->custom_value3 ?: '',
                 'custom_value4' => $expense->custom_value4 ?: '',
+                'number' => $expense->number ?: '',
                 'calculate_tax_by_amount' => (bool) $expense->calculate_tax_by_amount,
                 'uses_inclusive_taxes' => (bool) $expense->uses_inclusive_taxes,
                 'client' => $this->getClient($expense),

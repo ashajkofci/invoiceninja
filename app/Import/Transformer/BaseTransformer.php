@@ -242,6 +242,18 @@ class BaseTransformer
             }
         }
 
+        $is_free_hosted_client = $this->company->account->isFreeHostedClient();
+        $hosted_client_count = $this->company->account->hosted_client_count;
+
+        if ($is_free_hosted_client && ($this->company->clients()->count() > $hosted_client_count)) {
+            $this->error_array['invoice'][] = [
+                'invoice' => '',
+                'error' => "Error, you are attempting to import more clients than your plan allows ({$hosted_client_count})",
+            ];
+
+            throw new \App\Import\ImportException("Error, you are attempting to import more clients than your plan allows ({$hosted_client_count})");
+        }
+
         $client_repository = app()->make(ClientRepository::class);
         $client_repository->import_mode = true;
 

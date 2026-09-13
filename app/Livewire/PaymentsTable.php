@@ -33,6 +33,10 @@ class PaymentsTable extends Component
     public function mount()
     {
         MultiDB::setDb($this->db);
+
+        $this->sort_asc = false;
+
+        $this->sort_field = 'date';
     }
 
     public function render()

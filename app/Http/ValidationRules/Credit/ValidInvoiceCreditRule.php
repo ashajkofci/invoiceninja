@@ -50,7 +50,15 @@ class ValidInvoiceCreditRule implements Rule
     {
         $invoice = Invoice::withTrashed()->find($value);
 
-        if ($invoice->balance >= $invoice->amount) {
+        if(!$invoice){
+
+            $this->error_message = 'Invoice not found.';
+
+            return false;
+
+        }
+
+        elseif ($invoice->balance >= $invoice->amount) {
             $this->error_message = 'Cannot reverse an invoice with no payment applied.';
 
             return false;

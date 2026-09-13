@@ -279,8 +279,13 @@ class BankIntegrationController extends BaseController
             $is_account_active = $nordigen->isAccountActive($bank_integration->nordigen_account_id);
             $account = $nordigen->getAccount($bank_integration->nordigen_account_id);
 
-
-            if(is_array($account) && isset($account['account_status']) &&!in_array($account['account_status'], ['READY', 'PROCESSING','DISCOVERED'])) {
+            if(is_array($account) && isset($account['code']) && $account['code'] == 429) {
+                
+                $bank_integration->bank_account_status = "429 Rate limit reached, check back later....";
+                $bank_integration->save();
+                return;
+            }
+            elseif(is_array($account) && isset($account['account_status']) &&!in_array($account['account_status'], ['READY', 'PROCESSING','DISCOVERED'])) {
                 $bank_integration->disabled_upstream = true;
                 $bank_integration->save();
 
