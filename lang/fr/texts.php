@@ -4176,6 +4176,8 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'payment_type_BECS' => 'BECS',
     'payment_type_ACSS' => 'CASS',
     'gross_line_total' => 'Total brut',
+    'time_coefficient' => 'Coefficient de temps',
+    'time_coefficient_name' => 'Nom du coefficient de temps',
     'lang_Slovak' => 'slovaque',
     'normal' => 'Normal',
     'large' => 'Grand',

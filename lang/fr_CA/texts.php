@@ -4173,6 +4173,8 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'payment_type_BECS' => 'BECS',
     'payment_type_ACSS' => 'ACSS',
     'gross_line_total' => 'Ligne du total brut',
+    'time_coefficient' => 'Coefficient de temps',
+    'time_coefficient_name' => 'Nom du coefficient de temps',
     'lang_Slovak' => 'Slovaque',
     'normal' => 'Normal',
     'large' => 'Large',
