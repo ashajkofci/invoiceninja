@@ -471,6 +471,8 @@ class PdfBuilder
 
         $tbody = [];
 
+        $this->payment_amount_total = 0;
+
         foreach ($this->service->options['invoices'] as $invoice) {
             foreach ($invoice->payments as $payment) {
                 if ($payment->is_deleted) {
