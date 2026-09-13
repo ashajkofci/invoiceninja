@@ -149,6 +149,8 @@ return [
     'quickbooks' => [
         'client_id' => env('QUICKBOOKS_CLIENT_ID', false),
         'client_secret' => env('QUICKBOOKS_CLIENT_SECRET', false),
+        'redirect' => env('QUICKBOOKS_REDIRECT_URI'),
+        'env' => env('QUICKBOOKS_ENV'),
         'debug' => env('APP_DEBUG',false)
     ],
     'quickbooks_webhook' => [

@@ -21,7 +21,7 @@ class SdkWrapper
 {
     public const MAXRESULTS = 10000;
 
-    private $entities = ['Customer','Invoice','Item','SalesReceipt', 'Vendor', 'Purchase'];
+    private $entities = ['Customer','Invoice','Item', 'SalesReceipt', 'Vendor', 'Purchase', 'Payment'];
 
     private OAuth2AccessToken $token;
 

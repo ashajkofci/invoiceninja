@@ -81,9 +81,6 @@ class ImportController extends Controller
         /** @var UploadedFile $file */
         foreach ($request->files->get('files') as $entityType => $file) {
             $contents = file_get_contents($file->getPathname());
-
-            $contents = $this->convertEncoding($contents);
-
             // Store the csv in cache with an expiry of 10 minutes
             Cache::put($hash.'-'.$entityType, base64_encode($contents), 1200);
 
@@ -188,18 +185,6 @@ class ImportController extends Controller
     private function testMatch($haystack, $needle): bool
     {
         return stripos($haystack, $needle) !== false;
-    }
-
-    private function convertEncoding($data)
-    {
-
-        // $enc = mb_detect_encoding($data, mb_list_encodings(), true);
-
-        // if($enc !== false) {
-        //     $data = mb_convert_encoding($data, "UTF-8", $enc);
-        // }
-
-        return $data;
     }
 
     public function import(ImportRequest $request)

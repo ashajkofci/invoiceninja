@@ -11,24 +11,25 @@
 
 namespace App\Jobs\Import;
 
-use App\Factory\ClientContactFactory;
-use App\Factory\VendorContactFactory;
+use App\Models\Client;
+use App\Models\Vendor;
+use App\Models\Company;
+use App\Libraries\MultiDB;
+use Illuminate\Support\Str;
 use App\Import\Providers\Csv;
-use App\Import\Providers\Freshbooks;
-use App\Import\Providers\Invoice2Go;
-use App\Import\Providers\Invoicely;
+use Illuminate\Bus\Queueable;
 use App\Import\Providers\Wave;
 use App\Import\Providers\Zoho;
-use App\Libraries\MultiDB;
-use App\Models\Client;
-use App\Models\Company;
-use App\Models\Vendor;
-use Illuminate\Bus\Queueable;
+use App\Import\Providers\QBBackup;
+use App\Import\Providers\Invoicely;
+use App\Import\Providers\Freshbooks;
+use App\Import\Providers\Invoice2Go;
+use App\Factory\ClientContactFactory;
+use App\Factory\VendorContactFactory;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Str;
 
 class CSVIngest implements ShouldQueue
 {
@@ -136,6 +137,8 @@ class CSVIngest implements ShouldQueue
                 return new Zoho($this->request, $this->company);
             case 'freshbooks':
                 return new Freshbooks($this->request, $this->company);
+            case 'qbbackup':
+                return new QBBackup($this->request, $this->company);
             default:
                 nlog("could not return provider");
                 break;
