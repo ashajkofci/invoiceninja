@@ -182,6 +182,19 @@ class ClientFilters extends QueryFilters
             return $this->builder->orderByRaw("REGEXP_REPLACE(number,'[^0-9]+','')+0 " . $dir);
         }
 
+        if ($sort_col[0] == 'name') {
+            return $this->builder
+                ->select('clients.*')
+                ->selectSub(function($query) {
+                    $query->from('client_contacts')
+                        ->whereColumn('client_contacts.client_id', 'clients.id')
+                        ->whereNull('client_contacts.deleted_at')
+                        ->select(\DB::raw('COALESCE(NULLIF(first_name, ""), email) as contact_info'))
+                        ->limit(1);
+                }, 'first_contact_name')
+                ->orderByRaw("COALESCE(NULLIF(clients.name, ''), first_contact_name) " . $dir);
+        }
+
         return $this->builder->orderBy($sort_col[0], $dir);
     }
 

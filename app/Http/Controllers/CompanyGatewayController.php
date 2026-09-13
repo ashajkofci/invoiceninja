@@ -583,8 +583,8 @@ class CompanyGatewayController extends BaseController
 
     public function test(TestCompanyGatewayRequest $request, CompanyGateway $company_gateway)
     {
-
-        return response()->json(['message' => $company_gateway->driver()->auth() ? 'true' : 'false'], 200);
+        $message = $company_gateway->driver()->auth();
+        return response()->json(['message' => $message], 200);
 
     }
 

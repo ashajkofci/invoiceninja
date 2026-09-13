@@ -92,12 +92,13 @@ class BlockonomicsPaymentDriver extends BaseDriver
 
         $company = $request->getCompany();
 
-        $url_callback_secret = $request->secret;
-        $db_callback_secret = $this->company_gateway->getConfigField('callbackSecret');
+        // Re-introduce secret in a later stage if needed.
+        // $url_callback_secret = $request->secret;
+        // $db_callback_secret = $this->company_gateway->getConfigField('callbackSecret');
 
-        if ($url_callback_secret != $db_callback_secret) {
-            throw new PaymentFailed('Secret does not match');
-        }
+        // if ($url_callback_secret != $db_callback_secret) {
+        //     throw new PaymentFailed('Secret does not match');
+        // }
 
         $txid = $request->txid;
         $value = $request->value;
@@ -145,20 +146,19 @@ class BlockonomicsPaymentDriver extends BaseDriver
         return $this->payment_method->refund($payment, $amount); //this is your custom implementation from here
     }
 
-    public function auth(): bool
+    public function auth(): string
     {
         try {
-        
             $api_key = $this->company_gateway->getConfigField('apiKey');
             $url = $this->NEW_ADDRESS_URL . '?reset=1';
             $response = Http::withToken($api_key)
                 ->post($url, []);
             if($response->successful()) {
-                return true;
+                return 'ok';
             }
-            return false;
+            return 'error';
         } catch (\Exception $e) {
-            return false;
+            return $e->getMessage();
         }
 
     }

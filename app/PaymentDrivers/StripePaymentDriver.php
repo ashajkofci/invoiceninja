@@ -1035,25 +1035,58 @@ class StripePaymentDriver extends BaseDriver implements SupportsHeadlessInterfac
         }, $string);
     }
 
-    public function auth(): bool
+    public function auth(): string
     {
+        // $this->init();
+
+        // try {
+        //     $this->verifyConnect();
+        //     return 'ok';
+        // } catch (\Throwable $th) {
+
+        // }
+
+        // return 'error';
+
         $this->init();
 
-        try {
-            $this->verifyConnect();
-            return true;
-        } catch (\Exception $e) {
+        try{
+            if ($this->stripe_connect) {
+                // Verify Connect configuration
+                if (!strlen($this->company_gateway->getConfigField('account_id')) > 1) {
+                    return 'error';
+                }
 
+                // Test Connect API access
+                \Stripe\Account::retrieve(
+                    $this->company_gateway->getConfigField('account_id'),
+                    $this->stripe_connect_auth
+                );
+            } else {
+                // Test regular API key access
+                $api_key = $this->company_gateway->getConfigField('apiKey');
+                
+                if (empty($api_key)) {
+                    return 'error';
+                }
+
+                $b = \Stripe\Balance::retrieve(); // Simple API call to verify credentials
+
+            }
+
+            return 'ok';
+        } catch (\Throwable $th) {
+            nlog("Stripe auth error: " . $th->getMessage());
+            return 'error';
         }
 
-        return false;
 
     }
 
     /**
      * @inheritDoc
      */
-    public function setHeadless(bool $headless): self 
+    public function setHeadless(bool $headless): self
     {
         $this->headless = $headless;
 

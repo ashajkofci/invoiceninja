@@ -112,7 +112,7 @@ class FortePaymentDriver extends BaseDriver
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST => 'POST',
                 CURLOPT_POSTFIELDS => '{
-                     "action":"reverse", 
+                     "action":"reverse",
                      "authorization_amount":'.$amount.',
                      "original_transaction_id":"'.$payment->transaction_reference.'",
                      "authorization_code": "9ZQ754"
@@ -193,7 +193,7 @@ class FortePaymentDriver extends BaseDriver
     ////////////////////////////////////////////
     // DB
     ///////////////////////////////////////////
-    public function auth(): bool
+    public function auth(): string
     {
 
         $forte_base_uri = "https://sandbox.forte.net/api/v3/";
@@ -210,7 +210,7 @@ class FortePaymentDriver extends BaseDriver
                     ->withHeaders(['X-Forte-Auth-Organization-Id' => $forte_organization_id])
                     ->get("{$forte_base_uri}/organizations/{$forte_organization_id}/locations/{$forte_location_id}/customers/");
 
-        return $response->successful();
+        return $response->successful() ? 'ok' : 'error';
 
     }
 

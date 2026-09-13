@@ -5569,6 +5569,8 @@ $lang = array(
     'upgrade_plan' => 'Upgrade Plan',
     'upgrade_popup_premium_business_plus_pricing' => 'Pricing? Let\'s talk!',
     'plan_selected' => 'Plan Selected',
+    'invalid_date_create_syntax' => 'Invalid date syntax',
+    'start_and_end_date_required' => 'Start and end date are required',
 );
 
 return $lang;
