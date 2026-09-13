@@ -883,7 +883,7 @@ class Design extends BaseDesign
         }
 
         if(array_key_exists($column, $column_visibility)){
-            return $column_visibility[$column] ? false: true;
+            return !$column_visibility[$column];
         }
 
         return true;
@@ -963,20 +963,19 @@ class Design extends BaseDesign
                 }
             }
 
-
-            // Then, filter the elements array
-            $element['elements'] = array_map(function ($el) {
-                if (isset($el['properties']['visi'])) {
-                    if ($el['properties']['visi'] === false) {
-                        $el['properties']['style'] = 'display: none;';
+                // Then, filter the elements array
+                $element['elements'] = array_map(function ($el) {
+                    if (isset($el['properties']['visi'])) {
+                        if ($el['properties']['visi'] === false) {
+                            $el['properties']['style'] = 'display: none;';
+                        }
+                        unset($el['properties']['visi']);
                     }
-                    unset($el['properties']['visi']);
-                }
-                return $el;
-            }, $element['elements']);
-
+                    return $el;
+                }, $element['elements']);
 
                 $elements[] = $element;
+
             }
 
             return $elements;
@@ -1039,7 +1038,15 @@ class Design extends BaseDesign
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => 'product_table-product.tax2-td', 'visi' => $this->visibilityCheck($column_visibility, $cell)]];
                     } elseif ($cell == '$product.tax_rate3') {
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => 'product_table-product.tax3-td', 'visi' => $this->visibilityCheck($column_visibility, $cell)]];
-                    } elseif ($cell == '$product.unit_cost' || $cell == '$task.rate') {
+                    } elseif ($cell == '$task.discount' && !$this->company->enable_product_discount) {
+                        $element['elements'][] = ['element' => 'td', 'content' => $row['$task.discount'], 'properties' => ['data-ref' => 'task_table-task.discount-td', 'style' => 'display: none;']];
+                    } elseif ($cell == '$task.tax_rate1') {
+                        $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => 'task_table-task.tax1-td', 'visi' => $this->visibilityCheck($column_visibility, $cell)]];
+                    } elseif ($cell == '$task.tax_rate2') {
+                        $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => 'task_table-task.tax2-td', 'visi' => $this->visibilityCheck($column_visibility, $cell)]];
+                    } elseif ($cell == '$task.tax_rate3') {
+                        $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => 'task_table-task.tax3-td', 'visi' => $this->visibilityCheck($column_visibility, $cell)]];
+                    }elseif ($cell == '$product.unit_cost' || $cell == '$task.rate') {
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['style' => 'white-space: nowrap;', 'data-ref' => "{$_type}_table-" . substr($cell, 1) . '-td', 'visi' => $this->visibilityCheck($column_visibility, $cell)]];
                     } else {
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => "{$_type}_table-" . substr($cell, 1) . '-td', 'visi' => $this->visibilityCheck($column_visibility, $cell)]];
@@ -1047,7 +1054,19 @@ class Design extends BaseDesign
                 }
             }
 
+            // Then, filter the elements array
+            $element['elements'] = array_map(function ($el) {
+                if (isset($el['properties']['visi'])) {
+                    if ($el['properties']['visi'] === false) {
+                        $el['properties']['style'] = 'display: none;';
+                    }
+                    unset($el['properties']['visi']);
+                }
+                return $el;
+            }, $element['elements']);
+
             $elements[] = \App\Services\Pdf\GroupTableStyle::row($element);
+
         }
 
         $document = null;
@@ -1067,10 +1086,11 @@ class Design extends BaseDesign
         });
 
         // Transform the items first
-        $transformed_items = $this->transformLineItems($filtered_items,
+        $transformed_items = $this->transformLineItems(
+            $filtered_items->toArray(),
             $type_id === '1' ? '$product' : '$task'
         );
-
+        
         $columns = [];
 
         // Initialize all columns as empty
@@ -1114,9 +1134,12 @@ class Design extends BaseDesign
         $variables = $this->context['pdf_variables']['total_columns'];
         $show_terms_label = $this->entityVariableCheck('$entity.terms') ? 'display: none;' : '';
 
+        
         $elements = [
             ['element' => 'div', 'properties' => ['style' => 'display: flex; flex-direction: column;'], 'elements' => [
-                ['element' => 'p', 'content' => strtr(str_replace(["labels","values"], ["",""], $_variables['values']['$entity.public_notes']), $_variables), 'properties' => ['data-ref' => 'total_table-public_notes', 'style' => 'text-align: left;']],
+                ['element' => 'p', 'properties' => ['data-ref' => 'total_table-public_notes', 'style' => 'text-align: left;'], 'elements' => [
+                    ['element' => 'span', 'content' => strtr(str_replace(["labels", "values"], ["",""], $_variables['values']['$entity.public_notes']), $_variables)]
+                ]],
                 ['element' => 'p', 'content' => '', 'properties' => ['style' => 'text-align: left; display: flex; flex-direction: column; page-break-inside: auto;'], 'elements' => [
                     ['element' => 'span', 'content' => '$entity.terms_label: ', 'properties' => ['data-ref' => 'total_table-terms-label', 'style' => "font-weight: bold; text-align: left; margin-top: 1rem; {$show_terms_label}"]],
                     ['element' => 'span', 'content' => strtr(str_replace("labels", "", $_variables['values']['$entity.terms']), $_variables['labels']), 'properties' => ['data-ref' => 'total_table-terms', 'style' => 'text-align: left;']],
@@ -1201,9 +1224,6 @@ class Design extends BaseDesign
                 }
             } elseif (Str::startsWith($variable, '$custom_surcharge')) {
                 $_variable = ltrim($variable, '$'); // $custom_surcharge1 -> custom_surcharge1
-
-                //07/09/2023 don't show custom values if they are empty
-                // $visible = intval($this->entity->{$_variable}) != 0;
                 $visible = intval(str_replace(['0','.'], '', $this->entity->{$_variable})) != 0;
 
                 $elements[1]['elements'][] = ['element' => 'div', 'elements' => [
