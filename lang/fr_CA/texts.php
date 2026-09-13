@@ -5505,6 +5505,12 @@ Développe automatiquement la section des notes dans le tableau de produits pour
     'unlock_invoice_documents_after_payment' => 'Débloquer les documents après paiement',
     'unlock_invoice_documents_after_payment_help' => 'Autoriser le client à accéder aux documents de facturation lorsqu\'un facture a été payée.',
     'quickbooks' => 'Quickbooks',
+    'disable_emails' => 'Désactiver les courriels',
+    'disable_emails_error' => 'Vous n\'êtes pas autorisé à envoyer des courriels',
+    'disable_emails_help' => 'Empêche un utilisateur d\'envoyer des courriels depuis le système',
+    'add_location' => 'Ajouter un emplacement',
+    'updated_location' => 'Emplacement mis à jour',
+    'created_location' => 'Emplacement créé',
 );
 
 return $lang;
