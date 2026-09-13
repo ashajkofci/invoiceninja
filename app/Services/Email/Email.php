@@ -966,7 +966,7 @@ class Email implements ShouldQueue
      */
     private function entityEmailFailed(string $message = ''): void
     {
-        $class = get_class($this->email_object->entity);
+        $class = $this->email_object->entity ? get_class($this->email_object->entity) : false;
 
         switch ($class) {
             case Invoice::class:
