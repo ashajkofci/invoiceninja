@@ -105,7 +105,6 @@ class GenerateDeliveryNote
         ];
 
         $maker = new PdfMakerService($state);
-nlog("1");
         $maker
             ->design($template)
             ->build();
@@ -125,13 +124,9 @@ nlog("3");
             $pdf = $this->makePdf(null, null, $maker->getCompiledHTML());
         }
 
-nlog("4");
-
         if (config('ninja.log_pdf_html')) {
             info($maker->getCompiledHTML());
         }
-
-nlog("5");
 
         $maker = null;
         $state = null;
