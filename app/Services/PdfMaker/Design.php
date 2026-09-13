@@ -1044,7 +1044,7 @@ class Design extends BaseDesign
 
         $_variables = array_key_exists('variables', $this->context)
             ? $this->context['variables']
-            : ['values' => ['$entity.public_notes' => $this->entity->public_notes, '$entity.terms' => $this->entity->terms, '$entity_footer' => $this->entity->footer], 'labels' => []];
+            : ['values' => ['$entity.public_notes' => $this->entity->public_notes ?? '', '$entity.terms' => $this->entity->terms ?? '', '$entity_footer' => $this->entity->footer ?? ''], 'labels' => []];
 
         $variables = $this->context['pdf_variables']['total_columns'];
         $show_terms_label = $this->entityVariableCheck('$entity.terms') ? 'display: none;' : '';
