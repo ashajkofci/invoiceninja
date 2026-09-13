@@ -43,7 +43,7 @@ class SendEmail
         $this->quote->service()->markSent()->save();
 
         $this->quote->invitations->each(function ($invitation) {
-            if (! $invitation->contact->trashed() && $invitation->contact->email) {
+            if (! $invitation->contact->trashed() && $invitation->contact->email && !$invitation->contact->is_locked) {
 
                 //@refactor 2024-11-10
                 $mo = new EmailObject();

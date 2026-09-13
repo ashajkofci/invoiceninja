@@ -42,9 +42,12 @@ use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use App\Services\EDocument\Gateway\Storecove\PeppolToStorecoveNormalizer;
 use Symfony\Component\Serializer\NameConverter\MetadataAwareNameConverter;
 use Symfony\Component\Serializer\NameConverter\CamelCaseToSnakeCaseNameConverter;
+use App\Utils\Traits\SavesDocuments;
 
 class StorecoveExpense
 {
+    use SavesDocuments;
+
     public function __construct(private Storecove $storecove)
     {
     }
@@ -162,6 +165,14 @@ class StorecoveExpense
 
         $activity_repo = new ActivityRepository();
         $activity_repo->save($fields, $expense, Ninja::eventVars());
+
+        foreach($storecove_invoice->getAttachments() ?? [] as $attachment){
+                        
+            $document = \App\Utils\TempFile::UploadedFileFromBase64($attachment->getDocument(), $attachment->getFilename(), $attachment->getMimeType());
+
+            $this->saveDocument($document, $expense);
+
+        }
 
         return $expense;
 

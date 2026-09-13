@@ -79,6 +79,8 @@ class UpdateRecurringInvoiceRequest extends Request
 
         $rules['e_invoice'] = ['sometimes', 'nullable', new ValidInvoiceScheme()];
 
+        $rules['location_id'] = ['nullable', 'sometimes','bail', Rule::exists('locations', 'id')->where('company_id', $user->company()->id)->where('client_id', $this->recurring_invoice->client_id)];
+
         return $rules;
     }
 

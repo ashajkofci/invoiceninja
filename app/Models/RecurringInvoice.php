@@ -227,6 +227,7 @@ class RecurringInvoice extends BaseModel
         'next_send_date_client',
         'uses_inclusive_taxes',
         'e_invoice',
+        'location_id',
     ];
 
     protected $casts = [
@@ -360,6 +361,11 @@ class RecurringInvoice extends BaseModel
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class)->withTrashed();
+    }
+
+    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Location::class)->withTrashed();
     }
 
     public function assigned_user(): \Illuminate\Database\Eloquent\Relations\BelongsTo

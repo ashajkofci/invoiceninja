@@ -81,7 +81,7 @@ class EmailController extends BaseController
         }
 
         $entity_obj->invitations->each(function ($invitation) use ($entity_obj, $mo, $template) {
-            if (! $invitation->contact->trashed() && $invitation->contact->email) {
+            if (! $invitation->contact->trashed() && $invitation->contact->email && !$invitation->contact->is_locked) {
                 $entity_obj->service()->markSent()->save();
 
                 $mo->invitation_id = $invitation->id;

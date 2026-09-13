@@ -5499,6 +5499,12 @@ Développe automatiquement la section des notes dans le tableau de produits pour
     'yesterday' => 'Hier',
     'enable_client_profile_update' => 'Autoriser les clients à mettre à jour leur profil',
     'enable_client_profile_update_help' => 'Autoriser les vlients à mettre à jour leur profil à partir du portail client',
+    'preference_product_notes_for_html_view' => 'Utilisez les notes d\'articles pour la vue HTML',
+    'preference_product_notes_for_html_view_help' => 'Privilégier la description de l\'article par rapport au titre de l\'article lors de l\'affichage de la facture en HTML.',
+    'project_report' => 'Rapport de projets',
+    'unlock_invoice_documents_after_payment' => 'Débloquer les documents après paiement',
+    'unlock_invoice_documents_after_payment_help' => 'Autoriser le client à accéder aux documents de facturation lorsqu\'un facture a été payée.',
+    'quickbooks' => 'Quickbooks',
 );
 
 return $lang;

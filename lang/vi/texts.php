@@ -5501,6 +5501,12 @@ $lang = array(
     'yesterday' => 'Hôm qua',
     'enable_client_profile_update' => 'Cho phép Khách hàng đến cập nhật hồ sơ',
     'enable_client_profile_update_help' => 'Cho phép Khách hàng đến cập nhật thông tin hồ sơ từ cổng khách hàng',
+    'preference_product_notes_for_html_view' => 'Sử dụng mục Ghi chú cho HTML Xem',
+    'preference_product_notes_for_html_view_help' => 'Ưu tiên Mô tả sản phẩm hơn là Tiêu đề sản phẩm nếu hiển thị thực Hóa đơn trong HTML.',
+    'project_report' => 'Báo cáo dự án',
+    'unlock_invoice_documents_after_payment' => 'Mở khóa tài liệu sau khi Sự chi trả',
+    'unlock_invoice_documents_after_payment_help' => 'Cho phép khách hàng truy cập đến Hóa đơn khi Hóa đơn đã được thanh toán',
+    'quickbooks' => 'Sổ tay nhanh',
 );
 
 return $lang;

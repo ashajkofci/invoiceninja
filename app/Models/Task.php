@@ -394,7 +394,13 @@ class Task extends BaseModel
                 }
 
                 if ($this->company->invoice_task_hours) {
-                    $date_time[] = "{$this->logDuration($log[0], $log[1])} {$hours}";
+                    $duration = $this->logDuration($log[0], $log[1]);
+
+                    if($this->company->use_comma_as_decimal_place){
+                        $duration = number_format($duration, 2, ',', '.');
+                    }
+
+                    $date_time[] = "{$duration} {$hours}";
                 }
 
                 $parts[] = implode(" • ", $date_time);

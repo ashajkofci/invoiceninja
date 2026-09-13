@@ -150,7 +150,7 @@ class EInvoicePullDocs implements ShouldQueue
 
     }
 
-    public function failed(Throwable $exception)
+    public function failed(\Throwable $exception)
     {
         nlog($exception->getMessage());
     }

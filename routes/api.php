@@ -10,16 +10,13 @@
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-use App\Http\Controllers\EInvoicePeppolController;
-use App\Http\Controllers\EInvoiceTokenController;
-use App\Http\Controllers\SubscriptionStepsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BaseController;
-use App\Http\Controllers\BrevoController;
 use App\Http\Controllers\PingController;
 use App\Http\Controllers\SmtpController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\BrevoController;
 use App\Http\Controllers\ChartController;
 use App\Http\Controllers\EmailController;
 use App\Http\Controllers\QuoteController;
@@ -42,8 +39,6 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\MailgunController;
-use App\Http\Controllers\MigrationController;
-use App\Http\Controllers\OneTimeTokenController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\ProductController;
@@ -54,30 +49,35 @@ use App\Http\Controllers\WebCronController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\EInvoiceController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PostMarkController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\MigrationController;
 use App\Http\Controllers\SchedulerController;
 use App\Http\Controllers\SubdomainController;
 use App\Http\Controllers\SystemLogController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ImportJsonController;
-use App\Http\Controllers\ImportQuickbooksController;
 use App\Http\Controllers\SelfUpdateController;
 use App\Http\Controllers\TaskStatusController;
 use App\Http\Controllers\Bank\YodleeController;
 use App\Http\Controllers\CompanyUserController;
 use App\Http\Controllers\PaymentTermController;
 use App\PaymentDrivers\PayPalPPCPPaymentDriver;
-use App\PaymentDrivers\BlockonomicsPaymentDriver;
 use App\Http\Controllers\EmailHistoryController;
 use App\Http\Controllers\GroupSettingController;
+use App\Http\Controllers\OneTimeTokenController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Bank\NordigenController;
 use App\Http\Controllers\CompanyLedgerController;
+use App\Http\Controllers\EInvoiceTokenController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\TaskSchedulerController;
+use App\PaymentDrivers\BlockonomicsPaymentDriver;
 use App\Http\Controllers\CompanyGatewayController;
+use App\Http\Controllers\EInvoicePeppolController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\RecurringQuoteController;
 use App\Http\Controllers\BankIntegrationController;
@@ -87,9 +87,11 @@ use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\HostedMigrationController;
 use App\Http\Controllers\TemplatePreviewController;
 use App\Http\Controllers\ConnectedAccountController;
+use App\Http\Controllers\ImportQuickbooksController;
 use App\Http\Controllers\RecurringExpenseController;
 use App\Http\Controllers\RecurringInvoiceController;
 use App\Http\Controllers\ProtectedDownloadController;
+use App\Http\Controllers\SubscriptionStepsController;
 use App\Http\Controllers\ClientGatewayTokenController;
 use App\Http\Controllers\Reports\TaskReportController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -97,7 +99,6 @@ use App\Http\Controllers\BankTransactionRuleController;
 use App\Http\Controllers\InAppPurchase\AppleController;
 use App\Http\Controllers\Reports\QuoteReportController;
 use App\Http\Controllers\Auth\PasswordTimeoutController;
-use App\Http\Controllers\EInvoiceController;
 use App\Http\Controllers\PreviewPurchaseOrderController;
 use App\Http\Controllers\Reports\ClientReportController;
 use App\Http\Controllers\Reports\CreditReportController;
@@ -281,6 +282,9 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
     Route::get('invoice/{invitation_key}/download_e_invoice', [InvoiceController::class, 'downloadEInvoice'])->name('invoices.downloadEInvoice');
     Route::post('invoices/bulk', [InvoiceController::class, 'bulk'])->name('invoices.bulk');
     Route::post('invoices/update_reminders', [InvoiceController::class, 'update_reminders'])->name('invoices.update_reminders');
+
+    Route::resource('locations', LocationController::class); // name = (locations. index / create / show / update / destroy / edit
+    Route::post('locations/bulk', [LocationController::class, 'bulk'])->name('locations.bulk');
 
     Route::post('logout', [LogoutController::class, 'index'])->name('logout');
 

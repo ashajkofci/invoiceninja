@@ -215,6 +215,11 @@ class Vendor extends BaseModel
         return $this->hasMany(Activity::class);
     }
 
+    public function locations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Location::class)->withTrashed();
+    }
+
     public function getCurrencyCode(): string
     {
         if ($this->currency()) {

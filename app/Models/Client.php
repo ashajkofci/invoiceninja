@@ -320,6 +320,11 @@ class Client extends BaseModel implements HasLocalePreference
         return $this->hasMany(Project::class)->withTrashed();
     }
 
+    public function locations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Location::class)->withTrashed();
+    }
+
     /**
      * Retrieves the specific payment token per
      * gateway - per payment method.

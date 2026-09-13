@@ -11,14 +11,15 @@
 
 namespace App\Http\Controllers\ClientPortal;
 
+use Illuminate\View\View;
+use App\Models\ClientContact;
+use App\Jobs\Util\UploadAvatar;
+use Illuminate\Routing\Redirector;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Contracts\View\Factory;
 use App\Http\Requests\ClientPortal\UpdateClientRequest;
 use App\Http\Requests\ClientPortal\UpdateContactRequest;
-use App\Jobs\Util\UploadAvatar;
-use App\Models\ClientContact;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
@@ -26,7 +27,7 @@ class ProfileController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param ClientContact $client_contact
-     * @return Factory|View
+     * @return Factory|View|RedirectResponse|Redirector
      */
     public function edit(ClientContact $client_contact)
     {

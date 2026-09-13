@@ -526,8 +526,10 @@ class CompanySettings extends BaseSettings
     public bool $enable_client_profile_update = true;
     public bool $preference_product_notes_for_html_view = true;
 
+    public bool $unlock_invoice_documents_after_payment = false;
 
     public static $casts = [
+        'unlock_invoice_documents_after_payment' => 'bool',
         'preference_product_notes_for_html_view' => 'bool',
         'enable_client_profile_update'       => 'bool',
         'merge_e_invoice_to_pdf'             => 'bool',

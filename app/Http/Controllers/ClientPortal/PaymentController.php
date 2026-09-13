@@ -24,6 +24,7 @@ use App\Models\CompanyGateway;
 use App\Factory\PaymentFactory;
 use App\Utils\Traits\MakesHash;
 use App\Utils\Traits\MakesDates;
+use Illuminate\Routing\Redirector;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Contracts\View\Factory;
@@ -55,7 +56,7 @@ class PaymentController extends Controller
      *
      * @param Request $request
      * @param Payment $payment
-     * @return Factory|View
+     * @return Factory|View|RedirectResponse|Redirector
      */
     public function show(Request $request, Payment $payment)
     {

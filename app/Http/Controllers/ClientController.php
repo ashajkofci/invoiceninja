@@ -405,7 +405,7 @@ class ClientController extends BaseController
             }
 
             if (!$resolved_bounce_id) {
-                $ppwebhook = new ProcessPostmarkWebhook([]);
+                $ppwebhook = new ProcessPostmarkWebhook([], config('services.postmark.token'));
                 $resolved_bounce_id = $ppwebhook->getBounceId($bounce_id);
             }
 

@@ -70,7 +70,13 @@ class RecurringInvoiceToInvoiceFactory
 
         return $invoice;
     }
-
+    
+    /**
+     * transformEInvoice
+     *
+     * @param  \App\Models\RecurringInvoice $recurring_invoice
+     * @return \stdClass|null
+     */
     private static function transformEInvoice($recurring_invoice)
     {
         if(!$recurring_invoice->e_invoice) 

@@ -259,8 +259,9 @@ class ZugferdEDocument extends AbstractService
         foreach ($this->document->line_items as $index => $item) {
             /** @var InvoiceItem $item **/
             
+            $position_id = (string) ($index+1);
             // 1. Start new position and set basic details
-            $this->xdocument->addNewPosition($index)
+            $this->xdocument->addNewPosition($position_id)
                 ->setDocumentPositionProductDetails(
                     strlen($item->product_key ?? '') >= 1 ? $item->product_key : "no product name defined", 
                     $item->notes

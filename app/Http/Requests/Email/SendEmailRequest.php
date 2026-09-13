@@ -144,6 +144,11 @@ class SendEmailRequest extends Request
             return false;
         }
 
+        if($user->hasExactPermission('disable_emails')){
+            $this->error_message = ctrans('texts.disable_emails_error');
+            return false;
+        }
+
         /*Make sure we have all the require ingredients to send a template*/
         if (isset($input['entity']) && array_key_exists('entity_id', $input) && in_array($input['entity'], ['App\Models\Invoice','App\Models\Quote','App\Models\Credit','App\Models\RecurringInvoice','App\Models\PurchaseOrder','App\Models\Payment'])) {
 

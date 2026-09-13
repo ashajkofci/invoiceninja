@@ -18,6 +18,7 @@ use App\Libraries\MultiDB;
 use App\Jobs\Util\PreviewPdf;
 use App\Models\PurchaseOrder;
 use App\Models\VendorContact;
+use App\Services\Pdf\PdfMock;
 use App\Utils\Traits\MakesHash;
 use App\Utils\VendorHtmlEngine;
 use App\Services\Pdf\PdfService;
@@ -54,7 +55,7 @@ class PreviewPurchaseOrderController extends BaseController
     /**
      * Returns a template filled with entity variables.
      *
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse | \Illuminate\Http\JsonResponse | \Illuminate\Http\Response | \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse | \Illuminate\Http\JsonResponse | \Illuminate\Http\Response | \Symfony\Component\HttpFoundation\BinaryFileResponse | \Illuminate\Http\RedirectResponse | \Illuminate\Routing\Redirector | string
      *
      * @OA\Post(
      *      path="/api/v1/preview/purchase_order",
@@ -207,7 +208,6 @@ class PreviewPurchaseOrderController extends BaseController
         if (!$invitation) {
             return $this->mockEntity();
         }
-
             
         $design_object = json_decode(json_encode(request()->input('design')), true);
 
@@ -218,7 +218,7 @@ class PreviewPurchaseOrderController extends BaseController
         $ps = new PdfService($invitation, 'product', [
             'client' => $invitation->client ?? false,
             'vendor' => $invitation->vendor ?? false,
-            "{$entity_string}s" => [$invitation->{$entity_string}],
+            "purchase_orders" => [$invitation->purchase_order],
         ]);
 
         $ps->boot()

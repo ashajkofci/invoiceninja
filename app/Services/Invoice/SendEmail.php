@@ -44,7 +44,7 @@ class SendEmail extends AbstractService
         $this->invoice->service()->markSent()->save();
 
         $this->invoice->invitations->filter(function ($invitation){
-            return (! $invitation->contact->trashed() && $invitation->contact->email);
+            return (! $invitation->contact->trashed() && $invitation->contact->email && !$invitation->contact->is_locked);
         })->each(function ($invitation) use($base_template) {
             
                 $mo = new EmailObject();

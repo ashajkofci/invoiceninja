@@ -198,6 +198,7 @@ class Invoice extends BaseModel
         'uses_inclusive_taxes',
         'vendor_id',
         'e_invoice',
+        'location_id',
     ];
 
     protected $casts = [
@@ -317,6 +318,11 @@ class Invoice extends BaseModel
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class)->withTrashed();
+    }
+
+    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Location::class)->withTrashed();
     }
 
     public function recurring_invoice(): \Illuminate\Database\Eloquent\Relations\BelongsTo

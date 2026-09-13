@@ -165,6 +165,7 @@ class Quote extends BaseModel
         'subscription_id',
         'uses_inclusive_taxes',
         'vendor_id',
+        'location_id',
     ];
 
     protected $casts = [
@@ -266,6 +267,11 @@ class Quote extends BaseModel
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class)->withTrashed();
+    }
+
+    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Location::class)->withTrashed();
     }
 
     public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo

@@ -305,76 +305,79 @@ class FacturaEInvoice extends AbstractService
      * FacturaePayment::TYPE_CASH_ON_DELIVERY	Cash on delivery
      * FacturaePayment::TYPE_CARD	Payment by card
      *
-     * @param \App\Models\Payment $payment
-     * @return array
      */
-    private function resolvePaymentMethod(\App\Models\Payment $payment): array
-    {
-        $data = [];
-        $method = FacturaePayment::TYPE_CARD;
+    // private function resolvePaymentMethod(\App\Models\Payment $payment): array
+    // {
+    //     $data = [];
+    //     $method = FacturaePayment::TYPE_CARD;
 
-        match($payment->type_id) {
-            PaymentType::BANK_TRANSFER => $method = FacturaePayment::TYPE_TRANSFER	,
-            PaymentType::CASH => $method = FacturaePayment::TYPE_CASH	,
-            PaymentType::ACH => $method = FacturaePayment::TYPE_TRANSFER	,
-            PaymentType::VISA => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::MASTERCARD => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::AMERICAN_EXPRESS => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::DISCOVER => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::DINERS => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::EUROCARD => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::NOVA => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::CREDIT_CARD_OTHER => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::PAYPAL => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::CHECK => $method = FacturaePayment::TYPE_CHEQUE	,
-            PaymentType::CARTE_BLANCHE => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::UNIONPAY => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::JCB => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::LASER => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::MAESTRO => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::SOLO => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::SWITCH => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::VENMO => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::ALIPAY => $method = FacturaePayment::TYPE_CARD	,
-            PaymentType::SOFORT => $method =  FacturaePayment::TYPE_TRANSFER,
-            PaymentType::SEPA => $method = FacturaePayment::TYPE_TRANSFER,
-            PaymentType::GOCARDLESS => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::CRYPTO => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::CREDIT => $method = FacturaePayment::TYPE_DOCUMENTARY_CREDIT	,
-            PaymentType::ZELLE => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::MOLLIE_BANK_TRANSFER => $method = FacturaePayment::TYPE_TRANSFER	,
-            PaymentType::KBC => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::BANCONTACT => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::IDEAL => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::HOSTED_PAGE => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::GIROPAY => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::PRZELEWY24 => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::EPS => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::DIRECT_DEBIT => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::BECS => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::ACSS => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::INSTANT_BANK_PAY => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::FPX => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::KLARNA => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::Interac_E_Transfer => $method = FacturaePayment::TYPE_TRANSFER	,
-            PaymentType::BACS => $method = FacturaePayment::TYPE_SPECIAL	,
-            PaymentType::STRIPE_BANK_TRANSFER => $method = FacturaePayment::TYPE_TRANSFER	,
-            PaymentType::CASH_APP => $method = FacturaePayment::TYPE_SPECIAL	,
-            default => $method = FacturaePayment::TYPE_CARD	,
-        };
+    //     match($payment->type_id) {
+    //         PaymentType::BANK_TRANSFER => $method = FacturaePayment::TYPE_TRANSFER	,
+    //         PaymentType::CASH => $method = FacturaePayment::TYPE_CASH	,
+    //         PaymentType::ACH => $method = FacturaePayment::TYPE_TRANSFER	,
+    //         PaymentType::VISA => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::MASTERCARD => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::AMERICAN_EXPRESS => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::DISCOVER => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::DINERS => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::EUROCARD => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::NOVA => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::CREDIT_CARD_OTHER => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::PAYPAL => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::CHECK => $method = FacturaePayment::TYPE_CHEQUE	,
+    //         PaymentType::CARTE_BLANCHE => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::UNIONPAY => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::JCB => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::LASER => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::MAESTRO => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::SOLO => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::SWITCH => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::VENMO => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::ALIPAY => $method = FacturaePayment::TYPE_CARD	,
+    //         PaymentType::SOFORT => $method =  FacturaePayment::TYPE_TRANSFER,
+    //         PaymentType::SEPA => $method = FacturaePayment::TYPE_TRANSFER,
+    //         PaymentType::GOCARDLESS => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::CRYPTO => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::CREDIT => $method = FacturaePayment::TYPE_DOCUMENTARY_CREDIT	,
+    //         PaymentType::ZELLE => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::MOLLIE_BANK_TRANSFER => $method = FacturaePayment::TYPE_TRANSFER	,
+    //         PaymentType::KBC => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::BANCONTACT => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::IDEAL => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::HOSTED_PAGE => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::GIROPAY => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::PRZELEWY24 => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::EPS => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::DIRECT_DEBIT => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::BECS => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::ACSS => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::INSTANT_BANK_PAY => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::FPX => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::KLARNA => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::Interac_E_Transfer => $method = FacturaePayment::TYPE_TRANSFER	,
+    //         PaymentType::BACS => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         PaymentType::STRIPE_BANK_TRANSFER => $method = FacturaePayment::TYPE_TRANSFER	,
+    //         PaymentType::CASH_APP => $method = FacturaePayment::TYPE_SPECIAL	,
+    //         default => $method = FacturaePayment::TYPE_CARD	,
+    //     };
 
-        $data['method'] = $method;
+    //     $data['method'] = $method;
 
-        if ($method == FacturaePayment::TYPE_TRANSFER) {
-            $data['iban'] = $payment->custom_value1;
-            $data['bic'] = $payment->custom_value2;
-        }
+    //     if ($method == FacturaePayment::TYPE_TRANSFER) {
+    //         $data['iban'] = $payment->custom_value1;
+    //         $data['bic'] = $payment->custom_value2;
+    //     }
 
-        return $data;
+    //     return $data;
 
 
-    }
-
+    // }
+    
+    /**
+     * buildItems
+     *
+     * @return self
+     */
     private function buildItems(): self
     {
 

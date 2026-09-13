@@ -2080,7 +2080,7 @@ class PdfBuilder
      */
     private function isMarkdown(string $content): bool
     {
-        $content = str_ireplace('<br>', "\n", $content);
+        $content = str_ireplace(['<br>', '<br/>', '<br />'], "\n", $content);
         
         $markdownPatterns = [
             '/^\s*#{1,6}\s/m',  // Headers
@@ -2120,7 +2120,7 @@ class PdfBuilder
             $child['content'] = $child['content'] ?? '';
 
             if ($this->service->company->markdown_enabled && $this->isMarkdown($child['content'])) {
-                $child['content'] = str_ireplace('<br>', "\r", $child['content']);
+                $child['content'] = str_ireplace(['<br>', '<br/>', '<br />'], "\r", $child['content']);
                 $child['content'] = $this->commonmark->convert($child['content']); //@phpstan-ignore-line
             }
 
@@ -2158,9 +2158,9 @@ class PdfBuilder
     /**
      * updateVariables
      *
-     * @return void
+     * @return self
      */
-    public function updateVariables()
+    public function updateVariables(): self
     {
 
         $html = strtr($this->getCompiledHTML(), $this->service->html_variables['labels']);
