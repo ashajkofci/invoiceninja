@@ -72,7 +72,7 @@ class QuickbooksService
         $this->sdk = DataService::Configure($merged);
 
         $this->sdk->enableLog();
-        $this->sdk->setMinorVersion("73");
+        $this->sdk->setMinorVersion("75");
         $this->sdk->throwExceptionOnError(true);
 
         $this->checkToken();

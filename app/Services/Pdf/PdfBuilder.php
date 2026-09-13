@@ -59,6 +59,12 @@ class PdfBuilder
 
         $this->commonmark = new CommonMarkConverter([
             'allow_unsafe_links' => false,
+            'renderer' => [
+                'block_separator' => "\n",
+                'inner_separator' => "\n",
+                'soft_break'      => "\n",
+            ],
+            'html_input' => 'escape',
         ]);
     }
 
@@ -1962,7 +1968,7 @@ class PdfBuilder
     {
         foreach ($items as $key => $item) {
             foreach ($item as $variable => $value) {
-                $item[$variable] = str_replace("\n", '<br>', $value);
+                $item[$variable] = str_replace("\n", '<br/>', $value);
             }
 
             $items[$key] = $item;
@@ -2128,10 +2134,10 @@ class PdfBuilder
 
             if ($this->service->company->markdown_enabled && $this->isMarkdown($child['content'])) {
 
-                // $child['content'] = str_ireplace(['<br>', '<br/>', '<br />'], "\r", $child['content']); //13-05-2025 - testing whether /r or <br/> can work
-
-                $child['content'] = str_ireplace(['<br>', '<br/>', '<br />'], "<br/>", $child['content']); //13-05-2025 - testing whether /r or <br/> can work
+                $child['content'] = str_ireplace(['<br>', '<br/>', '<br />'], "\r\n", $child['content']); //19-05-2025 - pivotting back to this, and allowing html_input for commonmark.
                 $child['content'] = $this->commonmark->convert($child['content']); //@phpstan-ignore-line
+                $child['content'] = nl2br($child['content']); //19-05-2025 - This allows us to use <br> and markdown and still get our spacing.
+                
             }
 
             $contains_html = str_contains($child['content'], '<') && str_contains($child['content'], '>');
