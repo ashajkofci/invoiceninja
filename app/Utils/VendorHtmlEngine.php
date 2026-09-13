@@ -136,6 +136,10 @@ class VendorHtmlEngine
         $data['$line_tax_values'] = ['value' => $this->lineTaxValues(), 'label' => ctrans('texts.taxes')];
         $data['$date'] = ['value' => $this->translateDate($this->entity->date, $this->company->date_format(), $this->vendor->locale()) ?: '&nbsp;', 'label' => ctrans('texts.date')];
 
+        $data['$show_shipping_address'] = ['value' => strlen($this->entity->client->shipping_address1 ?? '') > 0 && $this->settings->show_shipping_address ? 'flex' : 'none', 'label' => ''];
+        $data['$show_shipping_address_block'] = ['value' => strlen($this->entity->client->shipping_address1 ?? '') > 0 && $this->settings->show_shipping_address ? 'block' : 'none', 'label' => ''];
+        $data['$show_shipping_address_visibility'] = ['value' => strlen($this->entity->client->shipping_address1 ?? '') > 0 && $this->settings->show_shipping_address ? 1 : 0, 'label' => ''];
+
         $data['$due_date'] = ['value' => $this->translateDate($this->entity->due_date, $this->company->date_format(), $this->vendor->locale()) ?: '&nbsp;', 'label' => ctrans('texts.due_date')];
 
         $data['$partial_due_date'] = ['value' => $this->translateDate($this->entity->partial_due_date, $this->company->date_format(), $this->vendor->locale()) ?: '&nbsp;', 'label' => ctrans('texts.'.$this->entity_string.'_due_date')];
@@ -154,7 +158,7 @@ class VendorHtmlEngine
         $data['$entity'] = ['value' => '', 'label' => ctrans('texts.purchase_order')];
         $data['$number'] = ['value' => $this->entity->number ?: '&nbsp;', 'label' => ctrans('texts.number')];
         $data['$number_short'] = ['value' => $this->entity->number ?: '&nbsp;', 'label' => ctrans('texts.purchase_order_number_short')];
-        $data['$entity.terms'] = ['value' => Helpers::processReservedKeywords(\nl2br($this->entity->terms ?? ''), $this->company) ?: '', 'label' => ctrans('texts.invoice_terms')];
+        $data['$entity.terms'] = ['value' => Helpers::processReservedKeywords(\nl2br($this->entity->terms ?? ''), $this->company) ?: '', 'label' => ctrans('texts.purchase_order_terms')];
         $data['$terms'] = &$data['$entity.terms'];
         $data['$view_link'] = ['value' => $this->buildViewButton($this->invitation->getLink(), ctrans('texts.view_purchase_order')), 'label' => ctrans('texts.view_purchase_order')];
         $data['$viewLink'] = &$data['$view_link'];
@@ -431,6 +435,9 @@ class VendorHtmlEngine
         $data['$entity_images'] = ['value' => $this->generateEntityImagesMarkup(), 'label' => ''];
 
         $data['$payments'] = ['value' => '', 'label' => ctrans('texts.payments')];
+
+        $data['$shipping'] = ['value' => '', 'label' => ctrans('texts.ship_to')];
+        $data['$ship_to'] = &$data['$shipping'];
 
         if ($this->entity->client()->exists()) {
             $data['$client1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'client1', $this->entity->client->custom_value1, $this->entity->client) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'client1')];

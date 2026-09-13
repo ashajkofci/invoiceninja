@@ -12,29 +12,27 @@
 
 namespace App\Services\Client;
 
-use App\Factory\InvoiceFactory;
-use App\Factory\InvoiceInvitationFactory;
-use App\Factory\InvoiceItemFactory;
+use App\Utils\Number;
 use App\Models\Client;
 use App\Models\Credit;
 use App\Models\Design;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Services\PdfMaker\Design as PdfMakerDesign;
-use App\Services\PdfMaker\PdfMaker;
-use App\Utils\HostedPDF\NinjaPdf;
 use App\Utils\HtmlEngine;
-use App\Utils\Number;
+use Illuminate\Support\Carbon;
+use App\Factory\InvoiceFactory;
+use App\Utils\Traits\MakesHash;
 use App\Utils\PhantomJS\Phantom;
 use App\Utils\Traits\MakesDates;
-use App\Utils\Traits\MakesHash;
-use App\Utils\Traits\Pdf\PdfMaker as PdfMakerTrait;
+use App\Utils\HostedPDF\NinjaPdf;
+use App\Utils\Traits\Pdf\PdfMaker;
+use App\Factory\InvoiceItemFactory;
+use App\Factory\InvoiceInvitationFactory;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 
 class Statement
 {
-    use PdfMakerTrait;
+    use PdfMaker;
     use MakesHash;
     use MakesDates;
 
@@ -89,52 +87,33 @@ class Statement
                 return $pdf;
             }
 
-            if ($this->getDesign()->is_custom) {
-                $this->options['custom_partials'] = \json_decode(\json_encode($this->getDesign()->design), true);
 
-                $template = new PdfMakerDesign(\App\Services\PdfMaker\Design::CUSTOM, $this->options);
-            } else {
-                $template = new PdfMakerDesign(strtolower($this->getDesign()->name), $this->options);
-            }
+            $variables['values']['$show_paid_stamp'] = 'none'; 
 
-            $variables['values']['$show_paid_stamp'] = 'none'; //do not show paid stamp on statement
-
-            $state = [
-                'template' => $template->elements([
-                    'client' => $this->client,
-                    'entity' => $this->entity,
-                    'pdf_variables' => (array) $this->entity->company->settings->pdf_variables,
-                    '$product' => $this->getDesign()->design->product,
-                    'variables' => $variables,
-                    'invoices' => $this->getInvoices()->cursor(),
-                    'payments' => $this->getPayments()->cursor(),
-                    'credits' => $this->getCredits()->cursor(),
-                    'aging' => $this->getAging(),
-                    'unapplied' => $this->getUnapplied()->cursor(),
-                ], \App\Services\PdfMaker\Design::STATEMENT),
-                'variables' => $variables,
-                'options' => [
-                ],
-                'process_markdown' => $this->entity->client->company->markdown_enabled,
+            $options = [
+                // 'client' => $this->entity->client,
+                // 'entity' => $this->entity,
+                // 'pdf_variables' => (array) $this->entity->company->settings->pdf_variables,
+                // '$product' => $this->getDesign()->design->product,
+                // 'variables' => $variables,
+                'invoices' => $this->getInvoices()->cursor(),
+                'payments' => $this->getPayments()->cursor(),
+                'credits' => $this->getCredits()->cursor(),
+                'aging' => $this->getAging(),
+                'unapplied' => $this->getUnapplied()->cursor()
             ];
 
-            $maker = new PdfMaker($state);
+            $ps = new \App\Services\Pdf\PdfService($invitation, 'statement', array_merge($options, $this->options));
+            $pdf = $ps->boot();
+            
+            $ps->config->pdf_variables = (array) $this->entity->company->settings->pdf_variables;
+            $ps->html_variables = $variables;
+            $ps->config->design = $this->getDesign();
 
-            $maker
-                ->design($template)
-                ->build();
+            $ps->designer->buildFromPartials((array)$ps->config->design->design);
+            $ps->builder->build();
+            $pdf = $ps->getPdf();
 
-            $pdf = null;
-            $html = $maker->getCompiledHTML(true);
-
-            // nlog($html);
-
-            $pdf = $this->convertToPdf($html);
-
-            $this->setVariables($variables);
-
-            $maker = null;
-            $state = null;
 
             return $pdf;
 
@@ -219,7 +198,7 @@ class Statement
     protected function setupEntity(): self
     {
         if ($this->getInvoices()->count() >= 1) {
-            $this->entity = $this->getInvoices()->first();//@phpstan-ignore-line
+            $this->entity = $this->getInvoices()->first(); //@phpstan-ignore-line
         }
         else {
             $this->entity = $this->client->invoices()->whereHas('invitations')->first();
@@ -235,7 +214,7 @@ class Statement
             $this->entity = \App\Models\Invoice::factory()->make(); //@phpstan-ignore-line
             $this->entity->client = \App\Models\Client::factory()->make(['settings' => $settings]); //@phpstan-ignore-line
             $this->entity->client->setRelation('company', $this->client->company);
-            $this->entity->invitation = \App\Models\InvoiceInvitation::factory()->make(); //@phpstan-ignore-line
+            $this->entity->setRelation('invitations', \App\Models\InvoiceInvitation::factory()->make()); //@phpstan-ignore-line
             $this->entity->setRelation('company', $this->client->company);
             $this->entity->setRelation('user', $this->client->user);
 
@@ -540,8 +519,8 @@ class Statement
     {
         $id = 1;
 
-        if (! empty($this->client->getSetting('entity_design_id'))) {
-            $id = (int) $this->client->getSetting('entity_design_id');
+        if (! empty($this->client->getSetting('statement_design_id'))) {
+            $id = (int) $this->client->getSetting('statement_design_id');
         }
 
         return Design::withTrashed()->find($id);

@@ -40,19 +40,21 @@
         padding: 0;
     }
 
-   #qr-bill{
-        width:100% !important;
+    #qr-bill {
+        width: 100% !important;
     }
 
     .header-container {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        justify-content: space-between;
-        width:100%;
+        grid-template-columns: minmax(0, 1.5fr) auto minmax(0, 1fr);
+        align-items: start;
+        gap: 1rem;
+        width: 100%;
     }
 
     .company-logo-container {
-        display: inline-block;
+        justify-self: start;
+        align-self: start;
     }
 
     .company-logo {
@@ -60,6 +62,8 @@
     }
 
     #company-details {
+        justify-self: center;
+        align-self: start;
         display: flex;
         flex-direction: column;
         line-height: var(--line-height);
@@ -70,6 +74,8 @@
     }
 
     #company-address {
+        justify-self: end;
+        align-self: start;
         display: flex;
         flex-direction: column;
         line-height: var(--line-height);
@@ -85,9 +91,11 @@
     }
 
     .client-and-entity-wrapper {
-        padding: 1rem;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: minmax(0, 2fr) auto minmax(0, 1fr);
+        align-items: start;
         border-top: 1px solid #d8d8d8;
         border-bottom: 1px solid #d8d8d8;
     }
@@ -97,6 +105,9 @@
         text-align: left;
         margin-right: 20px;
         line-height: var(--line-height) !important;
+        justify-self: start;
+        align-self: start;
+        padding-left: 1rem;
     }
 
     #entity-details>tr,
@@ -110,7 +121,8 @@
         display: flex;
         flex-direction: column;
         line-height: var(--line-height);
-        padding-right: 30px;
+        justify-self: center;
+        align-self: start;
     }
 
     #client-details> :first-child {
@@ -121,6 +133,9 @@
         display: $show_shipping_address;
         flex-direction: column;
         line-height: var(--line-height);
+        justify-self: end;
+        align-self: start;
+        padding-left: 1rem;
     }
 
     [data-ref="table"] {
@@ -153,7 +168,7 @@
         padding: 1rem 1rem;
     }
 
-     th.right-radius {
+    th.right-radius {
         padding-right: 1rem;
         text-align: right;
     }
@@ -162,10 +177,10 @@
         text-align: right;
     }
 
-    [data-ref='product_table-product.item-td']{
+    [data-ref='product_table-product.item-td'] {
         color: var(--primary-color);
     }
-    
+
     [data-ref="table"]>tbody>tr:nth-child(odd) {
         background-color: #f5f5f5;
     }
@@ -176,9 +191,8 @@
         grid-template-columns: 2fr 1fr;
         padding-top: 0rem;
         padding-right: 1rem;
-        padding-left: 1rem;
         gap: 80px;
-        page-break-inside: avoid;
+        page-break-inside: auto;
         overflow: visible !important;
     }
 
@@ -202,15 +216,6 @@
         margin-bottom: calc(.75rem * var(--tw-space-y-reverse));
     }
 
-    #table-totals>* [data-element='product-table-balance-due-label'],
-    #table-totals>* [data-element='product-table-balance-due'] {
-        font-weight: bold;
-    }
-
-    #table-totals>* [data-element='product-table-balance-due'] {
-        color: var(--primary-color);
-    }
-
     #table-totals>*> :last-child {
         text-align: right;
         padding-right: 0.5rem;
@@ -218,7 +223,6 @@
 
     #footer {
         margin-top: 10px;
-        margin-left: 1rem;
     }
 
     /** Markdown-specific styles. **/
@@ -260,7 +264,8 @@
         bottom: 0;
     }
 
-    [data-ref='product_table-product.description-td'], td {
+    [data-ref='product_table-product.description-td'],
+    td {
         min-width: 100%;
         max-width: 300px;
         overflow-wrap: break-word;
@@ -363,7 +368,7 @@
                     </div>
                     <p class="entity-label">$entity_label</p>
                     <div class="client-and-entity-wrapper">
-                        <div>
+                        <div class="entity-details-container">
                             <table id="entity-details" cellspacing="0" cellpadding="0" dir="$dir"></table>
                         </div>
                         <div id="client-details"></div>
@@ -381,8 +386,13 @@
                     <div id="statement-credit-table-totals" data-ref="statement-totals"></div>
                     <table id="statement-aging-table" cellspacing="0" data-ref="table"></table>
                     <div id="statement-aging-table-totals" data-ref="statement-totals"></div>
-                    <div id="table-totals" cellspacing="0">$status_logo</div>
+
                 </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div id="table-totals" cellspacing="0">$status_logo</div>
             </td>
         </tr>
     </tbody>
