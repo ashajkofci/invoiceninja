@@ -520,8 +520,8 @@ class Statement
         $id = 1;
 
         if (! empty($this->client->getSetting('statement_design_id'))) {
-            $id = (int) $this->client->getSetting('statement_design_id');
-        }
+            $id = $this->decodePrimaryKey($this->client->getSetting('statement_design_id'));
+         }
 
         return Design::withTrashed()->find($id);
     }

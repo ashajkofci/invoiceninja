@@ -191,7 +191,7 @@ class ProcessBankTransactionsYodlee implements ShouldQueue
 
     public function middleware()
     {
-        return [new WithoutOverlapping($this->bank_integration_account_id)];
+        return [(new WithoutOverlapping($this->bank_integration_account_id))->releaseAfter(60)];
     }
 
     public function backoff()

@@ -212,9 +212,9 @@ class PdfBuilder
             $template = $template->render($data);
 
             $f = $this->document->createDocumentFragment();
-
+            
+            $template = str_ireplace(['<br>', '<br />'], "<br/>", $template);
             $f->appendXML($template);
-            // $f->appendXML($template);
 
             $replacements[] = $f;
 
@@ -2125,7 +2125,10 @@ class PdfBuilder
             $child['content'] = $child['content'] ?? '';
 
             if ($this->service->company->markdown_enabled && $this->isMarkdown($child['content'])) {
-                $child['content'] = str_ireplace(['<br>', '<br/>', '<br />'], "\r", $child['content']);
+
+                // $child['content'] = str_ireplace(['<br>', '<br/>', '<br />'], "\r", $child['content']); //13-05-2025 - testing whether /r or <br/> can work
+
+                $child['content'] = str_ireplace(['<br>', '<br/>', '<br />'], "<br/>", $child['content']); //13-05-2025 - testing whether /r or <br/> can work
                 $child['content'] = $this->commonmark->convert($child['content']); //@phpstan-ignore-line
             }
 

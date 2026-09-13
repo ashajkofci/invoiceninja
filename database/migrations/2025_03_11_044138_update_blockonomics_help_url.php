@@ -11,15 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-            
-        Schema::table('payments', function (Blueprint $table) {
-                        
-            if (!Schema::hasColumn('payments', 'sync')) {
-                $table->text('sync')->nullable();
-            }
-
-        });
-
+        if($g = \App\Models\Gateway::find(65))
+        {
+            $g->site_url = 'https://help.blockonomics.co/a/solutions/articles/33000291849';
+            $g->save();
+        }
     }
 
     /**
@@ -27,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        
+        //
     }
 };

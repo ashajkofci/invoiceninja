@@ -45,6 +45,6 @@ class BankMatchingService implements ShouldQueue
 
     public function middleware()
     {
-        return [(new WithoutOverlapping($this->company_id))];
+        return [(new WithoutOverlapping($this->db."_".$this->company_id))->releaseAfter(60)];
     }
 }
