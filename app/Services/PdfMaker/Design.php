@@ -941,6 +941,14 @@ class Design extends BaseDesign
                 }
             }
 
+            if ($row_class && isset($element['elements'][0])) {
+                $style = $element['elements'][0]['properties']['style'] ?? '';
+                $style .= $row_class === 'group-header'
+                    ? ' font-weight: bold;'
+                    : ' padding-left: 1.5rem;';
+                $element['elements'][0]['properties']['style'] = trim($style);
+            }
+
             $elements[] = $element;
         }
 

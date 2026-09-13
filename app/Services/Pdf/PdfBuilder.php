@@ -300,10 +300,7 @@ class PdfBuilder
         $tbody = [];
 
         foreach ($this->service->options['credits'] as $credit) {
-            $row_class = !empty($row['__is_group_header'])
-                ? 'group-header'
-                : (!empty($row['__is_group_child']) ? 'group-item' : '');
-            $element = ['element' => 'tr', 'properties' => ['class' => $row_class], 'elements' => []];
+            $element = ['element' => 'tr', 'elements' => []];
 
             $element['elements'][] = ['element' => 'td', 'content' => $credit->number];
             $element['elements'][] = ['element' => 'td', 'content' => $this->translateDate($credit->date, $this->service->config->client->date_format(), $this->service->config->locale) ?: ' '];
@@ -703,7 +700,10 @@ class PdfBuilder
 
 
         foreach ($items as $row) {
-            $element = ['element' => 'tr', 'elements' => []];
+            $row_class = !empty($row['__is_group_header'])
+                ? 'group-header'
+                : (!empty($row['__is_group_child']) ? 'group-item' : '');
+            $element = ['element' => 'tr', 'properties' => ['class' => $row_class], 'elements' => []];
 
             if (
                 array_key_exists($type, $this->service->options) &&
@@ -762,6 +762,14 @@ class PdfBuilder
                         $element['elements'][] = ['element' => 'td', 'content' => $row[$cell], 'properties' => ['data-ref' => "{$_type}_table-" . substr($cell, 1) . '-td']];
                     }
                 }
+            }
+
+            if ($row_class && isset($element['elements'][0])) {
+                $style = $element['elements'][0]['properties']['style'] ?? '';
+                $style .= $row_class === 'group-header'
+                    ? ' font-weight: bold;'
+                    : ' padding-left: 1.5rem;';
+                $element['elements'][0]['properties']['style'] = trim($style);
             }
 
             $elements[] = $element;
@@ -1406,7 +1414,7 @@ class PdfBuilder
     public function productTable(): array
     {
         $product_items = collect($this->service->config->entity->line_items)->filter(function ($item) {
-            return $item->type_id == 1 || $item->type_id == 6 || $item->type_id == 5 || $item->type_id == 4;
+            return $item->type_id == 1 || $item->type_id == 7 || $item->type_id == 6 || $item->type_id == 5 || $item->type_id == 4;
         });
 
         if (count($product_items) == 0) {
