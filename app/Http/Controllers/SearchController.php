@@ -280,6 +280,7 @@ class SearchController extends Controller
     {
 
         $clients =  Client::query()
+                     ->withTrashed()
                      ->company()
                      ->where('is_deleted', 0)
                      ->when(!$user->hasPermission('view_all') || !$user->hasPermission('view_client'), function ($query) use ($user) {
@@ -314,6 +315,7 @@ class SearchController extends Controller
     {
 
         $invoices = Invoice::query()
+                     ->withTrashed()
                      ->company()
                      ->with('client')
                      ->where('is_deleted', 0)
