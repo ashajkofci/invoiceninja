@@ -257,7 +257,11 @@ class ZugferdEDocument extends AbstractService
         $br = new \App\DataMapper\Tax\BaseRule();
         $eu_states = $br->eu_country_codes;
 
-        $item = $this->document->line_items[0];
+        $item = $this->document->line_items[0] ?? null;
+
+        if(is_null($item)){
+            return $this;
+        }
 
         if (!in_array($this->document->client->country->iso_3166_2, $eu_states)) {
             $this->tax_code = ZugferdDutyTaxFeeCategories::FREE_EXPORT_ITEM_TAX_NOT_CHARGED;

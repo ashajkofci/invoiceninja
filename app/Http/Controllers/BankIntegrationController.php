@@ -280,7 +280,7 @@ class BankIntegrationController extends BaseController
             $account = $nordigen->getAccount($bank_integration->nordigen_account_id);
 
 
-            if(is_array($account) && !in_array($account['account_status'], ['READY', 'PROCESSING','DISCOVERED'])) {
+            if(is_array($account) && isset($account['account_status']) &&!in_array($account['account_status'], ['READY', 'PROCESSING','DISCOVERED'])) {
                 $bank_integration->disabled_upstream = true;
                 $bank_integration->save();
 

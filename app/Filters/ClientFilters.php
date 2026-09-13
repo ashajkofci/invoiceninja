@@ -164,18 +164,18 @@ class ClientFilters extends QueryFilters
     {
         $sort_col = explode('|', $sort);
 
+        if (isset($sort_col[0]) && $sort_col[0] == 'documents') {
+            return $this->builder;
+        }
+
+        if (isset($sort_col[0]) && $sort_col[0] == 'display_name') {
+            $sort_col[0] = 'name';
+        }
+
         if (!is_array($sort_col) || count($sort_col) != 2 || !in_array($sort_col[0], \Illuminate\Support\Facades\Schema::getColumnListing($this->builder->getModel()->getTable()))) {
             return $this->builder;
         }
             
-        if ($sort_col[0] == 'documents') {
-            return $this->builder;
-        }
-
-        if ($sort_col[0] == 'display_name') {
-            $sort_col[0] = 'name';
-        }
-
         $dir = ($sort_col[1] == 'asc') ? 'asc' : 'desc';
 
         if ($sort_col[0] == 'number') {

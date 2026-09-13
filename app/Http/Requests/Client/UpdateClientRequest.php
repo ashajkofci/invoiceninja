@@ -106,9 +106,11 @@ class UpdateClientRequest extends Request
         $user = auth()->user();
 
         /* If the user removes the currency we must always set the default */
-        if (array_key_exists('settings', $input) && ! array_key_exists('currency_id', $input['settings'])) {
-            $input['settings']['currency_id'] = (string) $user->company()->settings->currency_id;
-        } elseif (empty($input['settings']['currency_id']) ?? true) {
+        // if (array_key_exists('settings', $input) && ! array_key_exists('currency_id', $input['settings'])) {
+        //     $input['settings']['currency_id'] = (string) $user->company()->settings->currency_id;
+        // } else //2025-03-11 fixes for currency_id not being set
+        
+        if (empty($input['settings']['currency_id'])) {
             $input['settings']['currency_id'] = (string) $user->company()->settings->currency_id;
         }
 
