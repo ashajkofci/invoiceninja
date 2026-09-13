@@ -333,6 +333,9 @@ trait MakesInvoiceValues
             } else {
                 $data[$key][$table_type.'.quantity'] = '';
 
+                $data[$key][$table_type.'.time_coefficient'] = '';
+                $data[$key][$table_type.'.time_coefficient_name'] = '';
+
                 $data[$key][$table_type.'.unit_cost'] = '';
 
                 $data[$key][$table_type.'.cost'] = '';

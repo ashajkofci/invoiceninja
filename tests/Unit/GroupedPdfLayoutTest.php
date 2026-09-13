@@ -164,6 +164,23 @@ class GroupedPdfLayoutTest extends TestCase
         self::assertSame('$25.00', $data[4]['$product.line_total']);
     }
 
+    #[DataProvider('pipelines')]
+    public function testCoefficientColumnsExistForEveryProductRow(string $pipeline): void
+    {
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['item']);
+        $invoice->line_items = [
+            $this->item(['cost' => 25, 'quantity' => 1, 'time_coefficient' => 1.5, 'time_coefficient_name' => 'Weekend']),
+            $this->item(['cost' => 0, 'quantity' => 0]),
+        ];
+
+        $data = array_values($renderer->transformLineItems($invoice->line_items, '$product'));
+
+        self::assertSame('1.5', $data[0]['$product.time_coefficient']);
+        self::assertSame('Weekend', $data[0]['$product.time_coefficient_name']);
+        self::assertSame('', $data[1]['$product.time_coefficient']);
+        self::assertSame('', $data[1]['$product.time_coefficient_name']);
+    }
+
     /** PDF_LAYOUT_OUTPUT is an optional HTML file path, not a PDF output path. */
     public function testSyntheticHtmlFixture(): void
     {
