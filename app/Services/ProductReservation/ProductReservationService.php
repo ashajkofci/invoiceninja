@@ -211,7 +211,10 @@ class ProductReservationService
                     return null;
                 }
 
-                $totalPrice = (float) $items->sum('line_total');
+                $totalPrice = (float) $items->sum(fn ($item) =>
+                    (float) data_get($item, 'line_total', 0)
+                        - ($invoice->uses_inclusive_taxes ? (float) data_get($item, 'tax_amount', 0) : 0)
+                );
                 $pricedQuantity = (float) $items->sum(fn ($item) =>
                     (float) data_get($item, 'quantity', 0)
                         * (float) data_get($item, 'time_coefficient', 1)
