@@ -103,12 +103,22 @@ class ProductReservationService
         $requested = $this->quantitiesByProductKey($requestedItems);
         $used = [];
         $conflicts = [];
+        $currentlyReserved = [];
+
+        $today = CarbonImmutable::now($this->company->timezone()->name)->format('Y-m-d');
+        $this->overlappingInvoices($today, $today)->each(function (Invoice $invoice) use (&$currentlyReserved) {
+            foreach ($this->quantitiesByProductKey((array) $invoice->line_items) as $key => $quantity) {
+                $currentlyReserved[$key] = ($currentlyReserved[$key] ?? 0) + $quantity;
+            }
+        });
 
         $this->overlappingInvoices($start, $end, $excludeInvoiceId)->each(function (Invoice $invoice) use (&$used, &$conflicts) {
             [$invoiceStart, $invoiceEnd] = $this->datesFromInvoice($invoice->toArray());
             $status = $this->statusFromInvoice($invoice->toArray());
             foreach ($this->quantitiesByProductKey((array) $invoice->line_items) as $key => $quantity) {
-                $used[$key] = ($used[$key] ?? 0) + $quantity;
+                $dayAfterInvoice = CarbonImmutable::parse($invoiceEnd)->addDay()->format('Y-m-d');
+                $used[$key][$invoiceStart] = ($used[$key][$invoiceStart] ?? 0) + $quantity;
+                $used[$key][$dayAfterInvoice] = ($used[$key][$dayAfterInvoice] ?? 0) - $quantity;
                 $conflicts[$key][] = [
                     'invoice_id' => $invoice->hashed_id,
                     'invoice_number' => (string) $invoice->number,
@@ -122,7 +132,18 @@ class ProductReservationService
             }
         });
 
-        $keys = collect(array_keys($used))->merge(array_keys($requested))->unique();
+        foreach ($used as $key => $changes) {
+            ksort($changes);
+            $reserved = 0;
+            $used[$key] = 0;
+
+            foreach ($changes as $change) {
+                $reserved += $change;
+                $used[$key] = max($used[$key], $reserved);
+            }
+        }
+
+        $keys = collect(array_keys($requested));
         if ($productId) {
             $selectedProduct = Product::query()
                 ->where('company_id', $this->company->id)
@@ -137,10 +158,10 @@ class ProductReservationService
             ->when(! $includeAllProducts && ! $productId, fn ($query) => $query->whereIn('product_key', $keys))
             ->get();
 
-        return $products->map(function (Product $product) use ($used, $requested, $conflicts) {
+        return $products->map(function (Product $product) use ($used, $requested, $conflicts, $currentlyReserved) {
             $reserved = (float) ($used[$product->product_key] ?? 0);
             $quantity = (float) ($requested[$product->product_key] ?? 0);
-            $stock = (float) $product->in_stock_quantity;
+            $stock = (float) $product->in_stock_quantity + ($currentlyReserved[$product->product_key] ?? 0);
             $tracked = $stock > 0;
             $reservations = $conflicts[$product->product_key] ?? [];
 
