@@ -107,7 +107,7 @@ class Design extends BaseDesign
         $elements = [];
 
         if (strlen($this->company->getSetting('qr_iban')) > 5 && strlen($this->company->getSetting('besr_id')) > 1) {
-            $elements[] = ['element' => 'qr_code', 'content' => '$swiss_qr', 'show_empty' => false, 'properties' => ['data-ref' => 'swiss-qr-code']];
+            $elements[] = ['element' => 'qr_code', 'content' => '$swiss_qr_raw', 'show_empty' => false, 'properties' => ['data-ref' => 'swiss-qr-code']];
         }
 
         return $elements;
