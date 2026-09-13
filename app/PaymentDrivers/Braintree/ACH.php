@@ -140,6 +140,10 @@ class ACH implements MethodInterface, LivewireMethodInterface
             ->where('id', $this->decodePrimaryKey($request->source))
             ->firstOrFail();
 
+        $total_taxes = \App\Models\Invoice::query()->whereIn('id', $this->transformKeys(array_column($this->braintree->payment_hash->invoices(), 'invoice_id')))->withTrashed()->sum('total_taxes');
+        $invoice = $this->braintree->payment_hash->fee_invoice;
+        $po_number = $invoice->po_number ?? $invoice->number ?? '';
+
         $result = $this->braintree->gateway->transaction()->sale([
             'amount' => $this->braintree->payment_hash->data->amount_with_fee,
             'paymentMethodToken' => $token->token,
@@ -147,6 +151,8 @@ class ACH implements MethodInterface, LivewireMethodInterface
             'options' => [
                 'submitForSettlement' => true,
             ],
+            'tax_amount' => $total_taxes,
+            'purchase_order_number' => $po_number,
         ]);
 
         if ($result->success) {

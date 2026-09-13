@@ -103,6 +103,11 @@ class TaxSummaryReport extends BaseExport
         $accrual_invoice_map = [];
         $cash_invoice_map = [];
 
+        // Initialize cash variables
+        $cash_gross_sales = 0;
+        $cash_taxable_sales = 0; 
+        $cash_exempt_sales = 0;
+
         $gross_sales = round($query->sum('amount'), 2);
         $taxable_sales = round($query->where('total_taxes', '>', 0)->sum('amount'), 2);
         $exempt_sales = round(($gross_sales - $taxable_sales), 2);
@@ -144,10 +149,6 @@ class TaxSummaryReport extends BaseExport
                 if (!isset($cash_map[$key])) {
                     $cash_map[$key]['tax_amount'] = 0;
                 }
-
-                $cash_gross_sales = 0;
-                $cash_taxable_sales = 0;
-                $cash_exempt_sales = 0;
 
                 if (in_array($invoice->status_id, [Invoice::STATUS_PARTIAL,Invoice::STATUS_PAID])) {
 

@@ -51,7 +51,8 @@ class CompanyPresenter extends EntityPresenter
             $settings = $this->entity->settings;
         }
 
-        $basename = basename($this->settings->company_logo);
+        // $basename = basename($this->settings->company_logo);
+        $basename = basename($settings->company_logo);
 
         $logo = Storage::get("{$this->company_key}/{$basename}");
 
