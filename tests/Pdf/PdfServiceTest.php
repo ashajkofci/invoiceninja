@@ -128,7 +128,7 @@ class PdfServiceTest extends TestCase
         $this->assertSame('$100.00', $service->builder->transformLineItems([$item])[0]['$product.line_total']);
         $this->assertSame('$100.00', $this->invoice->transformLineItems([$item])[0]['$product.line_total']);
         $this->assertSame('$100.00', $design->transformLineItems([$item])[0]['$product.line_total']);
-        $this->assertSame('$116.20', $service->html_variables['values']['$subtotal']);
+        $this->assertSame('$100.00', $service->html_variables['values']['$subtotal']);
 
         $service->config->entity->uses_inclusive_taxes = true;
         $this->invoice->uses_inclusive_taxes = true;
@@ -154,6 +154,38 @@ class PdfServiceTest extends TestCase
         $this->assertSame('3.5', $values['$product.time_coefficient']);
         $this->assertSame('Three and a half days', $values['$product.time_coefficient_name']);
         $this->assertSame('$175.00', $values['$product.line_total']);
+    }
+
+    public function testGroupRowsRenderUnderTheirHeaderAndHideChildPrices()
+    {
+        $header = InvoiceItemFactory::create();
+        $header->type_id = 7;
+        $header->group_id = 'camera-kit';
+        $header->group_title = 'Camera kit';
+        $header->group_has_price = true;
+        $header->group_price = 80;
+        $header->line_total = 80;
+
+        $child = InvoiceItemFactory::create();
+        $child->group_id = 'camera-kit';
+        $child->product_key = 'Camera body';
+        $child->quantity = 2;
+        $child->cost = 30;
+        $child->line_total = 60;
+
+        $this->invoice->line_items = [$header, $child];
+        $this->invoice->save();
+
+        $service = (new PdfService($this->invoice->invitations->first()))->boot();
+        $builder = $service->builder;
+        $rows = $builder->buildTableBody('$product');
+
+        $this->assertSame('group-header', $rows[0]['properties']['class']);
+        $this->assertSame('font-weight: bold;', $rows[0]['elements'][0]['properties']['style']);
+        $this->assertSame('group-item', $rows[1]['properties']['class']);
+        $this->assertSame('padding-left: 1.5rem;', $rows[1]['elements'][0]['properties']['style']);
+        $this->assertSame('', $builder->transformLineItems([$header, $child])[1]['$product.line_total']);
+        $this->assertSame('$80.00', $service->html_variables['values']['$subtotal']);
     }
 
     public function testPdfLineTotalRoundsOnlyForDisplay()

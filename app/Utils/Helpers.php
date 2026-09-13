@@ -12,6 +12,7 @@
 
 namespace App\Utils;
 
+use App\Helpers\Invoice\InvoiceItemGroup;
 use App\Models\Client;
 use App\Utils\Traits\MakesDates;
 use Carbon\Carbon;
@@ -36,6 +37,21 @@ class Helpers
         }
 
         return $line_total;
+    }
+
+    public static function lineItemsTotal(iterable $items): float
+    {
+        $items = is_array($items) ? $items : iterator_to_array($items);
+        $headers = InvoiceItemGroup::headers($items);
+        $total = 0.0;
+
+        foreach ($items as $item) {
+            if (! InvoiceItemGroup::isChild($item, $headers)) {
+                $total += $item->line_total;
+            }
+        }
+
+        return $total;
     }
 
     public static function sharedEmailVariables(?Client $client, array $settings = null): array

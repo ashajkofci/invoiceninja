@@ -327,7 +327,7 @@ class HtmlEngine
         $data['$invoice.discount'] = ['value' => Number::formatMoney($this->entity_calc->getTotalDiscount(), $this->client) ?: ' ', 'label' => ($this->entity->is_amount_discount) ? ctrans('texts.discount') : ctrans('texts.discount').' '.(float)$this->entity->discount.'%'];
         $data['$discount'] = &$data['$invoice.discount'];
         $line_items = InternalProductFilter::filter($this->company->custom_fields, $this->entity->line_items);
-        $subtotal = array_sum(array_map(fn ($item) => Helpers::lineTotalWithTaxes($item, $this->entity), $line_items));
+        $subtotal = Helpers::lineItemsTotal($line_items);
         $data['$subtotal'] = ['value' => Number::formatMoney($subtotal, $this->client) ?: ' ', 'label' => ctrans('texts.subtotal')];
         $data['$gross_subtotal'] = ['value' => Number::formatMoney($this->entity_calc->getGrossSubTotal(), $this->client) ?: ' ', 'label' => ctrans('texts.subtotal')];
 

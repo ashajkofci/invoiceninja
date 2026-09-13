@@ -25,7 +25,7 @@
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/logo180.png" />
     <link rel="manifest" href="/manifest.json" />
-    <script type="module" crossorigin src="/react/index-1B5e4iWD.js"></script>
+    <script type="module" crossorigin src="/react/index-BER8Batm.js"></script>
     <link rel="modulepreload" crossorigin href="/react/rolldown-runtime-CNC7AqOf.js">
     <link rel="modulepreload" crossorigin href="/react/@ant-design-DAiAtinM.js">
     <link rel="modulepreload" crossorigin href="/react/@docuninja-CiT7sB1w.js">
@@ -104,7 +104,7 @@
     <link rel="modulepreload" crossorigin href="/react/html-string-Cvc5l8m4.js">
     <link rel="modulepreload" crossorigin href="/react/invoices-DQlBoRf5.js">
     <link rel="modulepreload" crossorigin href="/react/products-JKDOo9yf.js">
-    <link rel="modulepreload" crossorigin href="/react/ProductSelector-BJ3Lckr-.js">
+    <link rel="modulepreload" crossorigin href="/react/ProductSelector-TKZwYPJw.js">
     <link rel="modulepreload" crossorigin href="/react/collect.js-Dg3gyr1N.js">
     <link rel="modulepreload" crossorigin href="/react/ChevronUp-GWMUeku7.js">
     <link rel="modulepreload" crossorigin href="/react/tables-CYc09fki.js">
@@ -114,7 +114,7 @@
     <link rel="modulepreload" crossorigin href="/react/hex-color-regex-CVuZZM3o.js">
     <link rel="modulepreload" crossorigin href="/react/StatusColorTheme-WmXM3WTj.js">
     <link rel="modulepreload" crossorigin href="/react/inclusive-tax-HkhZ7N2P.js">
-    <link rel="modulepreload" crossorigin href="/react/invoice-sum-inclusive-BXCtW86k.js">
+    <link rel="modulepreload" crossorigin href="/react/invoice-sum-inclusive-B_cRxOqI.js">
     <link rel="modulepreload" crossorigin href="/react/payment-terms-OOLwVviM.js">
     <link rel="modulepreload" crossorigin href="/react/CountrySelector-nd606Oc3.js">
     <link rel="modulepreload" crossorigin href="/react/CurrencySelector-Dh3_l4nV.js">
@@ -180,7 +180,7 @@
     <link rel="stylesheet" crossorigin href="/react/react-phone-number-input-Rkh5BCSq.css">
     <link rel="stylesheet" crossorigin href="/react/react-image-crop-D3R7pVxC.css">
     <link rel="stylesheet" crossorigin href="/react/monaco-editor-Rh8eNCgD.css">
-    <link rel="stylesheet" crossorigin href="/react/index-CPLdFVyZ.css">
+    <link rel="stylesheet" crossorigin href="/react/index-B7EA2NDv.css">
   </head>
 
   <body class="h-full">

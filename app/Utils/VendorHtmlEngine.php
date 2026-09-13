@@ -173,7 +173,7 @@ class VendorHtmlEngine
         $data['$entity_number'] = &$data['$number'];
         $data['$discount'] = ['value' => $this->entity->discount, 'label' => ctrans('texts.discount')];
         $line_items = InternalProductFilter::filter($this->company->custom_fields, $this->entity->line_items);
-        $subtotal = array_sum(array_map(fn ($item) => Helpers::lineTotalWithTaxes($item, $this->entity), $line_items));
+        $subtotal = Helpers::lineItemsTotal($line_items);
         $data['$subtotal'] = ['value' => Number::formatMoney($subtotal, $this->vendor) ?: '&nbsp;', 'label' => ctrans('texts.subtotal')];
         $data['$gross_subtotal'] = ['value' => Number::formatMoney($this->entity_calc->getGrossSubTotal(), $this->vendor) ?: '&nbsp;', 'label' => ctrans('texts.subtotal')];
 
