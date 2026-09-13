@@ -1854,6 +1854,11 @@ class PdfBuilder
 
         $variables = $this->service->config->pdf_variables['client_details'];
 
+        // 2025-03-03 - Prevent duplicating contact/client name
+        if(strlen($this->service->config->client->name ?? '') == 0 && in_array('$client.name', $variables) && in_array('$contact.full_name', $variables)) {         
+            $variables = array_diff($variables, ['$contact.full_name']);
+        }
+
         foreach ($variables as $variable) {
             $elements[] = ['element' => 'div', 'content' => $variable, 'show_empty' => false, 'properties' => ['data-ref' => 'client_details-' . substr($variable, 1)]];
         }

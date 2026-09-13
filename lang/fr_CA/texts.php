@@ -5511,6 +5511,9 @@ Développe automatiquement la section des notes dans le tableau de produits pour
     'add_location' => 'Ajouter un emplacement',
     'updated_location' => 'Emplacement mis à jour',
     'created_location' => 'Emplacement créé',
+    'sync_send_time' => 'Synchroniser l\'heure d\'envoi',
+    'sync_send_time_help' => 'Mettre à jour tous les rappels et les factures récurrentes pour l\'utilisation de cette nouvelle heure d\'envoi',
+    'edit_location' => 'Éditer l\'emplacement',
 );
 
 return $lang;
