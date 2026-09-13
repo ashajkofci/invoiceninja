@@ -61,7 +61,7 @@ class PaymentIntentWebhook implements ShouldQueue
     {
         MultiDB::findAndSetDbByCompanyKey($this->company_key);
         
-        $company = Company::query()->where('company_key', $this->company_key)->first();
+        $company = Company::query()->where('company_key', $this->company_key)->firstOrFail();
 
         foreach ($this->stripe_request as $transaction) {
 

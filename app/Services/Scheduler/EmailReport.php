@@ -55,7 +55,7 @@ class EmailReport
     public function run()
     {
 
-        $start_end_dates = $this->calculateStartAndEndDates($this->scheduler->parameters);
+        $start_end_dates = $this->calculateStartAndEndDates($this->scheduler->parameters, $this->scheduler->company);
         $data = $this->scheduler->parameters;
 
         $data['start_date'] = $start_end_dates[0];

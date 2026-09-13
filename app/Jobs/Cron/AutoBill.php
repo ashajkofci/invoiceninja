@@ -69,8 +69,9 @@ class AutoBill implements ShouldQueue
             if ($this->send_email_on_failure && $invoice) {
 
                 $invoice->invitations->each(function ($invitation) use ($invoice) {
-
-                    if ($invitation->contact && !$invitation->contact->trashed() && strlen($invitation->contact->email) >= 1 && $invoice->client->getSetting('auto_email_invoice') && !$invitation->contact->is_locked) {
+                    
+                    //2025-04-06 additional conditional check to prevent duplicate emails from being sent.
+                    if ($invitation->contact && !$invitation->contact->trashed() && strlen($invitation->contact->email) >= 1 && $invoice->client->getSetting('auto_email_invoice') && !$invitation->contact->is_locked && $invoice->client->getSetting('client_online_payment_notification')) {
                         try {
                             EmailEntity::dispatch($invitation->withoutRelations(), $invoice->company->db)->delay(rand(1, 2));
 
