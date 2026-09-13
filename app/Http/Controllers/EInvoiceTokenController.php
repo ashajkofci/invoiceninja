@@ -15,11 +15,12 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\EInvoice\UpdateTokenRequest;
 use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 
 class EInvoiceTokenController extends BaseController
 {
-    public function __invoke(UpdateTokenRequest $request): Response
+    public function __invoke(UpdateTokenRequest $request): Response|JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
@@ -43,6 +44,8 @@ class EInvoiceTokenController extends BaseController
         }
         
 
-        return response()->noContent(status: 422);
+        nlog($response->body());
+
+        return response()->json(['message' => 'Failed to update token'], 422);
     }
 }

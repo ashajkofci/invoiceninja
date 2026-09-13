@@ -11,15 +11,16 @@
 
 namespace App\Models;
 
-use App\Events\Payment\PaymentWasRefunded;
-use App\Events\Payment\PaymentWasVoided;
-use App\Services\Ledger\LedgerService;
-use App\Services\Payment\PaymentService;
 use App\Utils\Ninja;
 use App\Utils\Number;
-use App\Utils\Traits\Inviteable;
+use App\DataMapper\PaymentSync;
 use App\Utils\Traits\MakesHash;
+use App\Utils\Traits\Inviteable;
+use App\Services\Ledger\LedgerService;
+use App\Events\Payment\PaymentWasVoided;
+use App\Services\Payment\PaymentService;
 use App\Utils\Traits\Payment\Refundable;
+use App\Events\Payment\PaymentWasRefunded;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -64,6 +65,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $custom_value4
  * @property int|null $transaction_id
  * @property string|null $idempotency_key
+ * @property object|null $sync
  * @property-read \App\Models\User|null $assigned_user
  * @property-read \App\Models\Client $client
  * @property-read \App\Models\Company $company
@@ -168,6 +170,7 @@ class Payment extends BaseModel
         'is_deleted' => 'bool',
         'meta' => 'object',
         'refund_meta' => 'array',
+        'sync' => PaymentSync::class,
     ];
 
     protected $with = [

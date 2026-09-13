@@ -44,25 +44,7 @@ class QbPayment implements SyncInterface
             $ninja_payment = $payment_transformer->buildPayment($payment);
             $ninja_payment->service()->applyNumber()->save();
 
-            $invoice = Invoice::query()
-                    ->withTrashed()
-                    ->where('company_id', $this->service->company->id)
-                    ->where('sync->qb_id', $payment['invoice_id'])
-                    ->first();
-
-            if ($invoice) {
-
-                $paymentable = new \App\Models\Paymentable();
-                $paymentable->payment_id = $ninja_payment->id;
-                $paymentable->paymentable_id = $invoice->id;
-                $paymentable->paymentable_type = 'invoices';
-                $paymentable->amount = $transformed['applied'] + $ninja_payment->credits->sum('amount');
-                $paymentable->created_at = $ninja_payment->date; //@phpstan-ignore-line
-                $paymentable->save();
-
-                $invoice->service()->applyPayment($ninja_payment, $paymentable->amount);
-
-            }
+            $payment_transformer->associatePaymentToInvoice($ninja_payment, $payment);
 
         }
 

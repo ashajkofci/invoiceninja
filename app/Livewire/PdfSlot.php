@@ -162,8 +162,8 @@ class PdfSlot extends Component
                             (new VendorHtmlEngine($this->invitation()))->generateLabelsAndValues() :
                             (new HtmlEngine($this->invitation()))->generateLabelsAndValues();
 
-        $this->entity()->terms = $this->entity()->parseHtmlVariables('terms', $this->html_variables);
-        $this->entity()->public_notes = $this->entity()->parseHtmlVariables('public_notes', $this->html_variables);
+        $terms = $this->entity()->parseHtmlVariables('terms', $this->html_variables);
+        $public_notes = $this->entity()->parseHtmlVariables('public_notes', $this->html_variables);
 
         return render('components.livewire.pdf-slot', [
             'invitation' => $this->invitation(),
@@ -182,6 +182,8 @@ class PdfSlot extends Component
             'entity_details' => $this->getEntityDetails(),
             'user_details' => $this->getUserDetails(),
             'user_name' => $this->getUserName(),
+            'terms' => $terms,
+            'public_notes' => $public_notes,
         ]);
     }
 
