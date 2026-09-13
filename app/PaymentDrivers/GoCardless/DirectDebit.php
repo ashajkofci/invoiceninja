@@ -62,14 +62,20 @@ class DirectDebit implements MethodInterface, LivewireMethodInterface
 
         $verify = $this->go_cardless->company_gateway->getConfigField('verifyBankAccount') ? 'recommended' : 'when_available';
 
-        $response = $this->go_cardless->gateway->billingRequests()->create([
-            "params" => [
-                "mandate_request" => [
-                "currency" => auth()->guard('contact')->user()->client->currency()->code,
-                "verify" => $verify
+        try {
+            $response = $this->go_cardless->gateway->billingRequests()->create([
+                "params" => [
+                    "mandate_request" => [
+                    "currency" => auth()->guard('contact')->user()->client->currency()->code,
+                    "verify" => $verify
+                    ]
                 ]
-            ]
-        ]);
+            ]);
+        }
+        catch(\Throwable $e) {
+            nlog($e->getMessage());
+            return $this->processUnsuccessfulAuthorization($e);
+        }
 
         try {
             $brf = $this->go_cardless->gateway->billingRequestFlows()->create([

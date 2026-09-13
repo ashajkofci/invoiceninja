@@ -65,7 +65,12 @@ class PostMarkController extends BaseController
     public function webhook(Request $request)
     {
         if ($request->header('X-API-SECURITY') && $request->header('X-API-SECURITY') == config('services.postmark.token')) {
-            ProcessPostmarkWebhook::dispatch($request->all())->delay(15);
+            ProcessPostmarkWebhook::dispatch($request->all(), $request->header('X-API-SECURITY'))->delay(15);
+
+            return response()->json(['message' => 'Success'], 200);
+        }
+        elseif($request->header('X-API-SECURITY') && stripos($request->header('X-API-SECURITY'), \Illuminate\Support\Facades\Cache::get('client_postmark_keys')) !== false){
+            ProcessPostmarkWebhook::dispatch($request->all(), $request->header('X-API-SECURITY'))->delay(15);
 
             return response()->json(['message' => 'Success'], 200);
         }

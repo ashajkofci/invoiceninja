@@ -34,24 +34,38 @@ class BulkRecurringInvoiceRequest extends Request
         /** @var \App\Models\User $user */
         $user = auth()->user();
 
-        return [
+        $rules = [
             'ids' => ['required','bail','array', Rule::exists('recurring_invoices', 'id')->where('company_id', $user->company()->id)],
             'action' => 'in:archive,restore,delete,increase_prices,update_prices,start,stop,send_now,set_payment_link,bulk_update',
             'percentage_increase' => 'required_if:action,increase_prices|numeric|min:0|max:100',
             'subscription_id' => 'sometimes|string',
             'column' => ['required_if:action,bulk_update', 'string', Rule::in(\App\Models\RecurringInvoice::$bulk_update_columns)],
-            'new_value' => ['required_if:action,bulk_update|string'],
         ];
+
+        switch($this->column) {
+            case 'remaining_cycles':
+                $rules['new_value'] = ['required_if:action,bulk_update', 'string', 'min:1'];
+                break;
+            case 'uses_inclusive_taxes':
+                $rules['new_value'] = ['required_if:action,bulk_update', 'boolean'];
+                break;
+                            
+        }
+
+        return $rules;
     }
 
     public function prepareForValidation()
     {
         $input = $this->all();
-
         if (isset($input['ids'])) {
             $input['ids'] = $this->transformKeys($input['ids']);
         }
 
+        if(!isset($input['new_value'])) {
+            $input['new_value'] = '';
+        }
+        
         $this->replace($input);
     }
 }

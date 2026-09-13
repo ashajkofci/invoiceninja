@@ -261,6 +261,7 @@ class RecurringInvoice extends BaseModel
         'public_notes',
         'terms',
         'footer',
+        'remaining_cycles',
     ];
 
     public function toSearchableArray()

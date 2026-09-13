@@ -40,8 +40,19 @@ class ApplyNumber extends AbstractService
             return $this->credit;
         }
 
-        $this->trySaving();
-        // $this->credit->number = $this->getNextCreditNumber($this->client, $this->credit);
+        switch ($this->client->getSetting('counter_number_applied')) {
+            case 'when_saved':
+                $this->trySaving();
+                break;
+            case 'when_sent':
+                if ($this->credit->status_id >= Credit::STATUS_SENT) {
+                    $this->trySaving();
+                }
+                break;
+
+            default:
+                break;
+        }
 
         return $this->credit;
     }

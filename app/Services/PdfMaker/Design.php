@@ -786,6 +786,11 @@ class Design extends BaseDesign
             return [];
         }
 
+        
+        $_type = Str::startsWith($type, '$') ? ltrim($type, '$') : $type;
+        $table_type = "{$_type}_columns";
+        $column_visibility = $this->getColumnVisibility($this->entity->line_items, $_type);
+
         if ($type == self::DELIVERY_NOTE) {
             $product_customs = [false, false, false, false];
 
@@ -800,68 +805,65 @@ class Design extends BaseDesign
             foreach ($items as $row) {
                 $element = ['element' => 'tr', 'elements' => []];
 
-                $element['elements'][] = ['element' => 'td', 'content' => $row['delivery_note.product_key'], 'properties' => ['data-ref' => 'delivery_note_table.product_key-td']];
-                $element['elements'][] = ['element' => 'td', 'content' => $row['delivery_note.notes'], 'properties' => ['data-ref' => 'delivery_note_table.notes-td']];
-                $element['elements'][] = ['element' => 'td', 'content' => $row['delivery_note.quantity'], 'properties' => ['data-ref' => 'delivery_note_table.quantity-td']];
+                $element['elements'][] = ['element' => 'td', 'content' => $row['delivery_note.product_key'], 'properties' => ['data-ref' => 'delivery_note_table.product_key-td', 'visi' => $this->visibilityCheck($column_visibility, 'product_key')]];
+                $element['elements'][] = ['element' => 'td', 'content' => $row['delivery_note.notes'], 'properties' => ['data-ref' => 'delivery_note_table.notes-td', 'visi' => $this->visibilityCheck($column_visibility, 'notes')]];
+                $element['elements'][] = ['element' => 'td', 'content' => $row['delivery_note.quantity'], 'properties' => ['data-ref' => 'delivery_note_table.quantity-td', 'visi' => $this->visibilityCheck($column_visibility, 'quantity')]];
 
                 for ($i = 0; $i < count($product_customs); $i++) {
                     if ($product_customs[$i]) {
-                        $element['elements'][] = ['element' => 'td', 'content' => $row['delivery_note.delivery_note' . ($i + 1)], 'properties' => ['data-ref' => 'delivery_note_table.product' . ($i + 1) . '-td']];
+                        $element['elements'][] = ['element' => 'td', 'content' => $row['delivery_note.delivery_note' . ($i + 1)], 'properties' => ['data-ref' => 'delivery_note_table.product' . ($i + 1) . '-td', 'visi' => $this->visibilityCheck($column_visibility, 'product'.($i+1))]];
                     }
                 }
 
-            $visible_elements = array_filter($element['elements'], function ($el) {
-                if (isset($el['properties']['visi']) && $el['properties']['visi']) {
-                    return true;
+                $visible_elements = array_filter($element['elements'], function ($el) {
+                    if (isset($el['properties']['visi']) && $el['properties']['visi']) {
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (!empty($visible_elements)) {
+                    $first_visible = array_key_first($visible_elements);
+                    $last_visible = array_key_last($visible_elements);
+
+                    // Add class to first visible cell
+                    if (!isset($element['elements'][$first_visible]['properties']['class'])) { //@phpstan-ignore-line
+                        $element['elements'][$first_visible]['properties']['class'] = 'left-radius';
+                    } else {
+                        $element['elements'][$first_visible]['properties']['class'] .= ' left-radius';
+                    }
+
+                    // Add class to last visible cell
+                    if (!isset($element['elements'][$last_visible]['properties']['class'])) {
+                        $element['elements'][$last_visible]['properties']['class'] = 'right-radius';
+                    } else {
+                        $element['elements'][$last_visible]['properties']['class'] .= ' right-radius';
+                    }
                 }
-                return false;
-            });
 
-            if (!empty($visible_elements)) {
-                $first_visible = array_key_first($visible_elements);
-                $last_visible = array_key_last($visible_elements);
-
-                // Add class to first visible cell
-                if (!isset($element['elements'][$first_visible]['properties']['class'])) { //@phpstan-ignore-line
-                    $element['elements'][$first_visible]['properties']['class'] = 'left-radius';
-                } else {
-                    $element['elements'][$first_visible]['properties']['class'] .= ' left-radius';
-                }
-
-                // Add class to last visible cell
-                if (!isset($element['elements'][$last_visible]['properties']['class'])) {
-                    $element['elements'][$last_visible]['properties']['class'] = 'right-radius';
-                } else {
-                    $element['elements'][$last_visible]['properties']['class'] .= ' right-radius';
-                }
-            }
-
-                // Then, filter the elements array
-                $element['elements'] = array_map(function ($el) {
-                    if (isset($el['properties']['visi'])) {
-                        if ($el['properties']['visi'] === false) {
-                            $el['properties']['style'] = 'display: none;';
+                    // Then, filter the elements array
+                    $element['elements'] = array_map(function ($el) {
+                        if (isset($el['properties']['visi'])) {
+                            if ($el['properties']['visi'] === false) {
+                                $el['properties']['style'] = 'display: none;';
+                            }
+                            unset($el['properties']['visi']);
                         }
-                        unset($el['properties']['visi']);
-                    }
-                    return $el;
-                }, $element['elements']);
+                        return $el;
+                    }, $element['elements']);
 
-                $elements[] = $element;
+                    $elements[] = $element;
 
             }
 
             return $elements;
         }
 
-        $_type = Str::startsWith($type, '$') ? ltrim($type, '$') : $type;
-        $table_type = "{$_type}_columns";
+
 
         if ($_type == 'product' && $this->entity instanceof Quote && !$this->settings_object->getSetting('sync_invoice_quote_columns')) {
             $table_type = "product_quote_columns";
         }
-
-        $column_visibility = $this->getColumnVisibility($this->entity->line_items, $_type);
 
         foreach ($items as $row) {
             $row_class = !empty($row['__is_group_header'])
