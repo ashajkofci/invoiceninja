@@ -237,4 +237,30 @@ class ProductTest extends TestCase
         ])->delete('/api/v1/products/'.$this->encodePrimaryKey($product->id))
         ->assertStatus(200);
     }
+
+    public function testProductGroupItemsPersist()
+    {
+        $group = Product::factory()->create([
+            'company_id' => $this->company->id,
+            'user_id' => $this->user->id,
+        ]);
+        $child = Product::factory()->create([
+            'company_id' => $this->company->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->put('/api/v1/products/'.$this->encodePrimaryKey($group->id), [
+            'is_group' => true,
+            'group_items' => [[
+                'product_id' => $this->encodePrimaryKey($child->id),
+                'quantity' => 2,
+            ]],
+        ])->assertStatus(200);
+
+        $response->assertJsonPath('data.group_items.0.product_id', $this->encodePrimaryKey($child->id));
+        $this->assertEquals(2, $group->fresh()->group_products()->first()->pivot->quantity);
+    }
 }

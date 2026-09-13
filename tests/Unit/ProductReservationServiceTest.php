@@ -26,6 +26,7 @@ class ProductReservationServiceTest extends TestCase
             $table->json('line_items');
             $table->string('custom_value1')->nullable();
             $table->string('custom_value2')->nullable();
+            $table->string('custom_value3')->nullable();
             $table->timestamp('deleted_at')->nullable();
         });
         Schema::create('products', function (Blueprint $table) {
@@ -329,6 +330,8 @@ class ProductReservationServiceTest extends TestCase
             'id' => 1,
             'reservation_start_custom_field' => 1,
             'reservation_end_custom_field' => 2,
+            'reservation_status_custom_field' => 3,
+            'reservation_statuses' => [['value' => 'Confirmed', 'color' => '#2563eb']],
         ]);
         $productId = DB::table('products')->insertGetId([
             'company_id' => $company->id,
@@ -345,10 +348,15 @@ class ProductReservationServiceTest extends TestCase
                     'product_key' => 'calendar-item',
                     'quantity' => 2,
                     'cost' => 25,
-                    'line_total' => 50,
+                    'discount' => 10,
+                    'is_amount_discount' => false,
+                    'time_coefficient' => 2,
+                    'line_total' => 90,
+                    'gross_line_total' => 99,
                 ]]),
                 'custom_value1' => '2025-12-30',
                 'custom_value2' => '2026-01-02',
+                'custom_value3' => 'Archived',
             ],
             [
                 'company_id' => $company->id,
@@ -359,10 +367,14 @@ class ProductReservationServiceTest extends TestCase
                     'product_key' => 'calendar-item',
                     'quantity' => 1,
                     'cost' => 40,
-                    'line_total' => 40,
+                    'discount' => 5,
+                    'is_amount_discount' => true,
+                    'line_total' => 35,
+                    'gross_line_total' => 38.5,
                 ]]),
                 'custom_value1' => '2026-02-01',
                 'custom_value2' => '2026-02-03',
+                'custom_value3' => 'Archived',
             ],
         ]);
 
@@ -374,6 +386,8 @@ class ProductReservationServiceTest extends TestCase
         $this->assertSame(3.0, $result['statistics']['total_quantity']);
         $this->assertSame(5, $result['statistics']['by_year'][0]['total_days']);
         $this->assertSame(2, $result['statistics']['by_year'][1]['total_days']);
-        $this->assertSame(90.0, $result['statistics']['totals_by_currency'][0]['total_price']);
+        $this->assertSame(35.0, $result['history'][0]['unit_price']);
+        $this->assertSame(22.5, $result['history'][1]['unit_price']);
+        $this->assertSame(125.0, $result['statistics']['totals_by_currency'][0]['total_price']);
     }
 }

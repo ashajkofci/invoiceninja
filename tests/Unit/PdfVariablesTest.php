@@ -13,6 +13,8 @@ namespace Tests\Unit;
 
 use App\DataMapper\CompanySettings;
 use App\Services\Pdf\PdfMock;
+use Illuminate\Support\Facades\Lang;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
 use Tests\TestCase;
 
@@ -49,5 +51,23 @@ class PdfVariablesTest extends TestCase
                 self::assertNotSame('', $labels["{$column}_label"], $name);
             }
         }
+    }
+
+    #[DataProvider('coefficientLocales')]
+    public function testCoefficientColumnsAreTranslated(string $locale): void
+    {
+        foreach (['time_coefficient', 'time_coefficient_name'] as $key) {
+            self::assertTrue(Lang::hasForLocale("texts.{$key}", 'en'));
+            self::assertTrue(Lang::hasForLocale("texts.{$key}", $locale));
+            self::assertNotSame(trans("texts.{$key}", [], 'en'), trans("texts.{$key}", [], $locale));
+        }
+    }
+
+    public static function coefficientLocales(): iterable
+    {
+        yield 'French' => ['fr'];
+        yield 'Swiss French' => ['fr_CH'];
+        yield 'German' => ['de'];
+        yield 'Italian' => ['it'];
     }
 }
