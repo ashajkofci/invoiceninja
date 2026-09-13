@@ -19,7 +19,9 @@ class ProductReservationServiceTest extends TestCase
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
+            $table->unsignedBigInteger('client_id')->nullable();
             $table->unsignedTinyInteger('status_id');
+            $table->string('number')->nullable();
             $table->boolean('is_deleted')->default(false);
             $table->json('line_items');
             $table->string('custom_value1')->nullable();
@@ -319,5 +321,59 @@ class ProductReservationServiceTest extends TestCase
 
         $this->assertSame(4.0, $today[0]['reserved_quantity']);
         $this->assertSame(8.0, $today[0]['available_quantity']);
+    }
+
+    public function testHistoryReturnsRentalTotalsAndSplitsUsageAcrossYears(): void
+    {
+        $company = (new Company())->forceFill([
+            'id' => 1,
+            'reservation_start_custom_field' => 1,
+            'reservation_end_custom_field' => 2,
+        ]);
+        $productId = DB::table('products')->insertGetId([
+            'company_id' => $company->id,
+            'product_key' => 'calendar-item',
+            'in_stock_quantity' => 10,
+        ]);
+        DB::table('invoices')->insert([
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'number' => '0001',
+                'line_items' => json_encode([[
+                    'type_id' => 1,
+                    'product_key' => 'calendar-item',
+                    'quantity' => 2,
+                    'cost' => 25,
+                    'line_total' => 50,
+                ]]),
+                'custom_value1' => '2025-12-30',
+                'custom_value2' => '2026-01-02',
+            ],
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'number' => '0002',
+                'line_items' => json_encode([[
+                    'type_id' => 1,
+                    'product_key' => 'calendar-item',
+                    'quantity' => 1,
+                    'cost' => 40,
+                    'line_total' => 40,
+                ]]),
+                'custom_value1' => '2026-02-01',
+                'custom_value2' => '2026-02-03',
+            ],
+        ]);
+
+        $result = (new ProductReservationService($company))->history($productId);
+
+        $this->assertSame(2, $result['statistics']['total_rentals']);
+        $this->assertSame(7, $result['statistics']['total_days']);
+        $this->assertSame(3.5, $result['statistics']['average_days']);
+        $this->assertSame(3.0, $result['statistics']['total_quantity']);
+        $this->assertSame(5, $result['statistics']['by_year'][0]['total_days']);
+        $this->assertSame(2, $result['statistics']['by_year'][1]['total_days']);
+        $this->assertSame(90.0, $result['statistics']['totals_by_currency'][0]['total_price']);
     }
 }

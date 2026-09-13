@@ -12,6 +12,8 @@
 namespace Tests\Unit;
 
 use App\DataMapper\CompanySettings;
+use App\Services\Pdf\PdfMock;
+use ReflectionClass;
 use Tests\TestCase;
 
 /**
@@ -29,5 +31,23 @@ class PdfVariablesTest extends TestCase
     public function testPdfVariableDefaults()
     {
         $this->assertTrue(is_array($this->settings->pdf_variables->client_details));
+    }
+
+    public function testDefaultPdfColumnsHaveTranslatedMockLabels(): void
+    {
+        $reflection = new ReflectionClass(PdfMock::class);
+        $mock = $reflection->newInstanceWithoutConstructor();
+        $labels = $reflection->getMethod('mockTranslatedLabels')->invoke($mock);
+
+        foreach ((array) $this->settings->pdf_variables as $name => $columns) {
+            if (!str_ends_with($name, '_columns')) {
+                continue;
+            }
+
+            foreach (array_diff((array) $columns, ['$total_taxes', '$line_taxes']) as $column) {
+                self::assertArrayHasKey("{$column}_label", $labels, $name);
+                self::assertNotSame('', $labels["{$column}_label"], $name);
+            }
+        }
     }
 }
