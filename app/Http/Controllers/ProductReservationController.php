@@ -49,7 +49,8 @@ class ProductReservationController extends BaseController
             [],
             null,
             $productId,
-            true
+            includeAllProducts: true,
+            currentAndFutureOnly: true
         )]);
     }
 

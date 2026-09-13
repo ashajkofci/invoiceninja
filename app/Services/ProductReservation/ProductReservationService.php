@@ -98,9 +98,17 @@ class ProductReservationService
         array $requestedItems = [],
         ?int $excludeInvoiceId = null,
         ?int $productId = null,
-        bool $includeAllProducts = false
+        bool $includeAllProducts = false,
+        bool $currentAndFutureOnly = false
     ): array {
         [$start, $end] = $this->normalizePeriod($startDate, $endDate);
+        if ($currentAndFutureOnly) {
+            $today = CarbonImmutable::today()->format('Y-m-d');
+            if ($end < $today) {
+                return [];
+            }
+            $start = max($start, $today);
+        }
         $requested = $this->quantitiesByProductKey($requestedItems);
         $used = [];
         $conflicts = [];

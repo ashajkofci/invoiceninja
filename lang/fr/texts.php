@@ -5494,6 +5494,13 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'e_invoicing' => 'E-Invoicing',
     'einvoice_token_not_found' => 'E-invoicing token not found. Please go to Settings > E-invoice and regenerate token.',
     'regenerate' => 'Regenerate',
+    'subscription_unavailable' => 'Cet article n\'est plus disponible',
+    'currency_samoan_tala' => 'Tala samoan',
+    'confirm_duplicate_gateway' => 'Êtes-vous sûr de vouloir créer une autre connexion ?',
+    'clients_limit' => 'Vous avez atteint votre limite de clients. Veuillez mettre à niveau votre forfait.',
+    'remaining_hours' => 'Heures restantes',
+    'just_now' => 'À l\'instant',
+    'yesterday' => 'Hier',
 
 );
 

@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Company;
 use App\Services\ProductReservation\ProductReservationService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -163,6 +164,46 @@ class ProductReservationServiceTest extends TestCase
         $this->assertSame(8.0, $availability[0]['reserved_quantity']);
         $this->assertSame(2.0, $availability[0]['available_quantity']);
         $this->assertSame(9.0, $availability[0]['total_quantity']);
+    }
+
+    public function testCurrentAvailabilityExcludesPastReservations(): void
+    {
+        CarbonImmutable::setTestNow('2026-09-13');
+        $company = (new Company())->forceFill([
+            'id' => 1,
+            'reservation_start_custom_field' => 1,
+            'reservation_end_custom_field' => 2,
+        ]);
+        DB::table('products')->insert([
+            'company_id' => $company->id,
+            'product_key' => 'calendar-item',
+            'in_stock_quantity' => 10,
+        ]);
+        DB::table('invoices')->insert([
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'line_items' => json_encode([['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 6]]),
+                'custom_value1' => '2026-09-01',
+                'custom_value2' => '2026-09-02',
+            ],
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'line_items' => json_encode([['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 2]]),
+                'custom_value1' => '2026-09-12',
+                'custom_value2' => '2026-09-14',
+            ],
+        ]);
+
+        $service = new ProductReservationService($company);
+        $availability = $service->availability('2026-09-01', '2026-09-30', [], null, null, true, true);
+
+        $this->assertSame(2.0, $availability[0]['reserved_quantity']);
+        $this->assertCount(1, $availability[0]['reservations']);
+        $this->assertSame([], $service->availability('2026-09-01', '2026-09-12', [], null, null, true, true));
+
+        CarbonImmutable::setTestNow();
     }
 
     public function testAvailabilityRejectsEmptyDatesInsteadOfUsingToday(): void
