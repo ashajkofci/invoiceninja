@@ -41,6 +41,10 @@ class InvoiceToRecurringInvoiceFactory
         $recurring_invoice->custom_value2 = $invoice->custom_value2;
         $recurring_invoice->custom_value3 = $invoice->custom_value3;
         $recurring_invoice->custom_value4 = $invoice->custom_value4;
+        $recurring_invoice->custom_value5 = $invoice->custom_value5;
+        $recurring_invoice->custom_value6 = $invoice->custom_value6;
+        $recurring_invoice->custom_value7 = $invoice->custom_value7;
+        $recurring_invoice->custom_value8 = $invoice->custom_value8;
         $recurring_invoice->amount = $invoice->amount;
         // $recurring_invoice->balance = $invoice->balance;
         $recurring_invoice->user_id = $invoice->user_id;

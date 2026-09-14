@@ -173,10 +173,6 @@ class HandleRestore extends AbstractService
         } catch (\Exception $e) {
             nlog('I could not wind back the invoice number');
 
-            if (Ninja::isHosted()) {
-                \Sentry\captureMessage('I could not wind back the invoice number');
-                app('sentry')->captureException($e);
-            }
         }
     }
 }

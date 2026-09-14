@@ -105,6 +105,10 @@ trait MakesTemplateData
         $data['$invoice2'] = ['value' => '10', 'label' => 'invoice2'];
         $data['$invoice3'] = ['value' => '10', 'label' => 'invoice3'];
         $data['$invoice4'] = ['value' => '10', 'label' => 'invoice4'];
+        $data['$invoice5'] = ['value' => '10', 'label' => 'invoice5'];
+        $data['$invoice6'] = ['value' => '10', 'label' => 'invoice6'];
+        $data['$invoice7'] = ['value' => '10', 'label' => 'invoice7'];
+        $data['$invoice8'] = ['value' => '10', 'label' => 'invoice8'];
         $data['$invoice.public_notes'] = ['value' => '10', 'label' => ctrans('texts.public_notes')];
         $data['$entity.public_notes'] = &$data['$invoice.public_notes'];
         $data['$quote_date'] = ['value' => '2010-02-03', 'label' => ctrans('texts.quote_date')];
@@ -191,7 +195,7 @@ trait MakesTemplateData
         $data['$product.cost'] = ['value' => '$10.00', 'label' => ctrans('texts.cost')];
         $data['$product.quantity'] = ['value' => '1', 'label' => ctrans('texts.quantity')];
         $data['$product.time_coefficient'] = ['value' => '1', 'label' => ctrans('texts.time_coefficient')];
-        $data['$product.time_coefficient_name'] = ['value' => 'Standard', 'label' => ctrans('texts.time_coefficient_name')];
+        $data['$product.time_coefficient_name'] = ['value' => 'Standard', 'label' => ctrans('texts.duration')];
         $data['$product.tax_name1'] = ['value' => 'GST', 'label' => ctrans('texts.tax')];
         $data['$product.tax_name2'] = ['value' => 'VAT', 'label' => ctrans('texts.tax')];
         $data['$product.tax_name3'] = ['value' => 'Sales TAX', 'label' => ctrans('texts.tax')];

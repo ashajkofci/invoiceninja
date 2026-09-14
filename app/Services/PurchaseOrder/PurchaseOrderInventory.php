@@ -41,6 +41,10 @@ class PurchaseOrderInventory
                 $p->custom_value2 = $item->custom_value2 ?? '';
                 $p->custom_value3 = $item->custom_value3 ?? '';
                 $p->custom_value4 = $item->custom_value4 ?? '';
+                $p->custom_value5 = $item->custom_value5 ?? '';
+                $p->custom_value6 = $item->custom_value6 ?? '';
+                $p->custom_value7 = $item->custom_value7 ?? '';
+                $p->custom_value8 = $item->custom_value8 ?? '';
             }
 
             $p->in_stock_quantity += $item->quantity;

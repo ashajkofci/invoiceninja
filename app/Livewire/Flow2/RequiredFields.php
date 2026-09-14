@@ -140,7 +140,6 @@ class RequiredFields extends Component
 
     public function exception($e, $stopPropagation)
     {
-        app('sentry')->captureException($e);
         nlog($e->getMessage());
         $stopPropagation();
 

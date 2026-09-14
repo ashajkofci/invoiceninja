@@ -64,6 +64,10 @@ class ProductSalesExport extends BaseExport
         'custom_value2' => 'custom_value2',
         'custom_value3' => 'custom_value3',
         'custom_value4' => 'custom_value4',
+        'custom_value5' => 'custom_value5',
+        'custom_value6' => 'custom_value6',
+        'custom_value7' => 'custom_value7',
+        'custom_value8' => 'custom_value8',
     ];
 
     public function __construct(Company $company, array $input)

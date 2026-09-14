@@ -31,10 +31,14 @@ class ProductMap
             12 => 'product.custom_value2',
             13 => 'product.custom_value3',
             14 => 'product.custom_value4',
-            15 => 'product.image_url',
-            16 => 'product.in_stock_quantity',
-            17 => 'product.tax_category',
-            18 => 'product.max_quantity',
+            15 => 'product.custom_value5',
+            16 => 'product.custom_value6',
+            17 => 'product.custom_value7',
+            18 => 'product.custom_value8',
+            19 => 'product.image_url',
+            20 => 'product.in_stock_quantity',
+            21 => 'product.tax_category',
+            22 => 'product.max_quantity',
         ];
     }
 
@@ -56,10 +60,14 @@ class ProductMap
             12 => 'texts.custom_value',
             13 => 'texts.custom_value',
             14 => 'texts.custom_value',
-            15 => 'texts.image_url',
-            16 => 'texts.in_stock_quantity',
-            17 => 'texts.tax_category',
-            18 => 'texts.max_quantity',
+            15 => 'texts.custom_value',
+            16 => 'texts.custom_value',
+            17 => 'texts.custom_value',
+            18 => 'texts.custom_value',
+            19 => 'texts.image_url',
+            20 => 'texts.in_stock_quantity',
+            21 => 'texts.tax_category',
+            22 => 'texts.max_quantity',
         ];
     }
 }

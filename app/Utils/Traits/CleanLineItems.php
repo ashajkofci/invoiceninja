@@ -103,8 +103,12 @@ trait CleanLineItems
             if (isset($item['custom_value3'])) {
                 $item['custom_value3'] = str_replace(["</sc","onerror","prompt(","alert(",], "<-", $item['custom_value3']);
             }
-            if (isset($item['custom_value4'])) {
-                $item['custom_value4'] = str_replace(["</sc","onerror","prompt(","alert(",], "<-", $item['custom_value4']);
+            foreach (range(4, 8) as $field_number) {
+                $field = "custom_value{$field_number}";
+
+                if (isset($item[$field])) {
+                    $item[$field] = str_replace(["</sc","onerror","prompt(","alert(",], "<-", $item[$field]);
+                }
             }
 
         }

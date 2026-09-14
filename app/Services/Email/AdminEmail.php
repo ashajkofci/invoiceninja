@@ -204,10 +204,6 @@ class AdminEmail implements ShouldQueue
                 /* If the is an entity attached to the message send a failure mailer */
                 $this->entityEmailFailed($message);
 
-                /* Don't send postmark failures to Sentry */
-                if (Ninja::isHosted() && (!$e instanceof ClientException)) { //@phpstan-ignore-line
-                    app('sentry')->captureException($e);
-                }
             }
 
             sleep(rand(0, 3));

@@ -43,6 +43,10 @@ class CreditFactory
         $credit->custom_value2 = '';
         $credit->custom_value3 = '';
         $credit->custom_value4 = '';
+        $credit->custom_value5 = '';
+        $credit->custom_value6 = '';
+        $credit->custom_value7 = '';
+        $credit->custom_value8 = '';
         $credit->amount = 0;
         $credit->balance = 0;
         $credit->partial = 0;

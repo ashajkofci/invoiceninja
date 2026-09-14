@@ -63,7 +63,7 @@ class InternalProductFilter
             return null;
         }
 
-        for ($i = 1; $i <= 4; $i++) {
+        for ($i = 1; $i <= 8; $i++) {
             $field = 'product' . $i;
 
             $field_config = self::getValue($custom_fields, $field);

@@ -563,7 +563,7 @@ class Account extends BaseModel
                 return true;
             }
         } catch (\Exception $e) {
-            \Sentry\captureMessage("I encountered an error with email quotas for account {$this->key} - defaulting to SEND");
+            nlog("I encountered an error with email quotas for account {$this->key} - defaulting to SEND");
         }
 
         return false;
@@ -601,7 +601,7 @@ class Account extends BaseModel
 
             return true;
         } catch (\Exception $e) {
-            \Sentry\captureMessage("I encountered an error with sending with gmail for account {$this->key}");
+            nlog("I encountered an error with sending with gmail for account {$this->key}");
         }
 
         return false;

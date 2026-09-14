@@ -115,6 +115,22 @@ class CreditDecorator implements DecoratorInterface
     {
         return $credit->custom_value4 ?? '';
     }
+    public function custom_value5(Credit $credit)
+    {
+        return $credit->custom_value5 ?? '';
+    }
+    public function custom_value6(Credit $credit)
+    {
+        return $credit->custom_value6 ?? '';
+    }
+    public function custom_value7(Credit $credit)
+    {
+        return $credit->custom_value7 ?? '';
+    }
+    public function custom_value8(Credit $credit)
+    {
+        return $credit->custom_value8 ?? '';
+    }
     public function exchange_rate(Credit $credit)
     {
         return $credit->exchange_rate ?? 0;

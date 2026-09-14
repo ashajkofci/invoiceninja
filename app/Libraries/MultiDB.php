@@ -52,8 +52,6 @@ class MultiDB
         'www',
         'app',
         'ninja',
-        'sentry',
-        'sentry2',
         'staging',
         'pdf',
         'demo',

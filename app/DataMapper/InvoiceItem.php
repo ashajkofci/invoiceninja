@@ -64,6 +64,10 @@ class InvoiceItem
     public $custom_value3 = '';
 
     public $custom_value4 = '';
+    public $custom_value5 = '';
+    public $custom_value6 = '';
+    public $custom_value7 = '';
+    public $custom_value8 = '';
 
     public $type_id = '1'; //1 = product, 2 = service, 3 unpaid gateway fee, 4 paid gateway fee, 5 late fee, 6 expense
 
@@ -117,6 +121,10 @@ class InvoiceItem
         'custom_value2' => 'string',
         'custom_value3' => 'string',
         'custom_value4' => 'string',
+        'custom_value5' => 'string',
+        'custom_value6' => 'string',
+        'custom_value7' => 'string',
+        'custom_value8' => 'string',
         'unit_code' => 'string',
         'group_id' => 'string',
         'group_title' => 'string',

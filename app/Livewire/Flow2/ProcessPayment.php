@@ -108,8 +108,6 @@ class ProcessPayment extends Component
     public function exception($e, $stopPropagation)
     {
 
-        app('sentry')->captureException($e);
-
         $errors = session()->get('errors', new \Illuminate\Support\ViewErrorBag());
 
         $bag = new \Illuminate\Support\MessageBag();

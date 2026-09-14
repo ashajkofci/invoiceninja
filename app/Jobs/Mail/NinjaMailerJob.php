@@ -263,8 +263,6 @@ class NinjaMailerJob implements ShouldQueue
                     $this->entityEmailFailed($message);
                 }
 
-                app('sentry')->captureException($e);
-
             }
 
             /* Releasing immediately does not add in the backoff */

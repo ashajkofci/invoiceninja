@@ -32,6 +32,10 @@ class ProductFactory extends Factory
             'custom_value2' => rand(0, 100),
             'custom_value3' => $this->faker->text(20),
             'custom_value4' => $this->faker->text(20),
+            'custom_value5' => $this->faker->text(20),
+            'custom_value6' => $this->faker->text(20),
+            'custom_value7' => $this->faker->text(20),
+            'custom_value8' => $this->faker->text(20),
             'is_deleted' => false,
             'tax_id' => 1,
         ];

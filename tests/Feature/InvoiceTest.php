@@ -52,6 +52,44 @@ class InvoiceTest extends TestCase
         $this->makeTestData();
     }
 
+    public function testAdditionalInvoiceAndProductCustomFieldsRoundTrip()
+    {
+        $item = InvoiceItemFactory::create();
+
+        foreach (range(5, 8) as $field_number) {
+            $field = "custom_value{$field_number}";
+            $item->{$field} = "product {$field_number}";
+        }
+
+        $data = [
+            'client_id' => $this->client->hashed_id,
+            'line_items' => [$item],
+        ];
+
+        foreach (range(5, 8) as $field_number) {
+            $data["custom_value{$field_number}"] = "invoice {$field_number}";
+        }
+
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->postJson('/api/v1/invoices', $data)
+            ->assertStatus(200);
+
+        foreach (range(5, 8) as $field_number) {
+            $response->assertJsonPath("data.custom_value{$field_number}", "invoice {$field_number}");
+            $response->assertJsonPath("data.line_items.0.custom_value{$field_number}", "product {$field_number}");
+        }
+
+        $invoice = Invoice::findOrFail($this->decodePrimaryKey($response->json('data.id')));
+
+        foreach (range(5, 8) as $field_number) {
+            $field = "custom_value{$field_number}";
+            $this->assertSame("invoice {$field_number}", $invoice->{$field});
+            $this->assertSame("product {$field_number}", $invoice->line_items[0]->{$field});
+        }
+    }
+
 
     public function testLineItemValidation()
     {

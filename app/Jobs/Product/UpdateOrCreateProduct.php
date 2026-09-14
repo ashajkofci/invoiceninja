@@ -113,20 +113,12 @@ class UpdateOrCreateProduct implements ShouldQueue
                 $product->quantity = isset($item->quantity) ? $item->quantity : 0;
             }
 
-            if (isset($item->custom_value1) && strlen($item->custom_value1) >= 1) {
-                $product->custom_value1 = $item->custom_value1;
-            }
+            foreach (range(1, 8) as $field_number) {
+                $field = "custom_value{$field_number}";
 
-            if (isset($item->custom_value2) && strlen($item->custom_value1) >= 1) {
-                $product->custom_value2 = $item->custom_value2;
-            }
-
-            if (isset($item->custom_value3) && strlen($item->custom_value1) >= 1) {
-                $product->custom_value3 = $item->custom_value3;
-            }
-
-            if (isset($item->custom_value4) && strlen($item->custom_value1) >= 1) {
-                $product->custom_value4 = $item->custom_value4;
+                if (isset($item->{$field}) && strlen($item->{$field}) >= 1) {
+                    $product->{$field} = $item->{$field};
+                }
             }
 
             $product->user_id = $this->invoice->user_id;

@@ -42,6 +42,10 @@ class ProductTransformer extends BaseTransformer
             'custom_value2' => $this->getString($data, 'product.custom_value2'),
             'custom_value3' => $this->getString($data, 'product.custom_value3'),
             'custom_value4' => $this->getString($data, 'product.custom_value4'),
+            'custom_value5' => $this->getString($data, 'product.custom_value5'),
+            'custom_value6' => $this->getString($data, 'product.custom_value6'),
+            'custom_value7' => $this->getString($data, 'product.custom_value7'),
+            'custom_value8' => $this->getString($data, 'product.custom_value8'),
             'product_image' => $this->getString($data, 'product.image_url'),
             'in_stock_quantity' => $this->getFloat($data, 'product.in_stock_quantity'),
             'tax_id' => $this->getNumber($data, 'product.tax_category', 1)

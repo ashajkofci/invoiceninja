@@ -59,6 +59,10 @@ use App\Models\Presenters\RecurringInvoicePresenter;
  * @property string|null $custom_value2
  * @property string|null $custom_value3
  * @property string|null $custom_value4
+ * @property string|null $custom_value5
+ * @property string|null $custom_value6
+ * @property string|null $custom_value7
+ * @property string|null $custom_value8
  * @property float $amount
  * @property float $balance
  * @property float|null $partial
@@ -204,6 +208,10 @@ class RecurringInvoice extends BaseModel
         'custom_value2',
         'custom_value3',
         'custom_value4',
+        'custom_value5',
+        'custom_value6',
+        'custom_value7',
+        'custom_value8',
         'amount',
         'partial',
         'frequency_id',
@@ -259,6 +267,10 @@ class RecurringInvoice extends BaseModel
         'custom_value2',
         'custom_value3',
         'custom_value4',
+        'custom_value5',
+        'custom_value6',
+        'custom_value7',
+        'custom_value8',
         'uses_inclusive_taxes',
         'private_notes',
         'public_notes',
@@ -286,6 +298,10 @@ class RecurringInvoice extends BaseModel
             'custom_value2' => (string)$this->custom_value2,
             'custom_value3' => (string)$this->custom_value3,
             'custom_value4' => (string)$this->custom_value4,
+            'custom_value5' => (string)$this->custom_value5,
+            'custom_value6' => (string)$this->custom_value6,
+            'custom_value7' => (string)$this->custom_value7,
+            'custom_value8' => (string)$this->custom_value8,
             'company_key' => $this->company->company_key,
             'po_number' => (string)$this->po_number,
         ];

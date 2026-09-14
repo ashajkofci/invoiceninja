@@ -42,6 +42,10 @@ class InvoiceFactory
         $invoice->custom_value2 = '';
         $invoice->custom_value3 = '';
         $invoice->custom_value4 = '';
+        $invoice->custom_value5 = '';
+        $invoice->custom_value6 = '';
+        $invoice->custom_value7 = '';
+        $invoice->custom_value8 = '';
         $invoice->amount = 0;
         $invoice->balance = 0;
         $invoice->paid_to_date = 0;

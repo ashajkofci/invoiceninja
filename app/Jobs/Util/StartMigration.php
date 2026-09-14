@@ -140,10 +140,6 @@ class StartMigration implements ShouldQueue
 
             Cache::put("migration-{$this->company->company_key}", "failed", 86400);
 
-            if (Ninja::isHosted()) {
-                app('sentry')->captureException($e);
-            }
-
             if (!$this->silent_migration) {
                 Mail::to($this->user->email, $this->user->name())->send(new MigrationFailed($e, $this->company, $e->getMessage()));
             }

@@ -391,8 +391,6 @@ class Email implements ShouldQueue
                 /* If the is an entity attached to the message send a failure mailer */
                 $this->entityEmailFailed($message);
 
-                app('sentry')->captureException($e);
-
             }
 
             $this->tearDown();

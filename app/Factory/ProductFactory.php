@@ -34,6 +34,10 @@ class ProductFactory
         $product->custom_value2 = '';
         $product->custom_value3 = '';
         $product->custom_value4 = '';
+        $product->custom_value5 = '';
+        $product->custom_value6 = '';
+        $product->custom_value7 = '';
+        $product->custom_value8 = '';
         $product->is_deleted = false;
         $product->tax_id = 1;
         
