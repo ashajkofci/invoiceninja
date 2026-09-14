@@ -186,6 +186,23 @@ class GroupedPdfLayoutTest extends TestCase
     }
 
     #[DataProvider('pipelines')]
+    public function testLegacySerializedItemsWithoutExpandedCustomValues(string $pipeline): void
+    {
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['item']);
+        $item = (object) get_object_vars($invoice->line_items[4]);
+
+        foreach (range(5, 8) as $index) {
+            unset($item->{"custom_value{$index}"});
+        }
+
+        $data = array_values($renderer->transformLineItems([$item], '$product'));
+
+        foreach (range(5, 8) as $index) {
+            self::assertSame('', $data[0]["\$product.product{$index}"]);
+        }
+    }
+
+    #[DataProvider('pipelines')]
     public function testExpandedTaxColumnsUseTranslatedNameLabels(string $pipeline): void
     {
         foreach (['product', 'task'] as $type) {
