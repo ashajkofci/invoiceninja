@@ -86,6 +86,10 @@ class ProductTransformer extends EntityTransformer
                     'custom_value2' => $child->custom_value2 ?: '',
                     'custom_value3' => $child->custom_value3 ?: '',
                     'custom_value4' => $child->custom_value4 ?: '',
+                    'custom_value5' => $child->custom_value5 ?: '',
+                    'custom_value6' => $child->custom_value6 ?: '',
+                    'custom_value7' => $child->custom_value7 ?: '',
+                    'custom_value8' => $child->custom_value8 ?: '',
                 ];
             })->values()->all()
             : [];
@@ -112,6 +116,10 @@ class ProductTransformer extends EntityTransformer
             'custom_value2' => $product->custom_value2 ?: '',
             'custom_value3' => $product->custom_value3 ?: '',
             'custom_value4' => $product->custom_value4 ?: '',
+            'custom_value5' => $product->custom_value5 ?: '',
+            'custom_value6' => $product->custom_value6 ?: '',
+            'custom_value7' => $product->custom_value7 ?: '',
+            'custom_value8' => $product->custom_value8 ?: '',
             'is_deleted' => (bool) $product->is_deleted,
             'in_stock_quantity' => (int) $product->in_stock_quantity ?: 0,
             'stock_notification' => (bool) $product->stock_notification,

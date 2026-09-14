@@ -73,6 +73,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $custom_value2
  * @property string|null $custom_value3
  * @property string|null $custom_value4
+ * @property string|null $custom_value5
+ * @property string|null $custom_value6
+ * @property string|null $custom_value7
+ * @property string|null $custom_value8
  * @property string|null $custom_surcharge1
  * @property string|null $custom_surcharge2
  * @property string|null $custom_surcharge3
@@ -154,6 +158,10 @@ class Quote extends BaseModel
         'custom_value2',
         'custom_value3',
         'custom_value4',
+        'custom_value5',
+        'custom_value6',
+        'custom_value7',
+        'custom_value8',
         'line_items',
         'client_id',
         'footer',
@@ -216,6 +224,10 @@ class Quote extends BaseModel
             'custom_value2' => (string)$this->custom_value2,
             'custom_value3' => (string)$this->custom_value3,
             'custom_value4' => (string)$this->custom_value4,
+            'custom_value5' => (string)$this->custom_value5,
+            'custom_value6' => (string)$this->custom_value6,
+            'custom_value7' => (string)$this->custom_value7,
+            'custom_value8' => (string)$this->custom_value8,
             'company_key' => $this->company->company_key,
             'po_number' => (string)$this->po_number,
         ];

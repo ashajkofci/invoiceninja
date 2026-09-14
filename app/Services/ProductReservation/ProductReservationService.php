@@ -370,19 +370,19 @@ class ProductReservationService
     private function startField(): ?string
     {
         $number = (int) $this->company->reservation_start_custom_field;
-        return $number >= 1 && $number <= 4 ? "custom_value{$number}" : null;
+        return $number >= 1 && $number <= 8 ? "custom_value{$number}" : null;
     }
 
     private function endField(): ?string
     {
         $number = (int) $this->company->reservation_end_custom_field;
-        return $number >= 1 && $number <= 4 ? "custom_value{$number}" : null;
+        return $number >= 1 && $number <= 8 ? "custom_value{$number}" : null;
     }
 
     private function statusField(): ?string
     {
         $number = (int) $this->company->reservation_status_custom_field;
-        return $number >= 1 && $number <= 4 ? "custom_value{$number}" : null;
+        return $number >= 1 && $number <= 8 ? "custom_value{$number}" : null;
     }
 
     private function statusFromInvoice(array $invoice): string

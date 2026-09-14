@@ -149,6 +149,10 @@ class InvoiceTransformer extends EntityTransformer
             'custom_value2' => (string) $invoice->custom_value2 ?: '',
             'custom_value3' => (string) $invoice->custom_value3 ?: '',
             'custom_value4' => (string) $invoice->custom_value4 ?: '',
+            'custom_value5' => (string) $invoice->custom_value5 ?: '',
+            'custom_value6' => (string) $invoice->custom_value6 ?: '',
+            'custom_value7' => (string) $invoice->custom_value7 ?: '',
+            'custom_value8' => (string) $invoice->custom_value8 ?: '',
             'has_tasks' => (bool) false, //@deprecated v5.0.23
             'has_expenses' => (bool) false, //@deprecated v5.0.23
             'custom_surcharge1' => (float) $invoice->custom_surcharge1,

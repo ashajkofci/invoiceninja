@@ -43,6 +43,10 @@ class PurchaseOrderFactory
         $purchase_order->custom_value2 = '';
         $purchase_order->custom_value3 = '';
         $purchase_order->custom_value4 = '';
+        $purchase_order->custom_value5 = '';
+        $purchase_order->custom_value6 = '';
+        $purchase_order->custom_value7 = '';
+        $purchase_order->custom_value8 = '';
         $purchase_order->amount = 0;
         $purchase_order->balance = 0;
         $purchase_order->partial = 0;

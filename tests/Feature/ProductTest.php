@@ -53,6 +53,35 @@ class ProductTest extends TestCase
 
     }
 
+    public function testAdditionalCustomFieldsRoundTrip()
+    {
+        $custom_fields = [
+            'custom_value5' => 'product five',
+            'custom_value6' => 'product six',
+            'custom_value7' => 'product seven',
+            'custom_value8' => 'product eight',
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-SECRET' => config('ninja.api_secret'),
+            'X-API-TOKEN' => $this->token,
+        ])->postJson('/api/v1/products', array_merge([
+            'product_key' => 'custom-fields-product',
+            'price' => 10,
+        ], $custom_fields))
+            ->assertStatus(200);
+
+        foreach ($custom_fields as $field => $value) {
+            $response->assertJsonPath("data.{$field}", $value);
+        }
+
+        $product = Product::findOrFail($this->decodePrimaryKey($response->json('data.id')));
+
+        foreach ($custom_fields as $field => $value) {
+            $this->assertSame($value, $product->{$field});
+        }
+    }
+
     public function testRequiredFields()
     {
         

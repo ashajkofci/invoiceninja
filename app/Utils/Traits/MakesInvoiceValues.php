@@ -46,6 +46,10 @@ trait MakesInvoiceValues
         'custom_label2',
         'custom_label3',
         'custom_label4',
+        'custom_label5',
+        'custom_label6',
+        'custom_label7',
+        'custom_label8',
     ];
 
     private static $custom_label_fields = [
@@ -53,6 +57,10 @@ trait MakesInvoiceValues
         'invoice2',
         'invoice3',
         'invoice4',
+        'invoice5',
+        'invoice6',
+        'invoice7',
+        'invoice8',
         'surcharge1',
         'surcharge2',
         'surcharge3',
@@ -318,6 +326,10 @@ trait MakesInvoiceValues
             $data[$key][$table_type.".{$_table_type}2"] = strlen($item->custom_value2) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}2", $item->custom_value2, $entity) : '';
             $data[$key][$table_type.".{$_table_type}3"] = strlen($item->custom_value3) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}3", $item->custom_value3, $entity) : '';
             $data[$key][$table_type.".{$_table_type}4"] = strlen($item->custom_value4) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}4", $item->custom_value4, $entity) : '';
+            $data[$key][$table_type.".{$_table_type}5"] = strlen($item->custom_value5) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}5", $item->custom_value5, $entity) : '';
+            $data[$key][$table_type.".{$_table_type}6"] = strlen($item->custom_value6) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}6", $item->custom_value6, $entity) : '';
+            $data[$key][$table_type.".{$_table_type}7"] = strlen($item->custom_value7) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}7", $item->custom_value7, $entity) : '';
+            $data[$key][$table_type.".{$_table_type}8"] = strlen($item->custom_value8) >= 1 ? $helpers->formatCustomFieldValue($this->company->custom_fields, "{$_table_type}8", $item->custom_value8, $entity) : '';
 
             if ($item->quantity > 0 || $item->cost > 0) {
                 $data[$key][$table_type.'.quantity'] = Number::formatValueNoTrailingZeroes($item->quantity, $entity);

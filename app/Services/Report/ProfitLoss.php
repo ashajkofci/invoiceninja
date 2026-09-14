@@ -25,8 +25,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
 use League\Csv\Writer;
 
-use function Sentry\continueTrace;
-
 class ProfitLoss
 {
     private bool $is_income_billed = true;

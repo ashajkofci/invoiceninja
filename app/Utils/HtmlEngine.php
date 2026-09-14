@@ -184,6 +184,8 @@ class HtmlEngine
 
         $data['$payment_qrcode'] = ['value' => $this->invitation->getPaymentQrCode(), 'label' => ctrans('texts.pay_now')];
         $data['$payment_qrcode_raw'] = ['value' => $this->invitation->getPaymentQrCodeRaw(), 'label' => ctrans('texts.pay_now')];
+        $data['$swiss_qr'] = ['value' => '', 'label' => ''];
+        $data['$swiss_qr_raw'] = &$data['$swiss_qr'];
 
         $data['$exchange_rate'] = ['value' => $this->entity->exchange_rate ?: ' ', 'label' => ctrans('texts.exchange_rate')];
         $data['$triangular_tax'] = ['value' => ctrans('texts.triangular_tax'), 'label' => ''];
@@ -209,21 +211,37 @@ class HtmlEngine
             $data['$invoice.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice2', $this->entity->custom_value2, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice2')];
             $data['$invoice.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice3', $this->entity->custom_value3, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice3')];
             $data['$invoice.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice4', $this->entity->custom_value4, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice4')];
+            $data['$invoice.custom5'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice5', $this->entity->custom_value5, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice5')];
+            $data['$invoice.custom6'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice6', $this->entity->custom_value6, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice6')];
+            $data['$invoice.custom7'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice7', $this->entity->custom_value7, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice7')];
+            $data['$invoice.custom8'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice8', $this->entity->custom_value8, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice8')];
 
             $data['$custom1'] = &$data['$invoice.custom1'];
             $data['$custom2'] = &$data['$invoice.custom2'];
             $data['$custom3'] = &$data['$invoice.custom3'];
             $data['$custom4'] = &$data['$invoice.custom4'];
+            $data['$custom5'] = &$data['$invoice.custom5'];
+            $data['$custom6'] = &$data['$invoice.custom6'];
+            $data['$custom7'] = &$data['$invoice.custom7'];
+            $data['$custom8'] = &$data['$invoice.custom8'];
 
             $data['$quote.custom1'] = &$data['$invoice.custom1'];
             $data['$quote.custom2'] = &$data['$invoice.custom2'];
             $data['$quote.custom3'] = &$data['$invoice.custom3'];
             $data['$quote.custom4'] = &$data['$invoice.custom4'];
+            $data['$quote.custom5'] = &$data['$invoice.custom5'];
+            $data['$quote.custom6'] = &$data['$invoice.custom6'];
+            $data['$quote.custom7'] = &$data['$invoice.custom7'];
+            $data['$quote.custom8'] = &$data['$invoice.custom8'];
 
             $data['$credit.custom1'] = &$data['$invoice.custom1'];
             $data['$credit.custom2'] = &$data['$invoice.custom2'];
             $data['$credit.custom3'] = &$data['$invoice.custom3'];
             $data['$credit.custom4'] = &$data['$invoice.custom4'];
+            $data['$credit.custom5'] = &$data['$invoice.custom5'];
+            $data['$credit.custom6'] = &$data['$invoice.custom6'];
+            $data['$credit.custom7'] = &$data['$invoice.custom7'];
+            $data['$credit.custom8'] = &$data['$invoice.custom8'];
 
             $data['$invoice.project'] = &$data['$project.name'];
             $data['$quote.project'] = &$data['$project.name'];
@@ -268,21 +286,37 @@ class HtmlEngine
             $data['$quote.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote2', $this->entity->custom_value2, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote2')];
             $data['$quote.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote3', $this->entity->custom_value3, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote3')];
             $data['$quote.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote4', $this->entity->custom_value4, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote4')];
+            $data['$quote.custom5'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote5', $this->entity->custom_value5, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote5')];
+            $data['$quote.custom6'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote6', $this->entity->custom_value6, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote6')];
+            $data['$quote.custom7'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote7', $this->entity->custom_value7, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote7')];
+            $data['$quote.custom8'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'quote8', $this->entity->custom_value8, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'quote8')];
 
             $data['$custom1'] = &$data['$quote.custom1'];
             $data['$custom2'] = &$data['$quote.custom2'];
             $data['$custom3'] = &$data['$quote.custom3'];
             $data['$custom4'] = &$data['$quote.custom4'];
+            $data['$custom5'] = &$data['$quote.custom5'];
+            $data['$custom6'] = &$data['$quote.custom6'];
+            $data['$custom7'] = &$data['$quote.custom7'];
+            $data['$custom8'] = &$data['$quote.custom8'];
 
             $data['$invoice.custom1'] = &$data['$quote.custom1'];
             $data['$invoice.custom2'] = &$data['$quote.custom2'];
             $data['$invoice.custom3'] = &$data['$quote.custom3'];
             $data['$invoice.custom4'] = &$data['$quote.custom4'];
+            $data['$invoice.custom5'] = &$data['$quote.custom5'];
+            $data['$invoice.custom6'] = &$data['$quote.custom6'];
+            $data['$invoice.custom7'] = &$data['$quote.custom7'];
+            $data['$invoice.custom8'] = &$data['$quote.custom8'];
 
             $data['$credit.custom1'] = &$data['$quote.custom1'];
             $data['$credit.custom2'] = &$data['$quote.custom2'];
             $data['$credit.custom3'] = &$data['$quote.custom3'];
             $data['$credit.custom4'] = &$data['$quote.custom4'];
+            $data['$credit.custom5'] = &$data['$quote.custom5'];
+            $data['$credit.custom6'] = &$data['$quote.custom6'];
+            $data['$credit.custom7'] = &$data['$quote.custom7'];
+            $data['$credit.custom8'] = &$data['$quote.custom8'];
 
             $data['$invoice.project'] = &$data['$project.name'];
             $data['$quote.project'] = &$data['$project.name'];
@@ -308,21 +342,37 @@ class HtmlEngine
             $data['$credit.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit2', $this->entity->custom_value2, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit2')];
             $data['$credit.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit3', $this->entity->custom_value3, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit3')];
             $data['$credit.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit4', $this->entity->custom_value4, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit4')];
+            $data['$credit.custom5'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit5', $this->entity->custom_value5, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit5')];
+            $data['$credit.custom6'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit6', $this->entity->custom_value6, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit6')];
+            $data['$credit.custom7'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit7', $this->entity->custom_value7, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit7')];
+            $data['$credit.custom8'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'credit8', $this->entity->custom_value8, $this->client) ?: ' ', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'credit8')];
 
             $data['$custom1'] = &$data['$credit.custom1'];
             $data['$custom2'] = &$data['$credit.custom2'];
             $data['$custom3'] = &$data['$credit.custom3'];
             $data['$custom4'] = &$data['$credit.custom4'];
+            $data['$custom5'] = &$data['$credit.custom5'];
+            $data['$custom6'] = &$data['$credit.custom6'];
+            $data['$custom7'] = &$data['$credit.custom7'];
+            $data['$custom8'] = &$data['$credit.custom8'];
 
             $data['$quote.custom1'] = &$data['$credit.custom1'];
             $data['$quote.custom2'] = &$data['$credit.custom2'];
             $data['$quote.custom3'] = &$data['$credit.custom3'];
             $data['$quote.custom4'] = &$data['$credit.custom4'];
+            $data['$quote.custom5'] = &$data['$credit.custom5'];
+            $data['$quote.custom6'] = &$data['$credit.custom6'];
+            $data['$quote.custom7'] = &$data['$credit.custom7'];
+            $data['$quote.custom8'] = &$data['$credit.custom8'];
 
             $data['$invoice.custom1'] = &$data['$credit.custom1'];
             $data['$invoice.custom2'] = &$data['$credit.custom2'];
             $data['$invoice.custom3'] = &$data['$credit.custom3'];
             $data['$invoice.custom4'] = &$data['$credit.custom4'];
+            $data['$invoice.custom5'] = &$data['$credit.custom5'];
+            $data['$invoice.custom6'] = &$data['$credit.custom6'];
+            $data['$invoice.custom7'] = &$data['$credit.custom7'];
+            $data['$invoice.custom8'] = &$data['$credit.custom8'];
         }
 
         $data['$portal_url'] = ['value' => $this->invitation->getPortalLink(), 'label' => ''];
@@ -616,7 +666,7 @@ class HtmlEngine
         $data['$product.unit_cost'] = ['value' => '', 'label' => ctrans('texts.unit_cost')];
         $data['$product.quantity'] = ['value' => '', 'label' => ctrans('texts.quantity')];
         $data['$product.time_coefficient'] = ['value' => '', 'label' => ctrans('texts.time_coefficient')];
-        $data['$product.time_coefficient_name'] = ['value' => '', 'label' => ctrans('texts.time_coefficient_name')];
+        $data['$product.time_coefficient_name'] = ['value' => '', 'label' => ctrans('texts.duration')];
         $data['$product.tax_name1'] = ['value' => '', 'label' => ctrans('texts.tax')];
         $data['$product.tax'] = ['value' => '', 'label' => ctrans('texts.tax')];
         $data['$product.tax_name2'] = ['value' => '', 'label' => ctrans('texts.tax')];
@@ -630,6 +680,10 @@ class HtmlEngine
         $data['$product.product2'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product2')];
         $data['$product.product3'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product3')];
         $data['$product.product4'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product4')];
+        $data['$product.product5'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product5')];
+        $data['$product.product6'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product6')];
+        $data['$product.product7'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product7')];
+        $data['$product.product8'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product8')];
         $data['$product.poids_total'] = $this->poidsTotalVariable();
         $data['$poids_total'] = &$data['$product.poids_total'];
 

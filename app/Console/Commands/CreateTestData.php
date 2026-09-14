@@ -664,6 +664,10 @@ class CreateTestData extends Command
             $item->custom_value2 = $product->custom_value2;
             $item->custom_value3 = $product->custom_value3;
             $item->custom_value4 = $product->custom_value4;
+            $item->custom_value5 = $product->custom_value5;
+            $item->custom_value6 = $product->custom_value6;
+            $item->custom_value7 = $product->custom_value7;
+            $item->custom_value8 = $product->custom_value8;
 
             $line_items[] = $item;
         }

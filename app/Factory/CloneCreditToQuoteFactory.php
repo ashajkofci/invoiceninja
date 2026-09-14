@@ -38,6 +38,10 @@ class CloneCreditToQuoteFactory
         $quote->custom_value2 = $credit->custom_value2;
         $quote->custom_value3 = $credit->custom_value3;
         $quote->custom_value4 = $credit->custom_value4;
+        $quote->custom_value5 = $credit->custom_value5;
+        $quote->custom_value6 = $credit->custom_value6;
+        $quote->custom_value7 = $credit->custom_value7;
+        $quote->custom_value8 = $credit->custom_value8;
         $quote->amount = $credit->amount;
         //$quote->balance = $credit->balance;
         $quote->partial = $credit->partial;

@@ -237,11 +237,19 @@ class VendorHtmlEngine
         $data['$purchase_order.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice2', $this->entity->custom_value2, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice2')];
         $data['$purchase_order.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice3', $this->entity->custom_value3, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice3')];
         $data['$purchase_order.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice4', $this->entity->custom_value4, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice4')];
+        $data['$purchase_order.custom5'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice5', $this->entity->custom_value5, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice5')];
+        $data['$purchase_order.custom6'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice6', $this->entity->custom_value6, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice6')];
+        $data['$purchase_order.custom7'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice7', $this->entity->custom_value7, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice7')];
+        $data['$purchase_order.custom8'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice8', $this->entity->custom_value8, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice8')];
 
         $data['$custom1'] = &$data['$purchase_order.custom1'];
         $data['$custom2'] = &$data['$purchase_order.custom2'];
         $data['$custom3'] = &$data['$purchase_order.custom3'];
         $data['$custom4'] = &$data['$purchase_order.custom4'];
+        $data['$custom5'] = &$data['$purchase_order.custom5'];
+        $data['$custom6'] = &$data['$purchase_order.custom6'];
+        $data['$custom7'] = &$data['$purchase_order.custom7'];
+        $data['$custom8'] = &$data['$purchase_order.custom8'];
 
         $data['$vendor1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'vendor1', $this->vendor->custom_value1, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'vendor1')];
         $data['$vendor2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'vendor2', $this->vendor->custom_value2, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'vendor2')];
@@ -370,7 +378,7 @@ class VendorHtmlEngine
         $data['$product.unit_cost'] = ['value' => '', 'label' => ctrans('texts.unit_cost')];
         $data['$product.quantity'] = ['value' => '', 'label' => ctrans('texts.quantity')];
         $data['$product.time_coefficient'] = ['value' => '', 'label' => ctrans('texts.time_coefficient')];
-        $data['$product.time_coefficient_name'] = ['value' => '', 'label' => ctrans('texts.time_coefficient_name')];
+        $data['$product.time_coefficient_name'] = ['value' => '', 'label' => ctrans('texts.duration')];
         $data['$product.tax_name1'] = ['value' => '', 'label' => ctrans('texts.tax')];
         $data['$product.tax'] = ['value' => '', 'label' => ctrans('texts.tax')];
         $data['$product.tax_name2'] = ['value' => '', 'label' => ctrans('texts.tax')];
@@ -384,6 +392,10 @@ class VendorHtmlEngine
         $data['$product.product2'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product2')];
         $data['$product.product3'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product3')];
         $data['$product.product4'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product4')];
+        $data['$product.product5'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product5')];
+        $data['$product.product6'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product6')];
+        $data['$product.product7'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product7')];
+        $data['$product.product8'] = ['value' => '', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'product8')];
 
         if ($this->settings->signature_on_pdf) {
             $data['$contact.signature'] = ['value' => $this->invitation->signature_base64, 'label' => ctrans('texts.signature')];

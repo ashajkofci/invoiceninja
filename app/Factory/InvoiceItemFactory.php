@@ -42,6 +42,10 @@ class InvoiceItemFactory
         $item->custom_value2 = '';
         $item->custom_value3 = '';
         $item->custom_value4 = '';
+        $item->custom_value5 = '';
+        $item->custom_value6 = '';
+        $item->custom_value7 = '';
+        $item->custom_value8 = '';
         $item->type_id = '1';
         $item->tax_id = '1';
 
@@ -72,6 +76,10 @@ class InvoiceItemFactory
             // $item->custom_value2 = $faker->realText(10);
             // $item->custom_value3 = $faker->realText(10);
             // $item->custom_value4 = $faker->realText(10);
+            // $item->custom_value5 = $faker->realText(10);
+            // $item->custom_value6 = $faker->realText(10);
+            // $item->custom_value7 = $faker->realText(10);
+            // $item->custom_value8 = $faker->realText(10);
             $item->tax_name1 = 'GST';
             $item->tax_rate1 = 10.00;
             $item->type_id = '1';
@@ -93,6 +101,10 @@ class InvoiceItemFactory
         // $item->custom_value2 = $faker->realText(10);
         // $item->custom_value3 = $faker->realText(10);
         // $item->custom_value4 = $faker->realText(10);
+        // $item->custom_value5 = $faker->realText(10);
+        // $item->custom_value6 = $faker->realText(10);
+        // $item->custom_value7 = $faker->realText(10);
+        // $item->custom_value8 = $faker->realText(10);
         $item->tax_name1 = 'GST';
         $item->tax_rate1 = 10.00;
         $item->type_id = '2';
@@ -128,6 +140,10 @@ class InvoiceItemFactory
             // $item->custom_value2 = $faker->realText(10);
             // $item->custom_value3 = $faker->realText(10);
             // $item->custom_value4 = $faker->realText(10);
+            // $item->custom_value5 = $faker->realText(10);
+            // $item->custom_value6 = $faker->realText(10);
+            // $item->custom_value7 = $faker->realText(10);
+            // $item->custom_value8 = $faker->realText(10);
             $item->tax_name1 = '';
             $item->tax_rate1 = 0;
             $item->type_id = '1';

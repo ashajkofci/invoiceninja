@@ -44,6 +44,10 @@ class RecurringQuoteToQuoteFactory
         $quote->custom_value2 = $recurring_quote->custom_value2;
         $quote->custom_value3 = $recurring_quote->custom_value3;
         $quote->custom_value4 = $recurring_quote->custom_value4;
+        $quote->custom_value5 = $recurring_quote->custom_value5;
+        $quote->custom_value6 = $recurring_quote->custom_value6;
+        $quote->custom_value7 = $recurring_quote->custom_value7;
+        $quote->custom_value8 = $recurring_quote->custom_value8;
         $quote->amount = $recurring_quote->amount;
         // $quote->balance = $recurring_quote->balance;
         $quote->user_id = $recurring_quote->user_id;

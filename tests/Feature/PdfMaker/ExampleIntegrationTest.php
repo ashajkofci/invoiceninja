@@ -64,4 +64,21 @@ class ExampleIntegrationTest extends TestCase
 
         $this->assertNotNull($maker->getCompiledHTML(true));
     }
+
+    public function testQuotePdfVariablesUseTranslatedDurationAndEmptySwissQr(): void
+    {
+        $invitation = $this->quote->invitations()->firstOrFail();
+        $variables = (new HtmlEngine($invitation))->generateLabelsAndValues();
+
+        $this->assertSame(
+            ctrans('texts.duration'),
+            $variables['labels']['$product.time_coefficient_name_label']
+        );
+        $this->assertNotSame(
+            'texts.time_coefficient_name',
+            $variables['labels']['$product.time_coefficient_name_label']
+        );
+        $this->assertSame('', $variables['values']['$swiss_qr']);
+        $this->assertSame('', $variables['values']['$swiss_qr_raw']);
+    }
 }

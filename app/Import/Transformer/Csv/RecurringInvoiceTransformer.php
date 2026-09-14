@@ -97,10 +97,11 @@ class RecurringInvoiceTransformer extends BaseTransformer
                 $invoice_data,
                 'invoice.custom_value3'
             ),
-            'custom_value4' => $this->getString(
-                $invoice_data,
-                'invoice.custom_value4'
-            ),
+            'custom_value4' => $this->getString($invoice_data, 'invoice.custom_value4'),
+            'custom_value5' => $this->getString($invoice_data, 'invoice.custom_value5'),
+            'custom_value6' => $this->getString($invoice_data, 'invoice.custom_value6'),
+            'custom_value7' => $this->getString($invoice_data, 'invoice.custom_value7'),
+            'custom_value8' => $this->getString($invoice_data, 'invoice.custom_value8'),
             'footer' => $this->getString($invoice_data, 'invoice.footer'),
             'partial' => $this->getFloat($invoice_data, 'invoice.partial') > 0 ? $this->getFloat($invoice_data, 'invoice.partial') : null,
             'partial_due_date' => isset($invoice_data['invoice.partial_due_date']) ? $this->parseDate($invoice_data['invoice.partial_due_date']) : null,
@@ -182,10 +183,11 @@ class RecurringInvoiceTransformer extends BaseTransformer
                     $record,
                     'item.custom_value3'
                 ),
-                'custom_value4' => $this->getString(
-                    $record,
-                    'item.custom_value4'
-                ),
+                'custom_value4' => $this->getString($record, 'item.custom_value4'),
+                'custom_value5' => $this->getString($record, 'item.custom_value5'),
+                'custom_value6' => $this->getString($record, 'item.custom_value6'),
+                'custom_value7' => $this->getString($record, 'item.custom_value7'),
+                'custom_value8' => $this->getString($record, 'item.custom_value8'),
                 'type_id' => $this->getInvoiceTypeId($record, 'item.type_id'),
             ];
         }

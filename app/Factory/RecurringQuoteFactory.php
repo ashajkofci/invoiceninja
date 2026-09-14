@@ -40,6 +40,10 @@ class RecurringQuoteFactory
         $quote->custom_value2 = '';
         $quote->custom_value3 = '';
         $quote->custom_value4 = '';
+        $quote->custom_value5 = '';
+        $quote->custom_value6 = '';
+        $quote->custom_value7 = '';
+        $quote->custom_value8 = '';
         $quote->amount = 0;
         $quote->balance = 0;
         $quote->partial = 0;
