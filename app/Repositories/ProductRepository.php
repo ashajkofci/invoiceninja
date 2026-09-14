@@ -47,8 +47,10 @@ class ProductRepository extends BaseRepository
             })->all();
 
             $product->group_products()->sync($product->is_group ? $items : []);
+            $product->unsetRelation('group_products');
         } elseif (!$product->is_group) {
             $product->group_products()->detach();
+            $product->unsetRelation('group_products');
         }
 
         if (array_key_exists('documents', $data)) {

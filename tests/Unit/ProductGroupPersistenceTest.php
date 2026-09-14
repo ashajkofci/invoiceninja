@@ -34,7 +34,7 @@ class ProductGroupPersistenceTest extends TestCase
         });
     }
 
-    public function testGroupMembersSurviveSaveAndReload(): void
+    public function testGroupMembersAreReturnedAfterSaveWithLoadedRelation(): void
     {
         $groupId = DB::table('products')->insertGetId([
             'company_id' => 1,
@@ -45,8 +45,9 @@ class ProductGroupPersistenceTest extends TestCase
             'product_key' => 'child',
         ]);
         $group = Product::query()->findOrFail($groupId);
+        $this->assertCount(0, $group->group_products);
 
-        Product::withoutEvents(fn () => (new ProductRepository())->save([
+        $savedGroup = Product::withoutEvents(fn () => (new ProductRepository())->save([
             'is_group' => true,
             'group_items' => [[
                 'product_id' => $childId,
@@ -54,7 +55,7 @@ class ProductGroupPersistenceTest extends TestCase
             ]],
         ], $group));
 
-        $member = Product::query()->findOrFail($groupId)->group_products()->first();
+        $member = $savedGroup->group_products->first();
 
         $this->assertSame($childId, $member->id);
         $this->assertSame(2.5, (float) $member->pivot->quantity);
