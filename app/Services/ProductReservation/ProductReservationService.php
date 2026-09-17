@@ -51,7 +51,7 @@ class ProductReservationService
             ->keyBy('product_key');
 
         return $this->overlappingInvoices($start, $end)
-            ->map(function (Invoice $invoice) use ($product, $productsByKey) {
+            ->map(function (Invoice $invoice) use ($end, $product, $productsByKey) {
                 $items = collect($invoice->line_items)
                     ->filter(fn ($item) => (int) data_get($item, 'type_id', 1) === Product::PRODUCT_TYPE_PHYSICAL)
                     ->when($product, fn (Collection $items) => $items->where('product_key', $product->product_key))
@@ -74,6 +74,8 @@ class ProductReservationService
 
                 [$invoiceStart, $invoiceEnd] = $this->datesFromInvoice($invoice->toArray());
                 $status = $this->statusFromInvoice($invoice->toArray());
+                $overridesEndDate = $this->statusOverridesEndDate($status);
+                $invoiceEnd = $overridesEndDate ? max($invoiceEnd, $end) : $invoiceEnd;
 
                 return [
                     'id' => $invoice->hashed_id,
@@ -83,6 +85,7 @@ class ProductReservationService
                     'start_date' => $invoiceStart,
                     'end_date' => $invoiceEnd,
                     'status' => $status,
+                    'overrides_end_date' => $overridesEndDate,
                     'color' => $this->colorForStatus($status),
                     'products' => $items->all(),
                 ];
@@ -116,6 +119,8 @@ class ProductReservationService
         $this->overlappingInvoices($start, $end, $excludeInvoiceId)->each(function (Invoice $invoice) use (&$used, &$conflicts, $start, $end) {
             [$invoiceStart, $invoiceEnd] = $this->datesFromInvoice($invoice->toArray());
             $status = $this->statusFromInvoice($invoice->toArray());
+            $overridesEndDate = $this->statusOverridesEndDate($status);
+            $invoiceEnd = $overridesEndDate ? max($invoiceEnd, $end) : $invoiceEnd;
             // Clip to the requested interval so the peak matches the availability during it.
             $reservedFrom = max($invoiceStart, $start);
             $dayAfterReservedUntil = CarbonImmutable::parse(min($invoiceEnd, $end))->addDay()->format('Y-m-d');
@@ -129,6 +134,7 @@ class ProductReservationService
                     'start_date' => $invoiceStart,
                     'end_date' => $invoiceEnd,
                     'status' => $status,
+                    'overrides_end_date' => $overridesEndDate,
                     'color' => $this->colorForStatus($status),
                     'quantity' => $quantity,
                 ];
@@ -272,9 +278,26 @@ class ProductReservationService
             return collect();
         }
 
+        $statusField = $this->statusField();
+        $overrideStatuses = collect($this->statusRules())
+            ->where('overrides_end_date', true)
+            ->pluck('value')
+            ->values();
+
         return $this->reservationInvoices()
-            ->where($startField, '<=', $endDate)
-            ->where($endField, '>=', $startDate)
+            ->where(function ($query) use ($startField, $endField, $startDate, $endDate, $statusField, $overrideStatuses) {
+                $query->where(function ($query) use ($startField, $endField, $startDate, $endDate) {
+                    $query->where($startField, '<=', $endDate)
+                        ->where($endField, '>=', $startDate);
+                });
+
+                if ($statusField && $overrideStatuses->isNotEmpty()) {
+                    $query->orWhere(function ($query) use ($startField, $endDate, $statusField, $overrideStatuses) {
+                        $query->where($startField, '<=', $endDate)
+                            ->whereIn($statusField, $overrideStatuses);
+                    });
+                }
+            })
             ->when($excludeInvoiceId, fn ($query) => $query->where('id', '!=', $excludeInvoiceId))
             ->get();
     }
@@ -397,10 +420,19 @@ class ProductReservationService
             ->map(fn ($rule) => [
                 'value' => trim((string) data_get($rule, 'value', '')),
                 'color' => (string) data_get($rule, 'color', '#2563eb'),
+                'overrides_end_date' => (bool) data_get($rule, 'overrides_end_date', false),
             ])
             ->filter(fn ($rule) => $rule['value'] !== '')
             ->values()
             ->all();
+    }
+
+    private function statusOverridesEndDate(string $status): bool
+    {
+        return collect($this->statusRules())->contains(
+            fn ($rule) => $rule['overrides_end_date']
+                && mb_strtolower($rule['value']) === mb_strtolower($status)
+        );
     }
 
     private function colorForStatus(string $status): string

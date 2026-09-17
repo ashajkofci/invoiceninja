@@ -60,4 +60,30 @@ class ProductGroupPersistenceTest extends TestCase
         $this->assertSame($childId, $member->id);
         $this->assertSame(2.5, (float) $member->pivot->quantity);
     }
+
+    public function testGroupMembersAreSavedWhenTheGroupIsCreated(): void
+    {
+        $childId = DB::table('products')->insertGetId([
+            'company_id' => 1,
+            'product_key' => 'child',
+        ]);
+        $group = (new Product())->forceFill([
+            'company_id' => 1,
+            'product_key' => 'group',
+        ]);
+
+        $savedGroup = Product::withoutEvents(fn () => (new ProductRepository())->save([
+            'is_group' => true,
+            'group_items' => [[
+                'product_id' => $childId,
+                'quantity' => 2.5,
+            ]],
+        ], $group));
+
+        $member = $savedGroup->group_products->first();
+
+        $this->assertTrue($savedGroup->exists);
+        $this->assertSame($childId, $member->id);
+        $this->assertSame(2.5, (float) $member->pivot->quantity);
+    }
 }
