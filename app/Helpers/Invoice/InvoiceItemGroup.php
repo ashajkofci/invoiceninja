@@ -63,7 +63,6 @@ class InvoiceItemGroup
         }
 
         foreach ($headers as $group_id => $header) {
-            $header->quantity = 1;
             $header->discount = 0;
             if (!empty($header->group_has_price)) {
                 $header->group_hide_item_prices = true;

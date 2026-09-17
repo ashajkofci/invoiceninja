@@ -107,7 +107,7 @@ class GroupedPdfLayoutTest extends TestCase
                 } else {
                     self::assertStringNotContainsString('text-align: right', $style);
                 }
-                if ($index === 1 && in_array($field, ['unit_cost', 'line_total'], true)) {
+                if ($index === 1 && $field === 'line_total') {
                     self::assertSame('', $cell['content'], 'Hidden child prices must remain empty cells.');
                 }
             }
@@ -144,17 +144,19 @@ class GroupedPdfLayoutTest extends TestCase
     {
         [$renderer, , $invoice] = $this->renderers($pipeline, ['item']);
         $data = $renderer->transformLineItems($invoice->line_items, '$product');
-        foreach (['unit_cost', 'cost', 'line_total', 'gross_line_total', 'tax_amount', 'discount', 'tax_rate1', 'tax_rate2', 'tax_rate3', 'tax1', 'tax2', 'tax3'] as $field) {
+        foreach (['line_total', 'gross_line_total', 'tax_amount', 'discount', 'tax_rate1', 'tax_rate2', 'tax_rate3', 'tax1', 'tax2', 'tax3'] as $field) {
             self::assertSame('', $data[1]['$product.'.$field], $field);
         }
         foreach ([0 => ['Fixed package', '$500.00'], 2 => ['Automatic package', '$150.00']] as $index => [$title, $total]) {
             self::assertTrue($data[$index]['__is_group_header']);
             self::assertSame($title, $data[$index]['$product.item']);
             self::assertSame($total, $data[$index]['$product.line_total']);
-            foreach (['quantity', 'unit_cost', 'cost', 'discount'] as $field) {
+            foreach (['unit_cost', 'cost', 'discount'] as $field) {
                 self::assertSame('', $data[$index]['$product.'.$field]);
             }
         }
+        self::assertSame('', $data[0]['$product.quantity']);
+        self::assertSame('3', $data[2]['$product.quantity']);
         self::assertSame('2', $data[0]['$product.time_coefficient']);
         self::assertSame('Weekend', $data[0]['$product.time_coefficient_name']);
         self::assertSame('2.5', $data[2]['$product.time_coefficient']);
@@ -162,10 +164,28 @@ class GroupedPdfLayoutTest extends TestCase
         self::assertTrue($data[1]['__is_group_child']);
         self::assertSame('2', $data[1]['$product.quantity']);
         self::assertSame('1.5', $data[1]['$product.time_coefficient']);
+        self::assertSame('$100.00', $data[1]['$product.unit_cost']);
+        self::assertSame('$100.00', $data[1]['$product.cost']);
+        self::assertSame('', $data[1]['$product.line_total']);
         self::assertSame('$50.00', $data[3]['$product.unit_cost']);
         self::assertSame('$150.00', $data[3]['$product.line_total']);
         self::assertFalse($data[4]['__is_group_child']);
         self::assertSame('$25.00', $data[4]['$product.line_total']);
+    }
+
+    #[DataProvider('pipelines')]
+    public function testZeroUnitPriceHidesQuantityUnitPriceAndTotal(string $pipeline): void
+    {
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['item']);
+        $invoice->line_items = [
+            $this->item(['cost' => 0, 'quantity' => 5, 'line_total' => 0]),
+        ];
+
+        $data = array_values($renderer->transformLineItems($invoice->line_items, '$product'))[0];
+
+        foreach (['quantity', 'unit_cost', 'cost', 'line_total', 'gross_line_total'] as $field) {
+            self::assertSame('', $data['$product.'.$field], $field);
+        }
     }
 
     #[DataProvider('pipelines')]
@@ -282,9 +302,9 @@ class GroupedPdfLayoutTest extends TestCase
         $invoice = new Invoice();
         $invoice->setRelation('company', $company)->setRelation('client', $client);
         $invoice->line_items = [
-            $this->item(['type_id' => '7', 'group_id' => 'fixed', 'group_title' => 'Fixed package', 'group_has_price' => true, 'group_price' => 500, 'group_hide_item_prices' => true, 'cost' => 500, 'quantity' => 1, 'time_coefficient' => 2, 'time_coefficient_name' => 'Weekend', 'line_total' => 500]),
+            $this->item(['type_id' => '7', 'group_id' => 'fixed', 'group_title' => 'Fixed package', 'group_has_price' => true, 'group_price' => 500, 'group_hide_item_prices' => true, 'group_show_item_unit_price' => true, 'cost' => 500, 'quantity' => 1, 'time_coefficient' => 2, 'time_coefficient_name' => 'Weekend', 'line_total' => 500]),
             $this->item(['group_id' => 'fixed', 'product_key' => 'Included equipment with a long wrapping label', 'cost' => 100, 'quantity' => 2, 'time_coefficient' => 1.5, 'line_total' => 300, 'gross_line_total' => 324, 'tax_amount' => 24, 'discount' => 5, 'tax_rate1' => 8, 'tax_rate2' => 2, 'tax_rate3' => 1]),
-            $this->item(['type_id' => '7', 'group_id' => 'auto', 'group_title' => 'Automatic package', 'cost' => 150, 'quantity' => 1, 'time_coefficient' => 2.5, 'time_coefficient_name' => 'Weekly', 'line_total' => 150]),
+            $this->item(['type_id' => '7', 'group_id' => 'auto', 'group_title' => 'Automatic package', 'cost' => 150, 'quantity' => 3, 'time_coefficient' => 2.5, 'time_coefficient_name' => 'Weekly', 'line_total' => 150]),
             $this->item(['group_id' => 'auto', 'product_key' => 'Metered equipment', 'cost' => 50, 'quantity' => 2, 'time_coefficient' => 1.5, 'line_total' => 150]),
             $this->item(['product_key' => 'Standalone delivery', 'cost' => 25, 'quantity' => 1, 'line_total' => 25]),
         ];

@@ -86,6 +86,9 @@ class InvoiceItem
 
     public $group_hide_item_prices = false;
 
+    /** Show child unit prices even when the other child prices are hidden. */
+    public $group_show_item_unit_price = false;
+
     /** Whether group_price replaces the calculated sum of the child items. */
     public $group_has_price = false;
 
@@ -129,6 +132,7 @@ class InvoiceItem
         'group_id' => 'string',
         'group_title' => 'string',
         'group_hide_item_prices' => 'bool',
+        'group_show_item_unit_price' => 'bool',
         'group_has_price' => 'bool',
         'group_price' => 'float',
     ];
