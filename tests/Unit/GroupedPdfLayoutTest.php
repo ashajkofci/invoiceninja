@@ -58,7 +58,7 @@ class GroupedPdfLayoutTest extends TestCase
     public static function layouts(): iterable
     {
         foreach (['builder', 'legacy'] as $pipeline) {
-            yield "$pipeline standard" => [$pipeline, ['product_key', 'notes', 'quantity', 'unit_cost', 'time_coefficient', 'line_total']];
+            yield "$pipeline standard" => [$pipeline, ['product_key', 'notes', 'quantity', 'unit_cost', 'time_coefficient', 'discount', 'line_total']];
             yield "$pipeline reordered" => [$pipeline, ['line_total', 'notes', 'time_coefficient', 'item', 'unit_cost', 'quantity']];
             yield "$pipeline no price columns" => [$pipeline, ['quantity', 'item', 'notes', 'time_coefficient']];
         }
@@ -100,7 +100,7 @@ class GroupedPdfLayoutTest extends TestCase
                     self::assertStringNotContainsString('background-color', $style);
                     self::assertStringNotContainsString('<div', $cell['content']);
                 }
-                $numeric = in_array($field, ['quantity', 'unit_cost', 'time_coefficient', 'line_total'], true);
+                $numeric = in_array($field, ['quantity', 'unit_cost', 'time_coefficient', 'discount', 'line_total'], true);
                 if ($numeric) {
                     self::assertStringContainsString('text-align: right !important', $style);
                     self::assertStringContainsString('text-align: right !important', $headers[$column]['properties']['style']);
@@ -147,14 +147,16 @@ class GroupedPdfLayoutTest extends TestCase
         foreach (['line_total', 'gross_line_total', 'tax_amount', 'discount', 'tax_rate1', 'tax_rate2', 'tax_rate3', 'tax1', 'tax2', 'tax3'] as $field) {
             self::assertSame('', $data[1]['$product.'.$field], $field);
         }
-        foreach ([0 => ['Fixed package', '$500.00'], 2 => ['Automatic package', '$150.00']] as $index => [$title, $total]) {
+        foreach ([0 => ['Fixed package', '$450.00'], 2 => ['Automatic package', '$150.00']] as $index => [$title, $total]) {
             self::assertTrue($data[$index]['__is_group_header']);
             self::assertSame($title, $data[$index]['$product.item']);
             self::assertSame($total, $data[$index]['$product.line_total']);
-            foreach (['unit_cost', 'cost', 'discount'] as $field) {
+            foreach (['unit_cost', 'cost'] as $field) {
                 self::assertSame('', $data[$index]['$product.'.$field]);
             }
         }
+        self::assertSame('10%', $data[0]['$product.discount']);
+        self::assertSame('', $data[2]['$product.discount']);
         self::assertSame('', $data[0]['$product.quantity']);
         self::assertSame('3', $data[2]['$product.quantity']);
         self::assertSame('2', $data[0]['$product.time_coefficient']);
@@ -240,7 +242,7 @@ class GroupedPdfLayoutTest extends TestCase
     /** PDF_LAYOUT_OUTPUT is an optional HTML file path, not a PDF output path. */
     public function testSyntheticHtmlFixture(): void
     {
-        $fields = ['item', 'notes', 'quantity', 'unit_cost', 'time_coefficient', 'line_total'];
+        $fields = ['item', 'notes', 'quantity', 'unit_cost', 'time_coefficient', 'discount', 'line_total'];
         $document = new \DOMDocument('1.0', 'UTF-8');
         $document->loadHTML('<!doctype html><html lang="en"><head><meta charset="UTF-8"><title>Grouped PDF layout — synthetic fixture</title></head><body></body></html>');
         $style = $document->createElement('style');
@@ -266,7 +268,7 @@ class GroupedPdfLayoutTest extends TestCase
             $table = $section->appendChild($document->createElement('table'));
             $table->setAttribute('data-ref', 'table');
             $headers = $renderer->buildTableHeader('product');
-            foreach (['Item', 'Description', 'Quantity', 'Unit cost', 'Coefficient', 'Total'] as $column => $label) {
+            foreach (['Item', 'Description', 'Quantity', 'Unit cost', 'Coefficient', 'Discount', 'Total'] as $column => $label) {
                 $headers[$column]['content'] = $label;
             }
             $builder->setDocument($document)->createElementContent($table, [
@@ -279,7 +281,7 @@ class GroupedPdfLayoutTest extends TestCase
         $xpath = new \DOMXPath($document);
         self::assertSame(0, $xpath->query('//*[@data-state="encoded-html"]')->length);
         self::assertSame(4, $xpath->query('//tr[@class="group-item"]/td/div[contains(@style,"font-style: italic")]')->length);
-        self::assertSame(24, $xpath->query('//tr[@class="group-header"]/td[contains(@style,"font-weight: 700")]')->length);
+        self::assertSame(28, $xpath->query('//tr[@class="group-header"]/td[contains(@style,"font-weight: 700")]')->length);
         if ($path = getenv('PDF_LAYOUT_OUTPUT')) {
             $html = $document->saveHTML();
             self::assertSame(strlen($html), file_put_contents($path, $html), 'Unable to write PDF_LAYOUT_OUTPUT; its parent directory must exist.');
@@ -302,7 +304,7 @@ class GroupedPdfLayoutTest extends TestCase
         $invoice = new Invoice();
         $invoice->setRelation('company', $company)->setRelation('client', $client);
         $invoice->line_items = [
-            $this->item(['type_id' => '7', 'group_id' => 'fixed', 'group_title' => 'Fixed package', 'group_has_price' => true, 'group_price' => 500, 'group_hide_item_prices' => true, 'group_show_item_unit_price' => true, 'cost' => 500, 'quantity' => 1, 'time_coefficient' => 2, 'time_coefficient_name' => 'Weekend', 'line_total' => 500]),
+            $this->item(['type_id' => '7', 'group_id' => 'fixed', 'group_title' => 'Fixed package', 'group_has_price' => true, 'group_price' => 500, 'group_hide_item_prices' => true, 'group_show_item_unit_price' => true, 'cost' => 500, 'quantity' => 1, 'time_coefficient' => 2, 'time_coefficient_name' => 'Weekend', 'discount' => 10, 'is_amount_discount' => false, 'line_total' => 450]),
             $this->item(['group_id' => 'fixed', 'product_key' => 'Included equipment with a long wrapping label', 'cost' => 100, 'quantity' => 2, 'time_coefficient' => 1.5, 'line_total' => 300, 'gross_line_total' => 324, 'tax_amount' => 24, 'discount' => 5, 'tax_rate1' => 8, 'tax_rate2' => 2, 'tax_rate3' => 1]),
             $this->item(['type_id' => '7', 'group_id' => 'auto', 'group_title' => 'Automatic package', 'cost' => 150, 'quantity' => 3, 'time_coefficient' => 2.5, 'time_coefficient_name' => 'Weekly', 'line_total' => 150]),
             $this->item(['group_id' => 'auto', 'product_key' => 'Metered equipment', 'cost' => 50, 'quantity' => 2, 'time_coefficient' => 1.5, 'line_total' => 150]),

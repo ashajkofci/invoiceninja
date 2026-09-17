@@ -121,4 +121,24 @@ class TimeCoefficientTest extends TestCase
 
         $this->assertSame(600.0, (float) $calculator->getLineTotal());
     }
+
+    public function testGroupDiscountAppliesToTheCalculatedTotal(): void
+    {
+        $header = InvoiceItemFactory::create();
+        $header->type_id = '7';
+        $header->group_id = 'rental';
+        $header->discount = 25;
+
+        $child = InvoiceItemFactory::create();
+        $child->group_id = 'rental';
+        $child->quantity = 2;
+        $child->cost = 10;
+
+        $this->invoice->is_amount_discount = false;
+        $this->invoice->line_items = [$header, $child];
+        $calculator = (new InvoiceItemSum($this->invoice))->process();
+
+        $this->assertSame(15.0, (float) $calculator->getLineTotal());
+        $this->assertSame(25.0, (float) $calculator->getLineItems()[0]->discount);
+    }
 }

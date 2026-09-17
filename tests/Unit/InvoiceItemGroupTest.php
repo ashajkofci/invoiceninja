@@ -16,6 +16,7 @@ class InvoiceItemGroupTest extends TestCase
         $header->group_id = 'fixed';
         $header->group_has_price = true;
         $header->group_price = 80;
+        $header->discount = 10;
 
         $child = InvoiceItemFactory::create();
         $child->group_id = 'fixed';
@@ -31,6 +32,7 @@ class InvoiceItemGroupTest extends TestCase
         $items[0]->gross_line_total = 80;
 
         $this->assertSame(80.0, $items[0]->cost);
+        $this->assertSame(10.0, (float) $items[0]->discount);
         $this->assertTrue($items[0]->group_hide_item_prices);
         $this->assertSame(60.0, $items[1]->line_total);
         $this->assertSame(100.0, Helpers::lineItemsTotal($items));

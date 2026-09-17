@@ -1076,7 +1076,6 @@ class PdfBuilder
                 }
                 $data[$key][$table_type.'.unit_cost'] = '';
                 $data[$key][$table_type.'.cost'] = '';
-                $data[$key][$table_type.'.discount'] = '';
             } elseif ($is_group_child && !empty($group_header->group_hide_item_prices)) {
                 $hidden_fields = ['line_total', 'gross_line_total', 'tax_amount', 'discount', 'tax_rate1', 'tax_rate2', 'tax_rate3', 'tax1', 'tax2', 'tax3'];
                 if (empty($group_header->group_show_item_unit_price)) {
