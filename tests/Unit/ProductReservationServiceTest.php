@@ -325,6 +325,77 @@ class ProductReservationServiceTest extends TestCase
         $this->assertSame(8.0, $today[0]['available_quantity']);
     }
 
+    public function testStatusesCanOverrideTheReservationEndDateWithOrLogic(): void
+    {
+        $company = (new Company())->forceFill([
+            'id' => 1,
+            'reservation_start_custom_field' => 1,
+            'reservation_end_custom_field' => 2,
+            'reservation_status_custom_field' => 3,
+            'reservation_statuses' => [
+                ['value' => 'Returned', 'color' => '#2563eb'],
+                ['value' => 'In use', 'color' => '#16a34a', 'overrides_end_date' => true],
+                ['value' => 'Awaiting return', 'color' => '#d97706', 'overrides_end_date' => true],
+            ],
+        ]);
+        DB::table('products')->insert([
+            'company_id' => $company->id,
+            'product_key' => 'calendar-item',
+            'in_stock_quantity' => 10,
+        ]);
+        DB::table('invoices')->insert([
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'line_items' => json_encode([['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 2]]),
+                'custom_value1' => '2026-09-01',
+                'custom_value2' => '2026-09-02',
+                'custom_value3' => 'In use',
+            ],
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'line_items' => json_encode([['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 3]]),
+                'custom_value1' => '2026-09-03',
+                'custom_value2' => '2026-09-04',
+                'custom_value3' => 'Awaiting return',
+            ],
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'line_items' => json_encode([['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 1]]),
+                'custom_value1' => '2026-10-15',
+                'custom_value2' => '2026-10-15',
+                'custom_value3' => 'Returned',
+            ],
+            [
+                'company_id' => $company->id,
+                'status_id' => 2,
+                'line_items' => json_encode([['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 4]]),
+                'custom_value1' => '2026-09-01',
+                'custom_value2' => '2026-09-02',
+                'custom_value3' => 'Returned',
+            ],
+        ]);
+
+        $service = new ProductReservationService($company);
+        $availability = $service->availability(
+            '2026-10-15',
+            '2026-10-15',
+            [['type_id' => 1, 'product_key' => 'calendar-item', 'quantity' => 1]]
+        );
+        $calendar = $service->calendar('2026-10-01', '2026-10-31');
+
+        $this->assertSame(6.0, $availability[0]['reserved_quantity']);
+        $this->assertCount(3, $availability[0]['reservations']);
+        $this->assertCount(3, $calendar);
+        $this->assertSame(2, collect($calendar)->where('overrides_end_date', true)->count());
+        $this->assertSame(
+            ['2026-10-31'],
+            collect($calendar)->where('overrides_end_date', true)->pluck('end_date')->unique()->values()->all()
+        );
+    }
+
     public function testHistoryReturnsRentalTotalsAndSplitsUsageAcrossYears(): void
     {
         $company = (new Company())->forceFill([

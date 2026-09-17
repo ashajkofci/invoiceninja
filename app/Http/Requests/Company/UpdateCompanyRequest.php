@@ -70,6 +70,7 @@ class UpdateCompanyRequest extends Request
         $rules['reservation_statuses'] = 'sometimes|array|max:20';
         $rules['reservation_statuses.*.value'] = 'nullable|string|max:100';
         $rules['reservation_statuses.*.color'] = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
+        $rules['reservation_statuses.*.overrides_end_date'] = 'sometimes|boolean';
         $rules['reservation_statuses_json'] = 'sometimes|string|json';
         $rules['enable_time_coefficient'] = 'sometimes|boolean';
         $rules['time_coefficients'] = 'sometimes|array|max:50';
