@@ -90,6 +90,7 @@ class TimeCoefficientTest extends TestCase
         $header = InvoiceItemFactory::create();
         $header->type_id = '7';
         $header->group_id = 'rental';
+        $header->quantity = 2;
         $header->time_coefficient = 2;
 
         $child = InvoiceItemFactory::create();
@@ -101,7 +102,7 @@ class TimeCoefficientTest extends TestCase
         $this->invoice->line_items = [$header, $child];
         $calculator = (new InvoiceItemSum($this->invoice))->process();
 
-        $this->assertSame(120.0, (float) $calculator->getLineItems()[0]->line_total);
+        $this->assertSame(240.0, (float) $calculator->getLineItems()[0]->line_total);
         $this->assertSame(60.0, (float) $calculator->getLineItems()[1]->line_total);
     }
 
@@ -112,11 +113,12 @@ class TimeCoefficientTest extends TestCase
         $header->group_id = 'rental';
         $header->group_has_price = true;
         $header->group_price = 80;
+        $header->quantity = 3;
         $header->time_coefficient = 2.5;
 
         $this->invoice->line_items = [$header];
         $calculator = (new InvoiceItemSum($this->invoice))->process();
 
-        $this->assertSame(200.0, (float) $calculator->getLineTotal());
+        $this->assertSame(600.0, (float) $calculator->getLineTotal());
     }
 }

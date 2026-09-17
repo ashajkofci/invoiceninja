@@ -53,6 +53,7 @@ class StoreProductRequest extends Request
         $rules['stock_notification'] = 'sometimes|bool';
         $rules['is_group'] = 'sometimes|bool';
         $rules['group_hide_item_prices'] = 'sometimes|bool';
+        $rules['group_show_item_unit_price'] = 'sometimes|bool';
         $rules['group_has_price'] = 'sometimes|bool';
         $rules['group_price'] = 'sometimes|numeric';
         $rules['group_items'] = 'sometimes|array';

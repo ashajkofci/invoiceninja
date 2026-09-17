@@ -129,6 +129,7 @@ class ProductTransformer extends EntityTransformer
             'tax_id' => (string) $product->tax_id ?: '1',
             'is_group' => (bool) $product->is_group,
             'group_hide_item_prices' => (bool) $product->group_hide_item_prices,
+            'group_show_item_unit_price' => (bool) $product->group_show_item_unit_price,
             'group_has_price' => (bool) $product->group_has_price,
             'group_price' => (float) $product->group_price,
             'group_items' => $group_items,

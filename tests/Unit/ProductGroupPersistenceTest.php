@@ -21,6 +21,7 @@ class ProductGroupPersistenceTest extends TestCase
             $table->string('product_key');
             $table->boolean('is_group')->default(false);
             $table->boolean('group_hide_item_prices')->default(false);
+            $table->boolean('group_show_item_unit_price')->default(false);
             $table->boolean('group_has_price')->default(false);
             $table->decimal('group_price', 16, 4)->default(0);
             $table->timestamps();

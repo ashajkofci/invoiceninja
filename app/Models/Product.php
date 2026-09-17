@@ -111,6 +111,7 @@ class Product extends BaseModel
         'tax_id',
         'is_group',
         'group_hide_item_prices',
+        'group_show_item_unit_price',
         'group_has_price',
         'group_price',
     ];
@@ -122,6 +123,7 @@ class Product extends BaseModel
         'sync' => ProductSync::class,
         'is_group' => 'boolean',
         'group_hide_item_prices' => 'boolean',
+        'group_show_item_unit_price' => 'boolean',
         'group_has_price' => 'boolean',
         'group_price' => 'float',
     ];

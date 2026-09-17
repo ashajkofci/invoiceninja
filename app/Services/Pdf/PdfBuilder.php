@@ -1064,13 +1064,25 @@ class PdfBuilder
                 $data[$key][$table_type.'.tax3'] = &$data[$key][$table_type.'.tax_rate3'];
             }
 
+            if ((float) $item->cost == 0.0) {
+                foreach (['quantity', 'unit_cost', 'cost', 'line_total', 'gross_line_total'] as $field) {
+                    $data[$key][$table_type.'.'.$field] = '';
+                }
+            }
+
             if ($is_group_header) {
-                $data[$key][$table_type.'.quantity'] = '';
+                if ((float) $item->quantity <= 1.0) {
+                    $data[$key][$table_type.'.quantity'] = '';
+                }
                 $data[$key][$table_type.'.unit_cost'] = '';
                 $data[$key][$table_type.'.cost'] = '';
                 $data[$key][$table_type.'.discount'] = '';
             } elseif ($is_group_child && !empty($group_header->group_hide_item_prices)) {
-                foreach (['unit_cost', 'cost', 'line_total', 'gross_line_total', 'tax_amount', 'discount', 'tax_rate1', 'tax_rate2', 'tax_rate3', 'tax1', 'tax2', 'tax3'] as $field) {
+                $hidden_fields = ['line_total', 'gross_line_total', 'tax_amount', 'discount', 'tax_rate1', 'tax_rate2', 'tax_rate3', 'tax1', 'tax2', 'tax3'];
+                if (empty($group_header->group_show_item_unit_price)) {
+                    array_push($hidden_fields, 'unit_cost', 'cost');
+                }
+                foreach ($hidden_fields as $field) {
                     $data[$key][$table_type.'.'.$field] = '';
                 }
             }
