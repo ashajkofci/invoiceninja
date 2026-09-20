@@ -12,10 +12,15 @@ class YearlyReportController extends BaseController
     {
         $year = $request->validate([
             'year' => ['required', 'integer', 'between:1900,9999'],
-        ])['year'];
+            'convert_to_main_currency' => ['sometimes', 'boolean'],
+        ]);
 
         return response()->json(
-            (new YearlyReport($request->user()->company(), $year))->run()
+            (new YearlyReport(
+                $request->user()->company(),
+                $year['year'],
+                $year['convert_to_main_currency'] ?? false,
+            ))->run()
         );
     }
 }
