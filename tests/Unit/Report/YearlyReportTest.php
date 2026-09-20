@@ -30,6 +30,7 @@ class YearlyReportTest extends TestCase
             'currency_id' => 1,
             'amount' => 120,
             'refunded' => 20,
+            'exchange_rate' => 1,
             'date' => '2099-01-15',
         ]);
 
@@ -39,6 +40,7 @@ class YearlyReportTest extends TestCase
             'status_id' => Payment::STATUS_COMPLETED,
             'currency_id' => 2,
             'amount' => 50,
+            'exchange_rate' => 2,
             'date' => '2099-02-15',
         ]);
 
@@ -50,6 +52,7 @@ class YearlyReportTest extends TestCase
             'refunded' => 0,
             'currency_id' => 1,
             'date' => '2099-01-15',
+            'exchange_rate' => 9,
         ]);
 
         DB::table('payments')->insert([
@@ -60,6 +63,7 @@ class YearlyReportTest extends TestCase
             'refunded' => 0,
             'currency_id' => 1,
             'date' => '2099-01-15',
+            'exchange_rate' => 9,
             'deleted_at' => now(),
         ]);
 
@@ -70,6 +74,7 @@ class YearlyReportTest extends TestCase
             'currency_id' => 1,
             'category_id' => 77,
             'amount' => 30,
+            'exchange_rate' => 1,
             'date' => '2099-01-20',
         ]);
 
@@ -79,6 +84,7 @@ class YearlyReportTest extends TestCase
             'is_deleted' => false,
             'currency_id' => 2,
             'amount' => 15,
+            'exchange_rate' => 2,
             'date' => '2099-03-20',
         ]);
 
@@ -88,6 +94,7 @@ class YearlyReportTest extends TestCase
             'is_deleted' => true,
             'currency_id' => 1,
             'amount' => 999,
+            'exchange_rate' => 9,
             'date' => '2099-01-20',
         ]);
 
@@ -97,6 +104,7 @@ class YearlyReportTest extends TestCase
             'is_deleted' => false,
             'currency_id' => 1,
             'amount' => 999,
+            'exchange_rate' => 9,
             'date' => '2099-01-20',
             'deleted_at' => now(),
         ]);
@@ -116,6 +124,15 @@ class YearlyReportTest extends TestCase
         $this->assertSame(50.0, collect($gbp['payments'])->firstWhere('month', 2)['total']);
         $this->assertSame(30.0, $usd['expenses'][0]['total']);
         $this->assertSame(15.0, $gbp['expenses'][0]['months'][2]);
+
+        $converted = (new YearlyReport($company, 2099, true))->run();
+        $mainCurrency = $converted['currencies'][0];
+
+        $this->assertCount(1, $converted['currencies']);
+        $this->assertSame('1', $mainCurrency['currency_id']);
+        $this->assertSame(100.0, collect($mainCurrency['payments'])->firstWhere('month', 2)['total']);
+        $this->assertSame(30.0, collect($mainCurrency['expenses'])->firstWhere('category_id', null)['months'][2]);
+        $this->assertSame(30.0, collect($mainCurrency['expenses'])->firstWhere('category_id', 77)['total']);
     }
 
     private function createReportTables(): void
@@ -129,6 +146,7 @@ class YearlyReportTest extends TestCase
                 $table->date('date')->nullable();
                 $table->decimal('amount', 20, 6)->default(0);
                 $table->decimal('refunded', 20, 6)->default(0);
+                $table->decimal('exchange_rate', 20, 10)->default(1);
                 $table->unsignedInteger('currency_id')->nullable();
                 $table->timestamp('deleted_at')->nullable();
             });
@@ -142,6 +160,7 @@ class YearlyReportTest extends TestCase
                 $table->boolean('is_deleted')->default(false);
                 $table->date('date')->nullable();
                 $table->decimal('amount', 20, 6)->default(0);
+                $table->decimal('exchange_rate', 20, 10)->default(1);
                 $table->unsignedInteger('currency_id')->nullable();
                 $table->unsignedBigInteger('category_id')->nullable();
                 $table->timestamp('deleted_at')->nullable();

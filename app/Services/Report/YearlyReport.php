@@ -14,6 +14,7 @@ class YearlyReport
     public function __construct(
         private Company $company,
         private int $year,
+        private bool $convertToMainCurrency = false,
     ) {
     }
 
@@ -34,32 +35,39 @@ class YearlyReport
                 Payment::STATUS_REFUNDED,
             ])
             ->whereBetween('date', [$start, $end])
-            ->select(['date', 'amount', 'refunded', 'currency_id'])
+            ->select(['date', 'amount', 'refunded', 'currency_id', 'exchange_rate'])
             ->cursor()
             ->each(function (Payment $payment) use (&$currencies, $baseCurrencyId): void {
-                $currencyId = (int) ($payment->currency_id ?: $baseCurrencyId);
+                $currencyId = $this->convertToMainCurrency
+                    ? $baseCurrencyId
+                    : (int) ($payment->currency_id ?: $baseCurrencyId);
                 $month = Carbon::parse($payment->date)->month;
+                $amount = ((float) $payment->amount - (float) $payment->refunded)
+                    * ($this->convertToMainCurrency ? ((float) $payment->exchange_rate ?: 1) : 1);
 
                 $currencies[$currencyId]['payments'][$month] =
                     ($currencies[$currencyId]['payments'][$month] ?? 0)
-                    + (float) $payment->amount
-                    - (float) $payment->refunded;
+                    + $amount;
             });
 
         Expense::query()
             ->where('company_id', $this->company->id)
             ->where('is_deleted', false)
             ->whereBetween('date', [$start, $end])
-            ->select(['date', 'amount', 'currency_id', 'category_id'])
+            ->select(['date', 'amount', 'currency_id', 'category_id', 'exchange_rate'])
             ->cursor()
             ->each(function (Expense $expense) use (&$currencies, &$categoryIds, $baseCurrencyId): void {
-                $currencyId = (int) ($expense->currency_id ?: $baseCurrencyId);
+                $currencyId = $this->convertToMainCurrency
+                    ? $baseCurrencyId
+                    : (int) ($expense->currency_id ?: $baseCurrencyId);
                 $categoryId = (int) ($expense->category_id ?: 0);
                 $month = Carbon::parse($expense->date)->month;
+                $amount = (float) $expense->amount
+                    * ($this->convertToMainCurrency ? ((float) $expense->exchange_rate ?: 1) : 1);
 
                 $currencies[$currencyId]['expenses'][$categoryId][$month] =
                     ($currencies[$currencyId]['expenses'][$categoryId][$month] ?? 0)
-                    + (float) $expense->amount;
+                    + $amount;
 
                 if ($categoryId) {
                     $categoryIds[$categoryId] = true;
