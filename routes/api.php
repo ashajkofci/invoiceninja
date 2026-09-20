@@ -119,6 +119,7 @@ use App\Http\Controllers\Reports\ARSummaryReportController;
 use App\Http\Controllers\Reports\QuoteItemReportController;
 use App\Http\Controllers\Reports\UserSalesReportController;
 use App\Http\Controllers\Reports\TaxSummaryReportController;
+use App\Http\Controllers\Reports\YearlyReportController;
 use App\Http\Controllers\Support\Messages\SendingController;
 use App\Http\Controllers\Reports\ClientSalesReportController;
 use App\Http\Controllers\Reports\InvoiceItemReportController;
@@ -362,6 +363,7 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
     Route::post('reports/quote_items', QuoteItemReportController::class)->middleware('throttle:20,1');
     Route::post('reports/recurring_invoices', RecurringInvoiceReportController::class)->middleware('throttle:20,1');
     Route::post('reports/payments', PaymentReportController::class)->middleware('throttle:20,1');
+    Route::get('reports/yearly', YearlyReportController::class)->middleware('throttle:20,1');
     Route::post('reports/products', ProductReportController::class)->middleware('throttle:20,1');
     Route::post('reports/product_sales', ProductSalesReportController::class)->middleware('throttle:20,1');
     Route::post('reports/tasks', TaskReportController::class)->middleware('throttle:20,1');
