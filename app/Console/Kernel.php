@@ -15,6 +15,7 @@ use App\Utils\Ninja;
 use App\Models\Account;
 use App\Jobs\Ninja\QueueSize;
 use App\Jobs\Util\DiskCleanup;
+use App\Jobs\Util\PurgeDeletedEntities;
 use App\Jobs\Util\ReminderJob;
 use App\Jobs\Cron\AutoBillCron;
 use App\Jobs\Util\VersionCheck;
@@ -93,6 +94,9 @@ class Kernel extends ConsoleKernel
 
         /* Checks and cleans redundant files */
         $schedule->job(new DiskCleanup())->dailyAt('02:10')->withoutOverlapping()->name('disk-cleanup-job')->onOneServer();
+
+        /* Permanently remove entities erased at least three years ago */
+        $schedule->job(new PurgeDeletedEntities())->dailyAt('03:10')->withoutOverlapping()->name('purge-deleted-entities-job')->onOneServer();
 
         /* Performs system maintenance such as pruning the backup table */
         $schedule->job(new SystemMaintenance())->sundays()->at('02:30')->withoutOverlapping()->name('system-maintenance-job')->onOneServer();

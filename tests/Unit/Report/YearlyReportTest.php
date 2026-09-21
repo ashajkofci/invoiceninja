@@ -3,6 +3,7 @@
 namespace Tests\Unit\Report;
 
 use App\Models\Expense;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\Report\YearlyReport;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -23,7 +24,7 @@ class YearlyReportTest extends TestCase
 
     public function test_it_groups_payments_and_expenses_by_month_currency_and_category(): void
     {
-        DB::table('payments')->insert([
+        $usdPaymentId = DB::table('payments')->insertGetId([
             'company_id' => 123,
             'is_deleted' => false,
             'status_id' => Payment::STATUS_COMPLETED,
@@ -34,7 +35,7 @@ class YearlyReportTest extends TestCase
             'date' => '2099-01-15',
         ]);
 
-        DB::table('payments')->insert([
+        $gbpPaymentId = DB::table('payments')->insertGetId([
             'company_id' => 123,
             'is_deleted' => false,
             'status_id' => Payment::STATUS_COMPLETED,
@@ -65,6 +66,30 @@ class YearlyReportTest extends TestCase
             'date' => '2099-01-15',
             'exchange_rate' => 9,
             'deleted_at' => now(),
+        ]);
+
+        $paidInvoiceId = DB::table('invoices')->insertGetId([
+            'status_id' => Invoice::STATUS_PAID,
+        ]);
+        $partialInvoiceId = DB::table('invoices')->insertGetId([
+            'status_id' => Invoice::STATUS_PARTIAL,
+        ]);
+
+        DB::table('paymentables')->insert([
+            [
+                'payment_id' => $usdPaymentId,
+                'paymentable_id' => $paidInvoiceId,
+                'paymentable_type' => 'invoices',
+                'amount' => 80,
+                'refunded' => 10,
+            ],
+            [
+                'payment_id' => $gbpPaymentId,
+                'paymentable_id' => $partialInvoiceId,
+                'paymentable_type' => 'invoices',
+                'amount' => 50,
+                'refunded' => 0,
+            ],
         ]);
 
         DB::table('expenses')->insert([
@@ -120,8 +145,13 @@ class YearlyReportTest extends TestCase
         $gbp = collect($report['currencies'])->firstWhere('currency_id', '2');
 
         $this->assertCount(2, $report['currencies']);
-        $this->assertSame(100.0, collect($usd['payments'])->firstWhere('month', 1)['total']);
-        $this->assertSame(50.0, collect($gbp['payments'])->firstWhere('month', 2)['total']);
+        $usdJanuaryPayments = collect($usd['payments'])->firstWhere('month', 1);
+        $gbpFebruaryPayments = collect($gbp['payments'])->firstWhere('month', 2);
+        $this->assertSame(100.0, $usdJanuaryPayments['total']);
+        $this->assertSame(70.0, $usdJanuaryPayments['invoice_statuses']->{Invoice::STATUS_PAID});
+        $this->assertSame(30.0, $usdJanuaryPayments['invoice_statuses']->{0});
+        $this->assertSame(50.0, $gbpFebruaryPayments['total']);
+        $this->assertSame(50.0, $gbpFebruaryPayments['invoice_statuses']->{Invoice::STATUS_PARTIAL});
         $this->assertSame(30.0, $usd['expenses'][0]['total']);
         $this->assertSame(15.0, $gbp['expenses'][0]['months'][2]);
 
@@ -130,7 +160,9 @@ class YearlyReportTest extends TestCase
 
         $this->assertCount(1, $converted['currencies']);
         $this->assertSame('1', $mainCurrency['currency_id']);
-        $this->assertSame(100.0, collect($mainCurrency['payments'])->firstWhere('month', 2)['total']);
+        $convertedFebruaryPayments = collect($mainCurrency['payments'])->firstWhere('month', 2);
+        $this->assertSame(100.0, $convertedFebruaryPayments['total']);
+        $this->assertSame(100.0, $convertedFebruaryPayments['invoice_statuses']->{Invoice::STATUS_PARTIAL});
         $this->assertSame(30.0, collect($mainCurrency['expenses'])->firstWhere('category_id', null)['months'][2]);
         $this->assertSame(30.0, collect($mainCurrency['expenses'])->firstWhere('category_id', 77)['total']);
     }
@@ -163,6 +195,26 @@ class YearlyReportTest extends TestCase
                 $table->decimal('exchange_rate', 20, 10)->default(1);
                 $table->unsignedInteger('currency_id')->nullable();
                 $table->unsignedBigInteger('category_id')->nullable();
+                $table->timestamp('deleted_at')->nullable();
+            });
+        }
+
+        if (! Schema::hasTable('invoices')) {
+            Schema::create('invoices', function ($table): void {
+                $table->id();
+                $table->unsignedInteger('status_id');
+                $table->timestamp('deleted_at')->nullable();
+            });
+        }
+
+        if (! Schema::hasTable('paymentables')) {
+            Schema::create('paymentables', function ($table): void {
+                $table->id();
+                $table->unsignedBigInteger('payment_id');
+                $table->unsignedBigInteger('paymentable_id');
+                $table->string('paymentable_type');
+                $table->decimal('amount', 20, 6)->default(0);
+                $table->decimal('refunded', 20, 6)->default(0);
                 $table->timestamp('deleted_at')->nullable();
             });
         }
