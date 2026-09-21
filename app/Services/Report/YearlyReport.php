@@ -7,6 +7,7 @@ use App\Models\Currency;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Payment;
+use App\Models\Paymentable;
 use Illuminate\Support\Carbon;
 
 class YearlyReport
@@ -47,6 +48,42 @@ class YearlyReport
 
                 $currencies[$currencyId]['payments'][$month] =
                     ($currencies[$currencyId]['payments'][$month] ?? 0)
+                    + $amount;
+            });
+
+        Paymentable::query()
+            ->join('payments', 'payments.id', '=', 'paymentables.payment_id')
+            ->join('invoices', 'invoices.id', '=', 'paymentables.paymentable_id')
+            ->where('payments.company_id', $this->company->id)
+            ->where('payments.is_deleted', false)
+            ->whereNull('payments.deleted_at')
+            ->where('paymentables.paymentable_type', 'invoices')
+            ->whereIn('payments.status_id', [
+                Payment::STATUS_COMPLETED,
+                Payment::STATUS_PARTIALLY_REFUNDED,
+                Payment::STATUS_REFUNDED,
+            ])
+            ->whereBetween('payments.date', [$start, $end])
+            ->select([
+                'payments.date as payment_date',
+                'payments.currency_id',
+                'payments.exchange_rate',
+                'invoices.status_id as invoice_status_id',
+                'paymentables.amount as applied_amount',
+                'paymentables.refunded as applied_refunded',
+            ])
+            ->cursor()
+            ->each(function (Paymentable $paymentable) use (&$currencies, $baseCurrencyId): void {
+                $currencyId = $this->convertToMainCurrency
+                    ? $baseCurrencyId
+                    : (int) ($paymentable->currency_id ?: $baseCurrencyId);
+                $month = Carbon::parse($paymentable->payment_date)->month;
+                $statusId = (int) $paymentable->invoice_status_id;
+                $amount = ((float) $paymentable->applied_amount - (float) $paymentable->applied_refunded)
+                    * ($this->convertToMainCurrency ? ((float) $paymentable->exchange_rate ?: 1) : 1);
+
+                $currencies[$currencyId]['payment_invoice_statuses'][$month][$statusId] =
+                    ($currencies[$currencyId]['payment_invoice_statuses'][$month][$statusId] ?? 0)
                     + $amount;
             });
 
@@ -95,9 +132,23 @@ class YearlyReport
                     $payments = [];
 
                     for ($month = 1; $month <= 12; $month++) {
+                        $total = round($values['payments'][$month] ?? 0, 2);
+                        $invoiceStatuses = array_map(
+                            fn (float|int $amount): float => round($amount, 2),
+                            $values['payment_invoice_statuses'][$month] ?? [],
+                        );
+                        $unapplied = round($total - array_sum($invoiceStatuses), 2);
+
+                        if ($unapplied > 0) {
+                            $invoiceStatuses[0] = $unapplied;
+                        }
+
+                        ksort($invoiceStatuses);
+
                         $payments[] = [
                             'month' => $month,
-                            'total' => round($values['payments'][$month] ?? 0, 2),
+                            'invoice_statuses' => (object) $invoiceStatuses,
+                            'total' => $total,
                         ];
                     }
 
