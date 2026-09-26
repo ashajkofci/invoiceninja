@@ -1,0 +1,15 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: marketing_test
+      MYSQL_ROOT_PASSWORD: marketing_test_only
+    ports:
+      - '127.0.0.1:${MARKETING_DB_PORT:-13309}:3306'
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysql', '--protocol=TCP', '-h', '127.0.0.1', '-uroot', '-pmarketing_test_only', 'marketing_test', '-e', 'SELECT 1']
+      interval: 3s
+      timeout: 3s
+      retries: 60

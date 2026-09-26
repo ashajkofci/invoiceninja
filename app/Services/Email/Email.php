@@ -100,6 +100,8 @@ class Email implements ShouldQueue
     /**
      * Send email job.
      */
+    public bool $delivered = false;
+
     public function handle()
     {
         MultiDB::setDb($this->company->db);
@@ -285,6 +287,7 @@ class Email implements ShouldQueue
             nlog("Using mailer => " . $this->mailer . " " . now()->toDateTimeString());
 
             $mailer->send($this->mailable);
+            $this->delivered = true;
 
             $this->incrementEmailCounter();
 

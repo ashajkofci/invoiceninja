@@ -242,6 +242,8 @@ class Company extends BaseModel
 {
     public const MODULE_PRODUCT_RESERVATIONS = 32768;
 
+    public const MODULE_MARKETING = 65536;
+
     use PresentableTrait;
     use MakesHash;
     use CompanySettingsSaver;
