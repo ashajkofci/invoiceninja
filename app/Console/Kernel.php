@@ -61,6 +61,8 @@ class Kernel extends ConsoleKernel
         /* Send reminders */
         $schedule->job(new ReminderJob())->hourly()->withoutOverlapping()->name('reminder-job')->onOneServer();
 
+        $schedule->command('marketing:run')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+
         /* Send quote reminders */
         $schedule->job(new QuoteReminderJob())->hourly()->withoutOverlapping()->name('quote-reminder-job')->onOneServer();
 

@@ -1,0 +1,509 @@
+{
+  "automatic": false,
+  "timezone": "Europe/Zurich",
+  "send_hour_start": 9,
+  "send_hour_end": 17,
+  "weekdays_only": true,
+  "daily_limit": 50,
+  "min_interval_hours": 24,
+  "require_consent": true,
+  "default_locale": "en",
+  "footer": "",
+  "stages": [
+    {
+      "id": "new",
+      "name": "New / Nouveau / Neu",
+      "probability": 10,
+      "outcome": "open"
+    },
+    {
+      "id": "qualified",
+      "name": "Qualified / Qualifié / Qualifiziert",
+      "probability": 30,
+      "outcome": "open"
+    },
+    {
+      "id": "proposal",
+      "name": "Offer / Offre / Angebot",
+      "probability": 60,
+      "outcome": "open"
+    },
+    {
+      "id": "negotiation",
+      "name": "Negotiation / Négociation / Verhandlung",
+      "probability": 80,
+      "outcome": "open"
+    },
+    {
+      "id": "won",
+      "name": "Won / Gagné / Gewonnen",
+      "probability": 100,
+      "outcome": "won"
+    },
+    {
+      "id": "lost",
+      "name": "Lost / Perdu / Verloren",
+      "probability": 0,
+      "outcome": "lost"
+    }
+  ],
+  "templates": [
+    {
+      "id": "welcome_en",
+      "name": "Welcome to {{company}}",
+      "locale": "en",
+      "purpose": "marketing",
+      "subject": "Welcome to {{company}}",
+      "body": "Hello {{contact}},\n\nThank you for your interest. What would you like to achieve? We would be happy to discuss {{opportunity}}.\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "welcome_fr",
+      "name": "Bienvenue chez {{company}}",
+      "locale": "fr",
+      "purpose": "marketing",
+      "subject": "Bienvenue chez {{company}}",
+      "body": "Bonjour {{contact}},\n\nMerci de votre intérêt. Quels sont vos objectifs ? Nous serions ravis de discuter de {{opportunity}}.\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "welcome_de",
+      "name": "Willkommen bei {{company}}",
+      "locale": "de",
+      "purpose": "marketing",
+      "subject": "Willkommen bei {{company}}",
+      "body": "Guten Tag {{contact}},\n\nVielen Dank für Ihr Interesse. Was möchten Sie erreichen? Gerne besprechen wir {{opportunity}} mit Ihnen.\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "discovery_en",
+      "name": "A short conversation about {{opportunity}}",
+      "locale": "en",
+      "purpose": "marketing",
+      "subject": "A short conversation about {{opportunity}}",
+      "body": "Hello {{contact}},\n\nCould we arrange a short call to understand your needs, timeline and budget? Please reply with a convenient time.\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "discovery_fr",
+      "name": "Un échange au sujet de {{opportunity}}",
+      "locale": "fr",
+      "purpose": "marketing",
+      "subject": "Un échange au sujet de {{opportunity}}",
+      "body": "Bonjour {{contact}},\n\nPourrions-nous organiser un bref appel pour préciser vos besoins, votre calendrier et votre budget ? Indiquez-nous vos disponibilités.\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "discovery_de",
+      "name": "Ein Gespräch zu {{opportunity}}",
+      "locale": "de",
+      "purpose": "marketing",
+      "subject": "Ein Gespräch zu {{opportunity}}",
+      "body": "Guten Tag {{contact}},\n\nKönnen wir in einem kurzen Gespräch Ihren Bedarf, Zeitplan und Ihr Budget klären? Teilen Sie uns einen passenden Termin mit.\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "meeting_followup_en",
+      "name": "Following our conversation",
+      "locale": "en",
+      "purpose": "marketing",
+      "subject": "Following our conversation",
+      "body": "Hello {{contact}},\n\nThank you for your time. Please let us know if there are additional requirements for {{opportunity}} before we prepare your offer.\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "meeting_followup_fr",
+      "name": "Suite à notre échange",
+      "locale": "fr",
+      "purpose": "marketing",
+      "subject": "Suite à notre échange",
+      "body": "Bonjour {{contact}},\n\nMerci pour votre temps. Faites-nous part de toute exigence complémentaire pour {{opportunity}} avant la préparation de votre offre.\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "meeting_followup_de",
+      "name": "Im Anschluss an unser Gespräch",
+      "locale": "de",
+      "purpose": "marketing",
+      "subject": "Im Anschluss an unser Gespräch",
+      "body": "Guten Tag {{contact}},\n\nVielen Dank für Ihre Zeit. Gibt es weitere Anforderungen für {{opportunity}}, die wir vor der Angebotserstellung berücksichtigen sollen?\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "offer_followup_en",
+      "name": "Your offer {{quote_number}}",
+      "locale": "en",
+      "purpose": "offer",
+      "subject": "Your offer {{quote_number}}",
+      "body": "Hello {{contact}},\n\nHave you had a chance to review offer {{quote_number}}? We are available for any questions.\n{{quote_url}}\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "offer_followup_fr",
+      "name": "Votre offre {{quote_number}}",
+      "locale": "fr",
+      "purpose": "offer",
+      "subject": "Votre offre {{quote_number}}",
+      "body": "Bonjour {{contact}},\n\nAvez-vous pu consulter l’offre {{quote_number}} ? Nous sommes à votre disposition pour toute question.\n{{quote_url}}\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "offer_followup_de",
+      "name": "Ihr Angebot {{quote_number}}",
+      "locale": "de",
+      "purpose": "offer",
+      "subject": "Ihr Angebot {{quote_number}}",
+      "body": "Guten Tag {{contact}},\n\nKonnten Sie das Angebot {{quote_number}} bereits prüfen? Für Fragen stehen wir Ihnen gerne zur Verfügung.\n{{quote_url}}\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "offer_questions_en",
+      "name": "Questions about {{quote_number}}?",
+      "locale": "en",
+      "purpose": "offer",
+      "subject": "Questions about {{quote_number}}?",
+      "body": "Hello {{contact}},\n\nIs there anything we can clarify or adjust in offer {{quote_number}}? Reply to this email and we will help.\n{{quote_url}}\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "offer_questions_fr",
+      "name": "Des questions sur {{quote_number}} ?",
+      "locale": "fr",
+      "purpose": "offer",
+      "subject": "Des questions sur {{quote_number}} ?",
+      "body": "Bonjour {{contact}},\n\nSouhaitez-vous une précision ou un ajustement de l’offre {{quote_number}} ? Répondez à cet e-mail pour en discuter.\n{{quote_url}}\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "offer_questions_de",
+      "name": "Fragen zu {{quote_number}}?",
+      "locale": "de",
+      "purpose": "offer",
+      "subject": "Fragen zu {{quote_number}}?",
+      "body": "Guten Tag {{contact}},\n\nKönnen wir etwas am Angebot {{quote_number}} erläutern oder anpassen? Antworten Sie gerne auf diese E-Mail.\n{{quote_url}}\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "offer_final_en",
+      "name": "Next steps for {{quote_number}}",
+      "locale": "en",
+      "purpose": "offer",
+      "subject": "Next steps for {{quote_number}}",
+      "body": "Hello {{contact}},\n\nAre you still considering this offer? Let us know whether to proceed, revise it or close the discussion.\n{{quote_url}}\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "offer_final_fr",
+      "name": "Prochaines étapes pour {{quote_number}}",
+      "locale": "fr",
+      "purpose": "offer",
+      "subject": "Prochaines étapes pour {{quote_number}}",
+      "body": "Bonjour {{contact}},\n\nCette offre vous intéresse-t-elle toujours ? Indiquez-nous si vous souhaitez avancer, la revoir ou clôturer la discussion.\n{{quote_url}}\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "offer_final_de",
+      "name": "Nächste Schritte zu {{quote_number}}",
+      "locale": "de",
+      "purpose": "offer",
+      "subject": "Nächste Schritte zu {{quote_number}}",
+      "body": "Guten Tag {{contact}},\n\nIst dieses Angebot weiterhin für Sie interessant? Sollen wir fortfahren, es überarbeiten oder die Anfrage abschließen?\n{{quote_url}}\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "proposal_revision_en",
+      "name": "Updated offer {{quote_number}}",
+      "locale": "en",
+      "purpose": "offer",
+      "subject": "Updated offer {{quote_number}}",
+      "body": "Hello {{contact}},\n\nPlease review the current version of your offer. Let us know if it meets your expectations.\n{{quote_url}}\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "proposal_revision_fr",
+      "name": "Offre actualisée {{quote_number}}",
+      "locale": "fr",
+      "purpose": "offer",
+      "subject": "Offre actualisée {{quote_number}}",
+      "body": "Bonjour {{contact}},\n\nVous pouvez consulter la version actuelle de votre offre. Dites-nous si elle répond à vos attentes.\n{{quote_url}}\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "proposal_revision_de",
+      "name": "Aktualisiertes Angebot {{quote_number}}",
+      "locale": "de",
+      "purpose": "offer",
+      "subject": "Aktualisiertes Angebot {{quote_number}}",
+      "body": "Guten Tag {{contact}},\n\nBitte prüfen Sie die aktuelle Fassung Ihres Angebots. Entspricht sie Ihren Erwartungen?\n{{quote_url}}\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "reconnect_en",
+      "name": "Shall we revisit {{opportunity}}?",
+      "locale": "en",
+      "purpose": "marketing",
+      "subject": "Shall we revisit {{opportunity}}?",
+      "body": "Hello {{contact}},\n\nHave your priorities changed since we last spoke? We would be happy to discuss your current needs.\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "reconnect_fr",
+      "name": "Reprenons-nous {{opportunity}} ?",
+      "locale": "fr",
+      "purpose": "marketing",
+      "subject": "Reprenons-nous {{opportunity}} ?",
+      "body": "Bonjour {{contact}},\n\nVos priorités ont-elles évolué depuis notre dernier échange ? Nous serions ravis de discuter de vos besoins actuels.\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "reconnect_de",
+      "name": "Wollen wir {{opportunity}} wieder aufgreifen?",
+      "locale": "de",
+      "purpose": "marketing",
+      "subject": "Wollen wir {{opportunity}} wieder aufgreifen?",
+      "body": "Guten Tag {{contact}},\n\nHaben sich Ihre Prioritäten seit unserem letzten Gespräch geändert? Gerne besprechen wir Ihren aktuellen Bedarf.\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "renewal_en",
+      "name": "Planning your next project",
+      "locale": "en",
+      "purpose": "marketing",
+      "subject": "Planning your next project",
+      "body": "Hello {{contact}},\n\nWould you like to plan your next order or renewal? Please share your preferred dates and requirements.\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "renewal_fr",
+      "name": "Préparons votre prochain projet",
+      "locale": "fr",
+      "purpose": "marketing",
+      "subject": "Préparons votre prochain projet",
+      "body": "Bonjour {{contact}},\n\nSouhaitez-vous préparer votre prochaine commande ou un renouvellement ? Communiquez-nous vos dates et vos besoins.\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "renewal_de",
+      "name": "Planung Ihres nächsten Projekts",
+      "locale": "de",
+      "purpose": "marketing",
+      "subject": "Planung Ihres nächsten Projekts",
+      "body": "Guten Tag {{contact}},\n\nMöchten Sie Ihre nächste Bestellung oder Verlängerung planen? Teilen Sie uns Ihre Wunschtermine und Anforderungen mit.\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "feedback_en",
+      "name": "Your feedback matters",
+      "locale": "en",
+      "purpose": "marketing",
+      "subject": "Your feedback matters",
+      "body": "Hello {{contact}},\n\nHow was your experience with {{company}}? Please reply with any feedback or suggestions.\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "feedback_fr",
+      "name": "Votre avis nous intéresse",
+      "locale": "fr",
+      "purpose": "marketing",
+      "subject": "Votre avis nous intéresse",
+      "body": "Bonjour {{contact}},\n\nComment s’est passée votre expérience avec {{company}} ? Vos retours et suggestions sont les bienvenus.\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "feedback_de",
+      "name": "Ihre Rückmeldung ist uns wichtig",
+      "locale": "de",
+      "purpose": "marketing",
+      "subject": "Ihre Rückmeldung ist uns wichtig",
+      "body": "Guten Tag {{contact}},\n\nWie war Ihre Erfahrung mit {{company}}? Wir freuen uns über Ihre Rückmeldung und Verbesserungsvorschläge.\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "referral_en",
+      "name": "Someone we could help?",
+      "locale": "en",
+      "purpose": "marketing",
+      "subject": "Someone we could help?",
+      "body": "Hello {{contact}},\n\nIf someone in your network needs our services, you are welcome to share our contact details. Thank you for your trust.\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "referral_fr",
+      "name": "À qui pourrions-nous être utiles ?",
+      "locale": "fr",
+      "purpose": "marketing",
+      "subject": "À qui pourrions-nous être utiles ?",
+      "body": "Bonjour {{contact}},\n\nSi une personne de votre réseau recherche nos services, n’hésitez pas à lui transmettre nos coordonnées. Merci de votre confiance.\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "referral_de",
+      "name": "Wem könnten wir helfen?",
+      "locale": "de",
+      "purpose": "marketing",
+      "subject": "Wem könnten wir helfen?",
+      "body": "Guten Tag {{contact}},\n\nFalls jemand in Ihrem Netzwerk unsere Leistungen benötigt, geben Sie gerne unsere Kontaktdaten weiter. Vielen Dank für Ihr Vertrauen.\n\nFreundliche Grüße\n{{company}}"
+    },
+    {
+      "id": "news_en",
+      "name": "News from {{company}}",
+      "locale": "en",
+      "purpose": "marketing",
+      "subject": "News from {{company}}",
+      "body": "Hello {{contact}},\n\nWe would like to share an update relevant to your projects. Reply to tell us which topics are most useful to you.\n\nKind regards,\n{{company}}"
+    },
+    {
+      "id": "news_fr",
+      "name": "Les nouvelles de {{company}}",
+      "locale": "fr",
+      "purpose": "marketing",
+      "subject": "Les nouvelles de {{company}}",
+      "body": "Bonjour {{contact}},\n\nNous souhaitons partager une actualité utile à vos projets. Indiquez-nous les sujets qui vous intéressent le plus.\n\nMeilleures salutations,\n{{company}}"
+    },
+    {
+      "id": "news_de",
+      "name": "Neuigkeiten von {{company}}",
+      "locale": "de",
+      "purpose": "marketing",
+      "subject": "Neuigkeiten von {{company}}",
+      "body": "Guten Tag {{contact}},\n\nWir möchten Neuigkeiten passend zu Ihren Projekten mit Ihnen teilen. Welche Themen sind für Sie besonders interessant?\n\nFreundliche Grüße\n{{company}}"
+    }
+  ],
+  "sequences": [
+    {
+      "id": "offer_en",
+      "name": "Offer follow-up (en)",
+      "steps": [
+        {
+          "days": 3,
+          "kind": "email",
+          "template_id": "offer_followup_en",
+          "title": "offer_followup"
+        },
+        {
+          "days": 7,
+          "kind": "email",
+          "template_id": "offer_questions_en",
+          "title": "offer_questions"
+        },
+        {
+          "days": 14,
+          "kind": "email",
+          "template_id": "offer_final_en",
+          "title": "offer_final"
+        }
+      ]
+    },
+    {
+      "id": "offer_fr",
+      "name": "Offer follow-up (fr)",
+      "steps": [
+        {
+          "days": 3,
+          "kind": "email",
+          "template_id": "offer_followup_fr",
+          "title": "offer_followup"
+        },
+        {
+          "days": 7,
+          "kind": "email",
+          "template_id": "offer_questions_fr",
+          "title": "offer_questions"
+        },
+        {
+          "days": 14,
+          "kind": "email",
+          "template_id": "offer_final_fr",
+          "title": "offer_final"
+        }
+      ]
+    },
+    {
+      "id": "offer_de",
+      "name": "Offer follow-up (de)",
+      "steps": [
+        {
+          "days": 3,
+          "kind": "email",
+          "template_id": "offer_followup_de",
+          "title": "offer_followup"
+        },
+        {
+          "days": 7,
+          "kind": "email",
+          "template_id": "offer_questions_de",
+          "title": "offer_questions"
+        },
+        {
+          "days": 14,
+          "kind": "email",
+          "template_id": "offer_final_de",
+          "title": "offer_final"
+        }
+      ]
+    },
+    {
+      "id": "discovery_en",
+      "name": "Discovery (en)",
+      "steps": [
+        {
+          "days": 0,
+          "kind": "email",
+          "template_id": "welcome_en",
+          "title": "Welcome"
+        },
+        {
+          "days": 2,
+          "kind": "call",
+          "template_id": "",
+          "title": "Discovery call"
+        },
+        {
+          "days": 5,
+          "kind": "email",
+          "template_id": "discovery_en",
+          "title": "Discovery follow-up"
+        }
+      ]
+    },
+    {
+      "id": "discovery_fr",
+      "name": "Discovery (fr)",
+      "steps": [
+        {
+          "days": 0,
+          "kind": "email",
+          "template_id": "welcome_fr",
+          "title": "Welcome"
+        },
+        {
+          "days": 2,
+          "kind": "call",
+          "template_id": "",
+          "title": "Discovery call"
+        },
+        {
+          "days": 5,
+          "kind": "email",
+          "template_id": "discovery_fr",
+          "title": "Discovery follow-up"
+        }
+      ]
+    },
+    {
+      "id": "discovery_de",
+      "name": "Discovery (de)",
+      "steps": [
+        {
+          "days": 0,
+          "kind": "email",
+          "template_id": "welcome_de",
+          "title": "Welcome"
+        },
+        {
+          "days": 2,
+          "kind": "call",
+          "template_id": "",
+          "title": "Discovery call"
+        },
+        {
+          "days": 5,
+          "kind": "email",
+          "template_id": "discovery_de",
+          "title": "Discovery follow-up"
+        }
+      ]
+    }
+  ],
+  "campaigns": [],
+  "sources": [
+    {
+      "id": "website",
+      "name": "Website / Site web / Webseite"
+    },
+    {
+      "id": "referral",
+      "name": "Referral / Recommandation / Empfehlung"
+    },
+    {
+      "id": "event",
+      "name": "Event / Événement / Veranstaltung"
+    },
+    {
+      "id": "existing",
+      "name": "Existing client / Client existant / Bestandskunde"
+    }
+  ],
+  "auto_enroll_quotes": false,
+  "offer_sequence_en": "offer_en",
+  "offer_sequence_fr": "offer_fr",
+  "offer_sequence_de": "offer_de"
+}

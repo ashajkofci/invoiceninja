@@ -1,5 +1,7 @@
 <?php
 
+\Illuminate\Support\Facades\Route::match(['get','post'], 'marketing/unsubscribe', \App\Http\Controllers\MarketingUnsubscribeController::class)->middleware('throttle:30,1');
+
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
