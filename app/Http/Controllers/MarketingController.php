@@ -38,6 +38,16 @@ class MarketingController extends Controller
         return $data;
     }
 
+    public function fromQuote(Quote $quote)
+    {
+        $service = $this->service();
+        abort_unless($quote->company_id === $service->company->id && !$quote->is_deleted && auth()->user()->can('view', $quote), 404);
+        $existing = $service->opportunities()->where('quote_id', $quote->id)->orderBy('archived')->oldest()->first();
+        if (!$existing) { $this->service('create'); }
+        $opportunity = $existing ?: $service->fromQuote($quote, auth()->id());
+        return ['data'=>$this->serializeOpportunity($opportunity)];
+    }
+
     public function bootstrap(Request $request)
     {
         $service = $this->service();
@@ -53,7 +63,7 @@ class MarketingController extends Controller
             'quotes'=>$quotes->map(fn ($q) => ['id'=>$q->hashed_id,'name'=>$q->number,'client_id'=>$this->encodePrimaryKey($q->client_id)])->values(),
             'owners'=>$company->users()->whereNull('company_user.deleted_at')->where('company_user.is_locked',false)->whereNull('users.deleted_at')->get()->map(fn ($u)=>['id'=>$u->hashed_id,'name'=>trim($u->first_name.' '.$u->last_name) ?: $u->email])->values(),
             'currencies'=>Currency::all()->map(fn ($c)=>['id'=>(string)$c->id,'name'=>$c->code])->values(),
-            'opportunities'=>$service->opportunities()->where('archived',false)->get(['id','title'])->map(fn ($o)=>['id'=>$o->id,'name'=>$o->title])->values(),
+            'opportunities'=>$service->opportunities()->get(['id','title'])->map(fn ($o)=>['id'=>$o->id,'name'=>$o->title])->values(),
         ];
         $stages = collect($settings['config']['stages'])->keyBy('id');
         $stage = fn ($o) => $stages[$o->stage_id] ?? ['outcome'=>'lost','probability'=>0];
@@ -65,6 +75,7 @@ class MarketingController extends Controller
         return ['data'=>[
             ...$settings, 'labels'=>$labels[$language] ?? $labels['en'],'fields'=>MarketingConfig::fields(),'options'=>$options,'forecast'=>$forecast,
             'permissions'=>['edit'=>auth()->user()->isAdmin() || auth()->user()->hasPermission('edit_quote'),'create'=>auth()->user()->isAdmin() || auth()->user()->hasPermission('create_quote'),'configure'=>auth()->user()->isAdmin()],
+            'workload'=>['due'=>$service->activities()->where('state','pending')->where('due_at','<=',now())->count(), 'needs_followup'=>$this->withoutNextAction($service->opportunities()->where('archived',false), $settings['config'])->count()],
             'defaults'=>['owner_id'=>auth()->user()->hashed_id,'currency_id'=>(string)$company->settings->currency_id,'locale'=>$settings['config']['default_locale'],'stage_id'=>$settings['config']['stages'][0]['id']],
         ]];
     }
@@ -103,22 +114,36 @@ class MarketingController extends Controller
         return ['data'=>true];
     }
 
+    private function withoutNextAction($query, array $config)
+    {
+        return $query->whereIn('stage_id', collect($config['stages'])->where('outcome','open')->pluck('id'))
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('marketing_activities')
+                ->whereColumn('marketing_activities.opportunity_id','marketing_opportunities.id')->where('state','pending'));
+    }
+
     public function index(Request $request, string $resource)
     {
         $service = $this->service();
         abort_unless(in_array($resource,['opportunities','activities']),404);
-        $request->validate(['q'=>'nullable|string|max:255','stage_id'=>'nullable|string','state'=>'nullable|string','opportunity_id'=>'nullable|uuid','page'=>'nullable|integer|min:1']);
+        $request->validate(['worklist'=>'nullable|in:due,needs_followup','q'=>'nullable|string|max:255','stage_id'=>'nullable|string','state'=>'nullable|string','opportunity_id'=>'nullable|uuid','page'=>'nullable|integer|min:1']);
         $query = $resource === 'opportunities' ? $service->opportunities() : $service->activities();
         if ($request->filled('q')) { $query->where('title','like','%'.$request->input('q').'%'); }
         if ($resource === 'opportunities') {
-            $query->where('archived',$request->boolean('archived'));
+            if ($request->input('archived') !== 'all') { $query->where('archived',$request->boolean('archived')); }
+            if ($request->filled('opportunity_id')) { $query->whereKey($request->input('opportunity_id')); }
+            if ($request->input('worklist') === 'needs_followup') { $this->withoutNextAction($query, $service->config()); }
             if ($request->filled('stage_id')) { $query->where('stage_id',$request->input('stage_id')); }
         } else {
             if ($request->filled('state')) { $query->where('state',$request->input('state')); }
             if ($request->filled('opportunity_id')) { $query->where('opportunity_id',$request->input('opportunity_id')); }
         }
-        $page = $query->orderBy($resource === 'opportunities' ? 'updated_at' : 'due_at','desc')->orderBy('id')->paginate(50);
-        if ($resource === 'opportunities') { $page->through(fn ($o)=>$this->serializeOpportunity($o)); }
+        if ($resource === 'activities' && $request->input('worklist') === 'due') { $query->where('state','pending')->where('due_at','<=',now()); }
+        $allPipeline = $resource === 'opportunities' && $request->input('archived') === 'all';
+        $page = $query->orderBy($resource === 'opportunities' ? ($allPipeline ? 'created_at' : 'updated_at') : 'due_at', $allPipeline || ($resource === 'activities' && $request->input('worklist') === 'due') ? 'asc' : 'desc')->orderBy('id')->paginate(50);
+        if ($resource === 'opportunities') {
+            $next = $service->activities()->whereIn('opportunity_id', $page->getCollection()->pluck('id'))->where('state','pending')->orderBy('due_at')->orderBy('id')->get()->groupBy('opportunity_id');
+            $page->through(fn ($o)=>[...$this->serializeOpportunity($o), 'next_activity'=>($next[$o->id] ?? collect())->first()]);
+        }
         return $page;
     }
 

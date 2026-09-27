@@ -32,6 +32,49 @@ class MarketingService
         return collect($this->config()['stages'])->firstWhere('id', $opportunity->stage_id) ?? ['outcome'=>'lost','probability'=>0];
     }
 
+    public function fromQuote(Quote $quote, ?int $userId = null, ?int $contactId = null): MarketingOpportunity
+    {
+        return DB::transaction(function () use ($quote, $userId, $contactId) {
+            Company::whereKey($this->company->id)->lockForUpdate()->firstOrFail();
+            $quote = Quote::where('company_id', $this->company->id)->where('is_deleted', false)->findOrFail($quote->id);
+            // Reuse even an archived opportunity; resending must not restart a closed sales cycle.
+            $existing = $this->opportunities()->where('quote_id', $quote->id)->orderBy('archived')->oldest()->first();
+            if ($existing) { return $existing; }
+            $config = $this->config();
+            $client = Client::without(['gateway_tokens','documents','contacts.company'])->where('company_id', $this->company->id)->where('is_deleted', false)->findOrFail($quote->client_id);
+            $contacts = $client->contacts()->where('company_id', $this->company->id)->where('is_locked', false);
+            $invited = $quote->invitations()->pluck('client_contact_id')->all();
+            $contact = $contactId ? (clone $contacts)->find($contactId) : null;
+            $contact ??= (clone $contacts)->whereIn('id', $invited)->orderByDesc('is_primary')->orderBy('id')->first();
+            $contact ??= $contacts->orderByDesc('is_primary')->orderBy('id')->first();
+            MarketingConfig::ensure((bool) $contact, 'contact', 'Add an active contact to the quote customer first.');
+            $members = $this->company->users()->whereNull('company_user.deleted_at')->where('company_user.is_locked', false)->whereNull('users.deleted_at');
+            $owner = null;
+            foreach (array_filter([$quote->assigned_user_id, $userId, $quote->user_id]) as $candidate) {
+                if ((clone $members)->where('users.id', $candidate)->exists()) { $owner = $candidate; break; }
+            }
+            $owner ??= $members->orderBy('users.id')->value('users.id');
+            MarketingConfig::ensure((bool) $owner, 'owner_id', 'An active company member is required.');
+            $locale = substr($client->locale(), 0, 2);
+            if (!in_array($locale, ['en','fr','de'])) { $locale = $config['default_locale']; }
+            $labels = json_decode(file_get_contents(resource_path('marketing/labels.json')), true)[$locale];
+            $opportunity = $this->opportunities()->create([
+                'company_id'=>$this->company->id, 'client_id'=>$client->id, 'contact_id'=>$contact->id, 'quote_id'=>$quote->id,
+                'owner_id'=>$owner, 'title'=>Str::limit($quote->number.' · '.$client->present()->name(), 255, ''),
+                'stage_id'=>$config['quote_stage_id'], 'amount'=>max(0, $quote->amount), 'currency_id'=>$client->getSetting('currency_id'),
+                'expected_close'=>$quote->due_date ?: null, 'locale'=>$locale, 'consent'=>false,
+                'automatic'=>$config['quote_followup_mode'] === 'automatic', 'archived'=>false,
+            ]);
+            $this->activities()->create(['company_id'=>$this->company->id,'opportunity_id'=>$opportunity->id,'user_id'=>$owner,
+                'title'=>$labels['created_from_quote'],'kind'=>'note','state'=>'done','due_at'=>now(),'notes'=>$quote->number]);
+            $this->syncQuote($opportunity);
+            if ($config['quote_followup_mode'] !== 'none' && $this->stage($opportunity)['outcome'] === 'open') {
+                $this->enroll($opportunity, $config['offer_sequence_'.$locale], $owner);
+            }
+            return $opportunity->refresh();
+        });
+    }
+
     public function enroll(MarketingOpportunity $opportunity, string $sequenceId, int $userId): void
     {
         $sequence = collect($this->config()['sequences'])->firstWhere('id', $sequenceId);

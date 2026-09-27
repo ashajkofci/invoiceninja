@@ -505,5 +505,8 @@
   "auto_enroll_quotes": false,
   "offer_sequence_en": "offer_en",
   "offer_sequence_fr": "offer_fr",
-  "offer_sequence_de": "offer_de"
+  "offer_sequence_de": "offer_de",
+  "auto_create_quotes": false,
+  "quote_stage_id": "proposal",
+  "quote_followup_mode": "manual"
 }

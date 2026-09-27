@@ -1,5 +1,18 @@
 # Marketing and sales module
 
+## Quote-first workflow and Kanban
+
+- Open a saved quote and choose **Track opportunity**. React exposes this beside the quote actions and in the quote menu; Flutter exposes it on the quote detail screen. The same action is available from Marketing's quote selector. It creates the opportunity immediately and opens its editor for review, or opens the existing opportunity. It copies the quote's customer, invited contact (falling back to the primary active contact), amount, customer currency, assigned owner, valid-until date, and supported customer language. Consent is never inferred from a quote.
+- **Kanban is the default view** in both clients. Every configured stage gets a column, a count, and cards with customer, value, next action, and follow-up shortcuts. Drag cards between columns (long-press in Flutter), or use the stage dropdown. Closing a card uses the existing server workflow and cancels pending reminders. The List toggle retains the tabular view and bulk enrollment. React remembers the selected view per company in this browser.
+- **Due now** opens pending work in due-date order. **No next action** finds open opportunities without a pending activity. Each opportunity offers **Add follow-up**, its history, and quote navigation. React also offers a one-click **Plan offer follow-ups** action using the company's sequence for that opportunity language; Flutter preselects that sequence in its enrollment dialog.
+- Both clients load all opportunity pages for the selected company into a company-scoped cache, including next-action summaries. Board grouping, customer/quote/title search, stage/archive filters, and list pagination then run locally. The board includes opportunities beyond the first 50 records. Activities/history are fetched on demand. Refresh and successful mutations reload authoritative data; updates keep revision checks, company permissions and email checks on the server. Switching companies isolates the cache.
+
+Company settings add **Create opportunities when quotes are sent** (off by default), the initial open stage, and **Follow-ups for new quote opportunities**: none, planned reminders for manual sending (default), or automatic follow-ups. Automatic follow-ups still require company automatic sending, valid quote invitations, contact preferences, sending limits and the normal send window.
+
+Automatic creation uses Invoice Ninja's quote-email and mark-sent events. It applies to future events; it does not import old quotes just because the setting is enabled. Repeated clicks, multiple recipients and resend events reuse the existing opportunity, including an archived one, and cannot duplicate a sequence. Creation schedules work but never sends an email itself. Changes to these defaults affect newly created opportunities. Existing company configurations receive missing new defaults without replacing their custom stages/templates; a missing default quote stage falls back to their first open stage.
+
+No additional database migration is needed for these enhancements beyond the original marketing-module migration.
+
 ## Enable and operate
 
 1. Deploy the backend and both web clients together. Back up the database, then run `php artisan migrate --force` on the intended server. The migration adds four company-scoped tables; it does not alter existing quotes or send mail.
@@ -11,7 +24,7 @@
 7. Use the activities list to view due dates, notes, immutable opportunity-change entries, sent message snapshots, pending work, cancellations and delivery problems. Filter by opportunity or status. Complete calls/tasks/meetings; email activities must actually be sent. Edit or cancel pending activities. Archive opportunities to stop their pending follow-ups.
 8. Quote approval or conversion moves an open opportunity to its configured won stage and cancels pending follow-ups. Closing or archiving an opportunity cancels its pending work. The scheduler also synchronizes outcomes without requiring the UI to be open.
 
-React provides a pipeline board, list, currency-separated weighted forecasts, bulk enrollment and current-page CSV export (including spreadsheet-formula escaping). Flutter provides the native opportunity/activity editors, forecasts, bulk enrollment, company configuration, offer navigation, email preview and delivery on desktop and web. Both use the same server field definitions, options and translations. Values and campaign budgets retain their own currencies; there is no implicit exchange-rate conversion.
+React and Flutter provide a Kanban board and list. React provides currency-separated weighted forecasts, bulk enrollment and CSV export of the filtered board or current list page (including spreadsheet-formula escaping). Flutter provides the native opportunity/activity editors, forecasts, bulk enrollment, company configuration, offer navigation, email preview and delivery on desktop and web. Both use the same server field definitions, options and translations. Values and campaign budgets retain their own currencies; there is no implicit exchange-rate conversion.
 
 ## Templates and defaults
 
@@ -65,8 +78,9 @@ All authenticated endpoints use the current API token's company:
 
 - `GET /api/v1/marketing/bootstrap?language=en|fr|de`: config, revision, labels, form definitions, allowed client/contact/quote/owner options, permissions and forecasts.
 - `PUT /api/v1/marketing/settings`: `{revision, config}`; administrator only.
-- `GET /api/v1/marketing/opportunities`: paginated records; `q`, `stage_id`, `archived`, `page`.
-- `GET /api/v1/marketing/activities`: paginated records; `q`, `state`, `opportunity_id`, `page`.
+- `GET /api/v1/marketing/opportunities`: paginated records; `q`, `stage_id`, `archived` (`0`, `1`, or `all`), `opportunity_id`, `worklist=needs_followup`, `page`. `archived=all` uses stable creation ordering for full-cache loading.
+- `GET /api/v1/marketing/activities`: paginated records; `q`, `state`, `opportunity_id`, `worklist=due`, `page`.
+- `POST /api/v1/marketing/from_quote/{hashed_quote_id}`: create/open the quote opportunity; viewing a quote alone creates nothing.
 - `POST /api/v1/marketing/{opportunities|activities}`: create using the bootstrap field definitions.
 - `PUT /api/v1/marketing/{resource}/{uuid}`: update with the current revision.
 - `POST /api/v1/marketing/opportunities/{uuid}/enroll`: `{sequence}`.
@@ -99,3 +113,5 @@ MARKETING_BROWSER=1 MARKETING_FIXTURE=/absolute/path/to/test-token.json npx play
 ```
 
 Use a fresh company for each run: the test intentionally persists an opportunity, activities and settings. It verifies the authenticated workflow through the real API, settings/reload persistence, preview/send with the array mail transport, and a 390-pixel viewport. It does not exercise password login: this checkout's React login currently requests `/api/v1/login/precheck`, which the paired backend does not expose. Flutter widget/build verification does not establish interactive native workflow or real SMTP delivery.
+
+The quote/Kanban browser regression additionally requires a saved quote (`quote` hashed ID in the fixture JSON) and at least 65 opportunities named `Pipeline seed 0` through `Pipeline seed 64`. It verifies the quote action, prefilling and reuse, full-pipeline loading, request-free search, stage selection, drag/drop, reload persistence, and mobile overflow. Native Kanban has static-analysis, widget/helper and build coverage; native drag interactions are not claimed as an interactive runtime check.
