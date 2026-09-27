@@ -539,7 +539,9 @@ class EventServiceProvider extends ServiceProvider
         QuoteWasUpdated::class => [
             QuoteUpdatedActivity::class,
         ],
+        \App\Events\Quote\QuoteWasMarkedSent::class => [\App\Listeners\Marketing\TrackSentQuote::class],
         QuoteWasEmailed::class => [
+            \App\Listeners\Marketing\TrackSentQuote::class,
             QuoteEmailActivity::class,
         ],
         QuoteWasViewed::class => [

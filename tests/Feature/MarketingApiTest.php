@@ -124,4 +124,79 @@ class MarketingApiTest extends TestCase
         $this->postJson('/api/v1/marketing/opportunities',$this->payload())->assertForbidden();
         $this->putJson('/api/v1/marketing/settings',['revision'=>0,'config'=>MarketingConfig::defaults()])->assertForbidden();
     }
+    private function quoteFixture(int $status = 1): Quote
+    {
+        return Model::withoutEvents(fn () => Quote::factory()->create([
+            'company_id'=>$this->first['company']->id, 'user_id'=>$this->first['user']->id,
+            'client_id'=>$this->first['client']->id, 'status_id'=>$status, 'number'=>'QUOTE-TRACK',
+            'assigned_user_id'=>$this->first['user']->id, 'amount'=>2400, 'due_date'=>now()->addDays(30)->toDateString(),
+        ]));
+    }
+
+    public function test_quote_action_creates_a_prefilled_opportunity_and_reuses_it(): void
+    {
+        $quote = $this->quoteFixture();
+        $this->first['client']->settings = (object) ['language_id'=>'2','currency_id'=>'3'];
+        $this->first['client']->saveQuietly();
+        $invited = Model::withoutEvents(fn () => ClientContact::factory()->create(['company_id'=>$quote->company_id,'client_id'=>$quote->client_id,'user_id'=>$quote->user_id,'email'=>'invited@example.test','is_primary'=>false,'is_locked'=>false]));
+        Model::withoutEvents(fn () => QuoteInvitation::forceCreate(['company_id'=>$quote->company_id,'user_id'=>$quote->user_id,'quote_id'=>$quote->id,'client_contact_id'=>$invited->id,'key'=>Str::random(40)]));
+        $record = $this->postJson('/api/v1/marketing/from_quote/'.$quote->hashed_id)->assertOk()->json('data');
+        $this->assertEquals('2400.0000',$record['amount']);
+        $this->assertSame($invited->hashed_id,$record['contact_id']);
+        $this->assertSame($quote->hashed_id,$record['quote_id']);
+        $this->assertSame('proposal',$record['stage_id']);
+        $this->assertEquals(3,$record['currency_id']);
+        $this->assertFalse($record['consent']);
+        $this->assertFalse($record['automatic']);
+        $this->postJson('/api/v1/marketing/from_quote/'.$quote->hashed_id)->assertOk()->assertJsonPath('data.id',$record['id']);
+        $this->getJson('/api/v1/marketing/activities?opportunity_id='.$record['id'])->assertOk()->assertJsonCount(4,'data');
+        $this->getJson('/api/v1/marketing/opportunities?opportunity_id='.$record['id'])->assertOk()->assertJsonPath('data.0.next_activity.state','pending');
+        $this->withHeaders(['X-API-TOKEN'=>$this->second['token']]);
+        $this->postJson('/api/v1/marketing/from_quote/'.$quote->hashed_id)->assertStatus(404);
+        Mail::assertNothingSent();
+    }
+
+    public function test_quote_events_are_opt_in_and_do_not_restart_archived_opportunities(): void
+    {
+        $quote = $this->quoteFixture(2);
+        $event = new \App\Events\Quote\QuoteWasMarkedSent($quote,$this->first['company'],[]);
+        event($event);
+        $this->assertEquals(0,\App\Models\MarketingOpportunity::where('company_id',$quote->company_id)->count());
+        $config = MarketingConfig::defaults(); $config['auto_create_quotes']=true; $config['quote_followup_mode']='automatic';
+        $this->putJson('/api/v1/marketing/settings',['revision'=>0,'config'=>$config])->assertOk();
+        event($event); event($event);
+        $opportunity = \App\Models\MarketingOpportunity::where('quote_id',$quote->id)->sole();
+        $this->assertTrue($opportunity->automatic);
+        $this->assertEquals(3,\App\Models\MarketingActivity::where('opportunity_id',$opportunity->id)->where('state','pending')->count());
+        $saved=$this->postJson('/api/v1/marketing/from_quote/'.$quote->hashed_id)->assertOk()->json('data');
+        $this->putJson('/api/v1/marketing/opportunities/'.$opportunity->id,[...$saved,'archived'=>true])->assertOk();
+        event($event);
+        $this->assertEquals(1,\App\Models\MarketingOpportunity::where('quote_id',$quote->id)->count());
+        $this->assertTrue($opportunity->fresh()->archived);
+        $this->assertEquals(0,\App\Models\MarketingActivity::where('opportunity_id',$opportunity->id)->where('state','pending')->count());
+        $invitation=Model::withoutEvents(fn () => QuoteInvitation::forceCreate(['company_id'=>$quote->company_id,'user_id'=>$quote->user_id,'quote_id'=>$quote->id,'client_contact_id'=>$this->first['contact']->id,'key'=>Str::random(40)]));
+        event(new \App\Events\Quote\QuoteWasEmailed($invitation,$this->first['company'],\App\Utils\Ninja::eventVars($this->first['user']->id),'quote'));
+        $this->assertEquals(1,\App\Models\MarketingOpportunity::where('quote_id',$quote->id)->count());
+        Mail::assertNothingSent();
+    }
+
+    public function test_action_lists_and_custom_quote_stage_and_legacy_settings(): void
+    {
+        $legacy = MarketingConfig::defaults(); unset($legacy['auto_create_quotes'],$legacy['quote_stage_id'],$legacy['quote_followup_mode']);
+        $legacy['stages'][2]['id']='custom_proposal';
+        DB::table('marketing_settings')->insert(['company_id'=>$this->first['company']->id,'config'=>json_encode($legacy),'revision'=>1]);
+        $config = $this->getJson('/api/v1/marketing/bootstrap')->assertOk()->json('data.config');
+        $this->assertFalse($config['auto_create_quotes']);
+        $this->assertSame('new',$config['quote_stage_id']);
+        $config['quote_stage_id']='custom_proposal'; $config['quote_followup_mode']='none';
+        $this->putJson('/api/v1/marketing/settings',['revision'=>1,'config'=>$config])->assertOk();
+        $quote = $this->quoteFixture();
+        $record=$this->postJson('/api/v1/marketing/from_quote/'.$quote->hashed_id)->assertOk()->assertJsonPath('data.stage_id','custom_proposal')->json('data');
+        $this->getJson('/api/v1/marketing/opportunities?worklist=needs_followup')->assertOk()->assertJsonCount(1,'data');
+        $this->postJson('/api/v1/marketing/activities',['opportunity_id'=>$record['id'],'title'=>'Call now','kind'=>'call','due_at'=>now()->subMinute()->toIso8601String()])->assertOk();
+        $this->getJson('/api/v1/marketing/opportunities?worklist=needs_followup')->assertOk()->assertJsonCount(0,'data');
+        $this->getJson('/api/v1/marketing/activities?worklist=due')->assertOk()->assertJsonCount(1,'data')->assertJsonPath('data.0.title','Call now');
+        $this->getJson('/api/v1/marketing/bootstrap')->assertOk()->assertJsonPath('data.workload.due',1)->assertJsonPath('data.workload.needs_followup',0);
+    }
+
 }
