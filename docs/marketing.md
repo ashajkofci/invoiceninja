@@ -9,6 +9,8 @@
 
 Company settings add **Create opportunities when quotes are sent** (off by default), the initial open stage, and **Follow-ups for new quote opportunities**: none, planned reminders for manual sending (default), or automatic follow-ups. Automatic follow-ups still require company automatic sending, valid quote invitations, contact preferences, sending limits and the normal send window.
 
+Administrators configure the module under **Settings / Parameters → Marketing & Sales** in both web and Flutter. Separate sections cover quote automation, sending rules, pipeline statuses, email templates by language, follow-up actions, campaigns and lead sources. The Marketing workspace links to this page; changes are saved together with a revision check.
+
 Automatic creation uses Invoice Ninja's quote-email and mark-sent events. It applies to future events; it does not import old quotes just because the setting is enabled. Repeated clicks, multiple recipients and resend events reuse the existing opportunity, including an archived one, and cannot duplicate a sequence. Creation schedules work but never sends an email itself. Changes to these defaults affect newly created opportunities. Existing company configurations receive missing new defaults without replacing their custom stages/templates; a missing default quote stage falls back to their first open stage.
 
 No additional database migration is needed for these enhancements beyond the original marketing-module migration.
@@ -72,7 +74,9 @@ Uncertain sends are never automatically retried, because SMTP acceptance and dat
 
 ## Data and API
 
-New tables: `marketing_settings`, `marketing_opportunities`, `marketing_activities`, `marketing_suppressions`. Company deletion cascades to module data. Company settings, opportunities and pending activity edits use optimistic revisions: stale updates return HTTP 409 and must be reloaded. Linking another contact/quote cancels the old pending follow-ups; review and create the replacement follow-ups. Existing opportunity references prevent removal of used stage/source/campaign identifiers; pending activities prevent deletion of referenced templates.
+New tables: `marketing_settings`, `marketing_opportunities`, `marketing_activities`, `marketing_suppressions`, `marketing_excluded_quotes`. Company deletion cascades to module data. Company settings, opportunities and pending activity edits use optimistic revisions: stale updates return HTTP 409 and must be reloaded. Linking another contact/quote cancels the old pending follow-ups; review and create the replacement follow-ups. Existing opportunity references prevent removal of used stage/source/campaign identifiers; pending activities prevent deletion of referenced templates.
+
+Removing a quote from Marketing deletes every marketing opportunity linked to that quote and its activity history. The quote itself stays in Quotes. Automatic tracking will not recreate the marketing record when that quote is sent again; choosing the quote in Marketing and tracking it manually removes the exclusion. Removal waits if a marketing email for that quote is currently being sent. Deploy the `marketing_excluded_quotes` migration before using this action.
 
 All authenticated endpoints use the current API token's company:
 
@@ -83,6 +87,7 @@ All authenticated endpoints use the current API token's company:
 - `POST /api/v1/marketing/from_quote/{hashed_quote_id}`: create/open the quote opportunity; viewing a quote alone creates nothing.
 - `POST /api/v1/marketing/{opportunities|activities}`: create using the bootstrap field definitions.
 - `PUT /api/v1/marketing/{resource}/{uuid}`: update with the current revision.
+- `DELETE /api/v1/marketing/opportunities/{uuid}`: `{revision}`; remove the opportunity and its activity history. For a quote opportunity, remove all marketing records linked to that quote and exclude it from automatic tracking. The quote remains available for manual tracking later.
 - `POST /api/v1/marketing/opportunities/{uuid}/enroll`: `{sequence}`.
 - `POST /api/v1/marketing/bulk_enroll`: `{ids: [opportunity UUIDs], sequence}`; up to 100 records, all checked within the company and enrolled transactionally.
 - `POST /api/v1/marketing/activities/{uuid}/preview`: rendered recipient, subject and body, or the sent snapshot.

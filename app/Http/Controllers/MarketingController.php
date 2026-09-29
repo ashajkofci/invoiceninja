@@ -44,7 +44,7 @@ class MarketingController extends Controller
         abort_unless($quote->company_id === $service->company->id && !$quote->is_deleted && auth()->user()->can('view', $quote), 404);
         $existing = $service->opportunities()->where('quote_id', $quote->id)->orderBy('archived')->oldest()->first();
         if (!$existing) { $this->service('create'); }
-        $opportunity = $existing ?: $service->fromQuote($quote, auth()->id());
+        $opportunity = $existing ?: $service->fromQuote($quote, auth()->id(), null, true);
         return ['data'=>$this->serializeOpportunity($opportunity)];
     }
 
@@ -183,6 +183,7 @@ class MarketingController extends Controller
                 if ($valid['quote_id']) {
                     $quote = Quote::where('company_id',$service->company->id)->where('client_id',$client->id)->where('is_deleted',false)->findOrFail($valid['quote_id']);
                     abort_unless(auth()->user()->can('view',$quote),403);
+                    DB::table('marketing_excluded_quotes')->where('company_id',$service->company->id)->where('quote_id',$quote->id)->delete();
                 }
                 $valid['consent_at'] = $valid['consent'] ? ($record->consent_at ?: now()) : null;
                 if ($id && ($record->contact_id != $valid['contact_id'] || $record->quote_id != $valid['quote_id'])) {
@@ -217,6 +218,31 @@ class MarketingController extends Controller
             return $record;
         });
         return ['data'=>$resource === 'opportunities' ? $this->serializeOpportunity($saved) : $saved];
+    }
+
+    public function destroy(Request $request, string $resource, string $id)
+    {
+        $service = $this->service('edit');
+        abort_unless($resource === 'opportunities', 404);
+        $data = $request->validate(['revision'=>'required|integer|min:1']);
+        DB::transaction(function () use ($service, $id, $data) {
+            Company::whereKey($service->company->id)->lockForUpdate()->firstOrFail();
+            $record = $service->opportunities()->whereKey($id)->lockForUpdate()->firstOrFail();
+            abort_unless($record->revision === (int)$data['revision'], 409, 'Record changed. Reload before removing.');
+            $records = $record->quote_id
+                ? $service->opportunities()->where('quote_id', $record->quote_id)->lockForUpdate()->get()
+                : collect([$record]);
+            $ids = $records->pluck('id')->all();
+            abort_if($service->activities()->whereIn('opportunity_id', $ids)->where('state', 'sending')->exists(),
+                409, 'An email is being sent. Retry after its status is resolved.');
+            if ($record->quote_id) {
+                DB::table('marketing_excluded_quotes')->insertOrIgnore([
+                    'company_id'=>$service->company->id, 'quote_id'=>$record->quote_id, 'created_at'=>now(),
+                ]);
+            }
+            $service->opportunities()->whereIn('id', $ids)->delete();
+        });
+        return ['data'=>true];
     }
 
     public function action(Request $request, string $resource, string $id, string $action)

@@ -180,6 +180,34 @@ class MarketingApiTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_removing_a_quote_clears_marketing_history_and_prevents_automatic_recreation(): void
+    {
+        $quote = $this->quoteFixture(2);
+        $config = MarketingConfig::defaults();
+        $config['auto_create_quotes'] = true;
+        $this->putJson('/api/v1/marketing/settings', ['revision'=>0, 'config'=>$config])->assertOk();
+        $record = $this->postJson('/api/v1/marketing/from_quote/'.$quote->hashed_id)->assertOk()->json('data');
+        $this->assertGreaterThan(0, \App\Models\MarketingActivity::where('opportunity_id', $record['id'])->count());
+        $duplicate = \App\Models\MarketingOpportunity::findOrFail($record['id'])->replicate();
+        $duplicate->id = (string) Str::uuid();
+        $duplicate->save();
+        $url = '/api/v1/marketing/opportunities/'.$record['id'];
+        $this->deleteJson($url, ['revision'=>$record['revision'] + 1])->assertStatus(409);
+        $this->withHeaders(['X-API-TOKEN'=>$this->second['token']]);
+        $this->deleteJson($url, ['revision'=>$record['revision']])->assertNotFound();
+        $this->withHeaders(['X-API-TOKEN'=>$this->first['token']]);
+        $this->deleteJson($url, ['revision'=>$record['revision']])->assertOk();
+        $this->assertNotNull($quote->fresh());
+        $this->assertSame(0, \App\Models\MarketingActivity::where('opportunity_id', $record['id'])->count());
+        $this->getJson('/api/v1/marketing/opportunities?archived=all')->assertOk()->assertJsonCount(0, 'data');
+        $this->assertSame(0, \App\Models\MarketingOpportunity::where('quote_id', $quote->id)->count());
+        event(new \App\Events\Quote\QuoteWasMarkedSent($quote, $this->first['company'], []));
+        $this->assertSame(0, \App\Models\MarketingOpportunity::where('quote_id', $quote->id)->count());
+        $restored = $this->postJson('/api/v1/marketing/from_quote/'.$quote->hashed_id)->assertOk()->json('data');
+        $this->assertNotSame($record['id'], $restored['id']);
+        $this->assertSame(1, \App\Models\MarketingOpportunity::where('quote_id', $quote->id)->count());
+    }
+
     public function test_action_lists_and_custom_quote_stage_and_legacy_settings(): void
     {
         $legacy = MarketingConfig::defaults(); unset($legacy['auto_create_quotes'],$legacy['quote_stage_id'],$legacy['quote_followup_mode']);
