@@ -149,6 +149,7 @@ Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'locale']
     Route::get('marketing/{resource}', [\App\Http\Controllers\MarketingController::class, 'index']);
     Route::post('marketing/{resource}', [\App\Http\Controllers\MarketingController::class, 'save']);
     Route::put('marketing/{resource}/{id}', [\App\Http\Controllers\MarketingController::class, 'save']);
+    Route::delete('marketing/{resource}/{id}', [\App\Http\Controllers\MarketingController::class, 'destroy']);
     Route::post('marketing/{resource}/{id}/{action}', [\App\Http\Controllers\MarketingController::class, 'action']);
 
 

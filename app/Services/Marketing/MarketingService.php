@@ -32,11 +32,15 @@ class MarketingService
         return collect($this->config()['stages'])->firstWhere('id', $opportunity->stage_id) ?? ['outcome'=>'lost','probability'=>0];
     }
 
-    public function fromQuote(Quote $quote, ?int $userId = null, ?int $contactId = null): MarketingOpportunity
+    public function fromQuote(Quote $quote, ?int $userId = null, ?int $contactId = null, bool $explicit = false): ?MarketingOpportunity
     {
-        return DB::transaction(function () use ($quote, $userId, $contactId) {
+        return DB::transaction(function () use ($quote, $userId, $contactId, $explicit) {
             Company::whereKey($this->company->id)->lockForUpdate()->firstOrFail();
             $quote = Quote::where('company_id', $this->company->id)->where('is_deleted', false)->findOrFail($quote->id);
+            $excluded = DB::table('marketing_excluded_quotes')
+                ->where('company_id', $this->company->id)->where('quote_id', $quote->id);
+            if ($explicit) { $excluded->delete(); }
+            elseif ($excluded->exists()) { return null; }
             // Reuse even an archived opportunity; resending must not restart a closed sales cycle.
             $existing = $this->opportunities()->where('quote_id', $quote->id)->orderBy('archived')->oldest()->first();
             if ($existing) { return $existing; }
