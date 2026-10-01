@@ -654,6 +654,7 @@ class TemplateService
                         'poids_total' => $poids_total['formatted'],
                         'poids_total_raw' => $poids_total['total'],
                         'poids_total_label' => $poids_total['label'],
+                        'project' => $invoice->project ? $this->transformProject($invoice->project, true) : [],
                     ];
 
                 });
@@ -1224,7 +1225,7 @@ class TemplateService
             'client' => $this->getClient($project),
             'user' => $this->userInfo($project->user),
             'assigned_user' => $project->assigned_user ? $this->userInfo($project->assigned_user) : [],
-            'invoices' => $this->processInvoices($project->invoices),
+            'invoices' => !$nested ? $this->processInvoices($project->invoices) : [],
             'expenses' => ($project->expenses && !$nested) ? $this->processExpenses($project->expenses, true) : [],
         ];
 

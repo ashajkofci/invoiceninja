@@ -2382,7 +2382,7 @@ Ko imate zneske, se vrnite na to stran plačilnega sredstva in kliknite na "Comp
     'contact_custom2' => 'Drugi po meri za kontakt',
     'currency' => 'Valuta',
     'ofx_help' => 'Za odpravljanje težav preverite komentarje na :ofxhome_link in testirajte z :ofxget_link.',
-    'comments' => 'komentarji',
+    'comments' => 'Comments',
 
     'item_product' => 'Predmeti izdelka',
     'item_notes' => 'Zaznamki predmeta',
@@ -2889,7 +2889,7 @@ Ko imate zneske, se vrnite na to stran plačilnega sredstva in kliknite na "Comp
     'reopened' => 'Ponovno odprto',
     'priority' => 'Prednost',
     'last_updated' => 'Nazadnje posodobljeno',
-    'comment' => 'Komentarji',
+    'comment' => 'Comment',
     'tags' => 'Oznake',
     'linked_objects' => 'Povezani objekti',
     'low' => 'Nizko',
@@ -5572,6 +5572,7 @@ Ko imate zneske, se vrnite na to stran plačilnega sredstva in kliknite na "Comp
     'invalid_date_create_syntax' => 'Invalid date syntax',
     'start_and_end_date_required' => 'Start and end date are required',
     'project_value' => 'Project Value',
+    'invalid_csv_data' => 'Invalid CSV data, your import was cancelled.',
 );
 
 return $lang;

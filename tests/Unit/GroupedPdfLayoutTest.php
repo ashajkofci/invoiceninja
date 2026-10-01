@@ -37,7 +37,7 @@ class GroupedPdfLayoutTest extends TestCase
         // No kernel/providers, environment file, database, cache or business data.
         $app = new Application(dirname(__DIR__, 2));
         $app->instance('config', new Repository(['app' => ['key' => '', 'cipher' => 'AES-256-CBC']]));
-        $app->instance('translator', new \Illuminate\Translation\Translator(
+        $app->instance('translator', new \App\Helpers\Language\NinjaTranslator(
             new \Illuminate\Translation\FileLoader(new \Illuminate\Filesystem\Filesystem(), dirname(__DIR__, 2).'/lang'),
             'en'
         ));
@@ -180,6 +180,34 @@ class GroupedPdfLayoutTest extends TestCase
             $data = $renderer->transformLineItems($invoice->line_items, '$product');
             self::assertSame(str_replace(':category_name', 'Fixed package', $translations['total_group']), $data['group-total-0']['$product.notes'], $locale);
         }
+    }
+
+    #[DataProvider('pipelines')]
+    public function testMissingGroupTotalTranslationUsesLocalizedExistingLabels(string $pipeline): void
+    {
+        $loader = new \Illuminate\Translation\ArrayLoader();
+        foreach (['en' => ['Total', 'Group'], 'de' => ['Gesamt', 'Gruppe'], 'fr' => ['Total', 'Groupe']] as $locale => [$total, $group]) {
+            $loader->addMessages($locale, 'texts', ['total' => $total, 'group' => $group]);
+        }
+        $translator = new \App\Helpers\Language\NinjaTranslator($loader, 'en');
+        Application::getInstance()->instance('translator', $translator);
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['notes', 'line_total']);
+        foreach (['en' => 'Total Group', 'de' => 'Gesamt Gruppe', 'fr' => 'Total Groupe'] as $locale => $label) {
+            $translator->setLocale($locale);
+            $data = $renderer->transformLineItems($invoice->line_items, '$product');
+            self::assertSame($label.' Fixed package', $data['group-total-0']['$product.notes']);
+            self::assertSame($data['group-total-0']['$product.notes'], $data['group-total-0']['$product.description']);
+            self::assertSame('$450.00', $data['group-total-0']['$product.line_total']);
+        }
+    }
+
+    #[DataProvider('pipelines')]
+    public function testCustomGroupTotalTranslationIsPreserved(string $pipeline): void
+    {
+        Application::getInstance()->make('translator')->set('texts.total_group', 'Package subtotal :category_name');
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['notes', 'line_total']);
+        $data = $renderer->transformLineItems($invoice->line_items, '$product');
+        self::assertSame('Package subtotal Fixed package', $data['group-total-0']['$product.notes']);
     }
 
     public static function pipelines(): iterable

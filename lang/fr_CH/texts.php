@@ -2378,7 +2378,7 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'contact_custom2' => 'Personnalisation 2 du contact',
     'currency' => 'Devise',
     'ofx_help' => 'Pour résoudre un problème, consultez les commentaires sur :ofxhome_link  et testez avec :ofxget_link.',
-    'comments' => 'commentaires',
+    'comments' => 'Comments',
 
     'item_product' => 'Produit de l\'article',
     'item_notes' => 'Notes de l\'article',
@@ -2885,7 +2885,7 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'reopened' => 'Réouvert',
     'priority' => 'Priorité',
     'last_updated' => 'Dernière mise à jour',
-    'comment' => 'Commentaires',
+    'comment' => 'Comment',
     'tags' => 'Libellés',
     'linked_objects' => 'Objets liés',
     'low' => 'Basse',
@@ -5570,6 +5570,7 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'invalid_date_create_syntax' => 'Invalid date syntax',
     'start_and_end_date_required' => 'Start and end date are required',
     'project_value' => 'Project Value',
+    'invalid_csv_data' => 'Invalid CSV data, your import was cancelled.',
 );
 
 return $lang;

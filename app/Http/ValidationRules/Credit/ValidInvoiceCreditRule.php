@@ -80,6 +80,7 @@ class ValidInvoiceCreditRule implements Rule
         $cost = 0;
 
         foreach (request()->input('line_items') as $item) {
+            $item = (array)$item;
             $cost += $item['cost'] * $item['quantity'];
         }
 

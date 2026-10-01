@@ -116,8 +116,7 @@ class Purify
         'content' => ['*'],
         'http-equiv' => ['cache-control'],
         'viewport' => ['*'],
-        'xmlns' => ['http://www.w3.org/2000/svg'],
-
+        'xmlns' => ['http://www.w3.org/2000/svg']
     ];
 
     private static array $dangerous_css_patterns = [
