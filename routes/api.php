@@ -141,7 +141,7 @@ Route::group(['middleware' => ['throttle:login', 'api_secret_check', 'email_db']
     Route::post('api/v1/reset_password', [ForgotPasswordController::class, 'sendResetLinkEmail']);
 });
 
-Route::group(['middleware' => ['throttle:api', 'api_db', 'token_auth', 'valid_json', 'locale'], 'prefix' => 'api/v1', 'as' => 'api.'], function () {
+Route::group(['middleware' => ['throttle:api', 'token_auth', 'valid_json', 'locale'], 'prefix' => 'api/v1', 'as' => 'api.'], function () {
     Route::post('marketing/from_quote/{quote}', [\App\Http\Controllers\MarketingController::class, 'fromQuote']);
     Route::post('marketing/bulk_enroll', [\App\Http\Controllers\MarketingController::class, 'bulkEnroll']);
     Route::get('marketing/bootstrap', [\App\Http\Controllers\MarketingController::class, 'bootstrap']);
