@@ -21,6 +21,11 @@ class BlackListRule implements ValidationRule
 {
     /** Bad domains +/- disposable email domains */
     private array $blacklist = [
+        'easymailer.live',
+        'mynes.com',
+        'techeback.online',
+        'deliverydaily.org',
+        'ptct.net',
         'cybtric.com',
         'intady.com',
         'nike4s.com',
