@@ -23,7 +23,7 @@ class BroadcastServiceProvider extends \Illuminate\Broadcasting\BroadcastService
      */
     public function boot()
     {
-        Broadcast::routes(['middleware' => ['api_db', 'token_auth']]);
+        Broadcast::routes(['middleware' => ['token_auth']]);
 
         require base_path('routes/channels.php');
     }

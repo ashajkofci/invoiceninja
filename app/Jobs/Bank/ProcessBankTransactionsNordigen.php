@@ -73,7 +73,8 @@ class ProcessBankTransactionsNordigen implements ShouldQueue
 
         // UPDATE ACCOUNT
         try {
-            $this->updateAccount();
+            // $this->updateAccount();
+            $this->nordigen_account = true;
         } catch (\Exception $e) {
             nlog("Nordigen: {$this->bank_integration->nordigen_account_id} - exited abnormally => " . $e->getMessage());
 
