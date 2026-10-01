@@ -430,7 +430,7 @@ class Invoice extends BaseModel
      */
     public function quote(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $this->hasOne(Quote::class);
+        return $this->hasOne(Quote::class)->where('company_id', $this->company_id);
     }
 
     public function expenses(): \Illuminate\Database\Eloquent\Relations\HasMany

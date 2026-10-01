@@ -28,9 +28,13 @@ final class GroupTableStyle
             $total = array_fill_keys(array_keys($row), '');
             $total['__is_group_header'] = false;
             $total['__is_group_child'] = false;
-            $total[$table_type.'.notes'] = ctrans('texts.total_group', [
+            $label = ctrans('texts.total_group', [
                 'category_name' => $row[$table_type.'.product_key'],
             ]);
+            if ($label === 'texts.total_group') {
+                $label = ctrans('texts.total').' '.ctrans('texts.group').' '.$row[$table_type.'.product_key'];
+            }
+            $total[$table_type.'.notes'] = $label;
             $total[$table_type.'.description'] = $total[$table_type.'.notes'];
             foreach (['line_total', 'gross_line_total'] as $field) {
                 $total[$table_type.'.'.$field] = $row[$table_type.'.'.$field];

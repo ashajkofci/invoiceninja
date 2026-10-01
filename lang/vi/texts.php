@@ -2381,7 +2381,7 @@ $lang = array(
     'contact_custom2' => 'Liên hệ Second Custom',
     'currency' => 'Tiền tệ',
     'ofx_help' => 'Để khắc phục sự cố, hãy kiểm tra các bình luận trên :ofxhome_link và thử nghiệm với :ofxget_link .',
-    'comments' => 'bình luận',
+    'comments' => 'Bình luận',
 
     'item_product' => 'Sản phẩm',
     'item_notes' => 'Thông tin sản phẩm',
@@ -5571,6 +5571,7 @@ $lang = array(
     'invalid_date_create_syntax' => 'Cú pháp ngày không hợp lệ',
     'start_and_end_date_required' => 'Bắt đầu và ngày kết thúc là bắt buộc',
     'project_value' => 'Giá trị dự án',
+    'invalid_csv_data' => 'Dữ liệu CSV không hợp lệ, quá trình nhập của bạn đã bị hủy.',
 );
 
 return $lang;

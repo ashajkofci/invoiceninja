@@ -214,7 +214,7 @@ class CreditController extends BaseController
         if ($credit->invoice_id) {
             $credit = $credit->service()->markSent()->save();
             // $credit->client->service()->updatePaidToDate(-1 * $credit->balance)->save(); // If we mutate the paid to date, we need to reverse the status of the invoice, this will allow the credit note that has been created to be used and double paid to dates prevented.
-            $credit->client->service()->updateBalanceAndPaidToDate(-1 * $credit->balance, -1 * $credit->balance)->save();
+            $credit->client->service()->updateBalanceAndPaidToDate(-1 * ($credit->invoice->balance ?? 0), -1 * $credit->balance)->save();
             // $invoice = $credit->invoice;
             
             $invoice = \App\Models\Invoice::withTrashed()->find($credit->invoice_id);

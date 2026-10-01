@@ -141,6 +141,9 @@ class TaxSummaryReport extends BaseExport
                     'date' => $this->translateDate($invoice->date, $this->company->date_format(), $this->company->locale()),
                     'formatted' => Number::formatMoney($tax['total'], $this->company),
                     'tax' => Number::formatValue($tax['total'], $this->company->currency()),
+                    'name' => $tax['name'],
+                    'rate' => $tax['tax_rate'],
+                    'base_amount' => $tax['base_amount'] ?? $calc->getNetSubtotal(),
                 ];
 
                 //cash
@@ -177,7 +180,9 @@ class TaxSummaryReport extends BaseExport
                             'date' => $this->translateDate($invoice->date, $this->company->date_format(), $this->company->locale()),
                             'formatted' => Number::formatMoney($tax_prorata, $this->company),
                             'tax' => Number::formatValue($tax_prorata, $this->company->currency()),
-
+                            'name' => $tax['name'],
+                            'rate' => $tax['tax_rate'],
+                            'base_amount' => $tax['base_amount'] ?? $calc->getNetSubtotal(),
                         ];
 
                     } catch (\DivisionByZeroError $e) {
@@ -234,7 +239,7 @@ class TaxSummaryReport extends BaseExport
 
         $this->csv->insertOne([]);
         $this->csv->insertOne([]);
-        $this->csv->insertOne([ctrans('texts.cash_vs_accrual'), ctrans('texts.date'), ctrans('texts.amount'), ctrans('texts.amount')]);
+        $this->csv->insertOne([ctrans('texts.cash_vs_accrual'), ctrans('texts.date'), ctrans('texts.amount'), ctrans('texts.amount'), ctrans('texts.tax_name'), ctrans('texts.tax_rate'), ctrans('texts.taxable_amount')]); // for the summary add in the tax rates as headers also
 
         foreach ($accrual_invoice_map as $map) {
             $this->csv->insertOne($map);
@@ -242,7 +247,8 @@ class TaxSummaryReport extends BaseExport
 
         $this->csv->insertOne([]);
         $this->csv->insertOne([]);
-        $this->csv->insertOne([ctrans('texts.cash_accounting'), ctrans('texts.date'), ctrans('texts.amount'), ctrans('texts.amount')]);
+        $this->csv->insertOne([ctrans('texts.cash_accounting'), ctrans('texts.date'), ctrans('texts.amount'), ctrans('texts.amount'), ctrans('texts.tax_name'), ctrans('texts.tax_rate'), ctrans('texts.taxable_amount')]); // for the summary add in the tax rates as headers also
+
 
         foreach ($cash_invoice_map as $map) {
             $this->csv->insertOne($map);

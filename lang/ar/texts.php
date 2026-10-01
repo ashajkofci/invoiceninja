@@ -2362,7 +2362,7 @@ $lang = array(
     'contact_custom2' => 'اتصل بـ Second Custom',
     'currency' => 'عملة',
     'ofx_help' => 'لاستكشاف الأخطاء وإصلاحها ، تحقق من التعليقات على :ofxhome_link واختبرها باستخدام :ofxget_link.',
-    'comments' => 'تعليقات',
+    'comments' => 'Comments',
 
     'item_product' => 'المنتج البند',
     'item_notes' => 'ملاحظات البند',
@@ -2869,7 +2869,7 @@ $lang = array(
     'reopened' => 'أعيد فتحه',
     'priority' => 'أولوية',
     'last_updated' => 'آخر تحديث',
-    'comment' => 'تعليقات',
+    'comment' => 'Comment',
     'tags' => 'العلامات',
     'linked_objects' => 'كائنات مرتبطة',
     'low' => 'قليل',
@@ -5552,6 +5552,7 @@ $lang = array(
     'invalid_date_create_syntax' => 'صيغة التاريخ غير صالحة',
     'start_and_end_date_required' => 'تاريخ البدء والانتهاء مطلوبين',
     'project_value' => 'Project Value',
+    'invalid_csv_data' => 'Invalid CSV data, your import was cancelled.',
 );
 
 return $lang;

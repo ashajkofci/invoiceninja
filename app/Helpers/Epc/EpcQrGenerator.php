@@ -51,8 +51,6 @@ class EpcQrGenerator
             );
             $writer = new Writer($renderer);
 
-            $this->validateFields();
-
             $qr = $writer->writeString($this->encodeMessage(), 'utf-8');
 
             return htmlspecialchars("<svg viewBox='0 0 200 200' width='200' height='200' x='0' y='0' xmlns='http://www.w3.org/2000/svg'>
@@ -95,18 +93,6 @@ class EpcQrGenerator
         ];
 
         return implode("\n", $data);
-
-    }
-
-    private function validateFields()
-    {
-        if (Ninja::isSelfHost() && isset($this->company?->custom_fields?->company2)) {
-            // nlog('The BIC field is not present and _may_ be a required fields for EPC QR codes');
-        }
-
-        if (Ninja::isSelfHost() && isset($this->company?->custom_fields?->company1)) {
-            // nlog('The IBAN field is required');
-        }
 
     }
 

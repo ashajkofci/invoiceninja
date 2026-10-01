@@ -11,13 +11,14 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\CompanyToken;
+use Closure;
+use stdClass;
 use App\Models\User;
 use App\Utils\Ninja;
+use App\Libraries\MultiDB;
 use App\Utils\TruthSource;
-use Closure;
+use App\Models\CompanyToken;
 use Illuminate\Http\Request;
-use stdClass;
 
 class TokenAuth
 {
@@ -30,10 +31,19 @@ class TokenAuth
      */
     public function handle($request, Closure $next)
     {
-        if ($request->header('X-API-TOKEN') && ($company_token = CompanyToken::with([
-            'user' => [
-                'account',
-            ], 'company'])->where('token', $request->header('X-API-TOKEN'))->first())) {
+        if(config('ninja.db.multi_db_enabled') &&
+        $request->header('X-API-TOKEN') &&
+        ($company_token = MultiDB::getCompanyToken($request->header('X-API-TOKEN')))){
+        }
+        elseif ($request->header('X-API-TOKEN') && ($company_token = CompanyToken::with([
+            'user.account',
+            'company',
+            'account', 
+            ])->where('token', $request->header('X-API-TOKEN'))->first())) {
+        }
+        else {
+            return response()->json(['message' => 'Invalid token'], 403);
+        }
             $user = $company_token->user;
 
             $error = [
@@ -90,14 +100,6 @@ class TokenAuth
             //stateless, don't remember the user.
             auth()->login($user, false);
             auth()->user()->setCompany($company_token->company);
-        } else {
-            $error = [
-                'message' => 'Invalid token',
-                'errors' => new stdClass(),
-            ];
-
-            return response()->json($error, 403);
-        }
 
         return $next($request);
     }

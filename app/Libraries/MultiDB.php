@@ -322,6 +322,30 @@ class MultiDB
         return false;
     }
 
+    public static function getCompanyToken($token): ?CompanyToken
+    {
+        $current_db = config('database.default');
+        
+        foreach (self::$dbs as $db) {
+
+            if($ct = CompanyToken::on($db)->with([
+                'user.account',
+                'company',
+                'account', 
+            ])->where('token', $token)->first()) {
+
+                        self::setDB($db);
+
+                        return $ct;
+            }
+        }
+
+        self::setDB($current_db);
+
+        return null;
+
+    }
+
     public static function findAndSetDb($token): bool
     {
         $current_db = config('database.default');
