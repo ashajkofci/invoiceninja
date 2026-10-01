@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Ryhmän :category_name kokonaissumma',
     'organization' => 'Yritys',
     'name' => 'Nimi',
     'website' => 'Kotisivu',

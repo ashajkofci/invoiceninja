@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Grupės :category_name bendra suma',
     'organization' => 'Įmonė',
     'name' => 'Pavadinimas',
     'website' => 'Internetinis puslapis',

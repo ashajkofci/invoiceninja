@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Total del grupo :category_name',
     'organization' => 'Organización',
     'name' => 'Nombre',
     'website' => 'Página Web',

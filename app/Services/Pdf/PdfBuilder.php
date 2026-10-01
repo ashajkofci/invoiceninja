@@ -1089,7 +1089,7 @@ class PdfBuilder
             $data[$key]['task_id'] = property_exists($item, 'task_id') ? $item->task_id : '';
         }
 
-        return $data;
+        return GroupTableStyle::totals($data, $items, $table_type);
     }
 
     

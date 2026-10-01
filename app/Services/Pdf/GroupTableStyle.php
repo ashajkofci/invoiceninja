@@ -5,6 +5,55 @@ namespace App\Services\Pdf;
 /** Shared presentation for both invoice PDF renderers. Never changes table geometry. */
 final class GroupTableStyle
 {
+    /** Move each group total to a description-only row after its last item. */
+    public static function totals(array $rows, array $items, string $table_type): array
+    {
+        if ($table_type !== '$product') {
+            return $rows;
+        }
+
+        $last_items = [];
+        foreach ($rows as $key => $row) {
+            if (!empty($row['__is_group_header']) || !empty($row['__is_group_child'])) {
+                $last_items[(string) ($items[$key]->group_id ?? '')] = $key;
+            }
+        }
+
+        $totals = [];
+        foreach ($rows as $key => &$row) {
+            if (empty($row['__is_group_header'])) {
+                continue;
+            }
+
+            $total = array_fill_keys(array_keys($row), '');
+            $total['__is_group_header'] = false;
+            $total['__is_group_child'] = false;
+            $total[$table_type.'.notes'] = ctrans('texts.total_group', [
+                'category_name' => $row[$table_type.'.product_key'],
+            ]);
+            $total[$table_type.'.description'] = $total[$table_type.'.notes'];
+            foreach (['line_total', 'gross_line_total'] as $field) {
+                $total[$table_type.'.'.$field] = $row[$table_type.'.'.$field];
+                $row[$table_type.'.'.$field] = '';
+            }
+
+            $group_id = (string) ($items[$key]->group_id ?? '');
+            $last_key = $group_id !== '' ? $last_items[$group_id] : $key;
+            $totals[$last_key]['group-total-'.$key] = $total;
+        }
+        unset($row);
+
+        $result = [];
+        foreach ($rows as $key => $row) {
+            $result[$key] = $row;
+            foreach ($totals[$key] ?? [] as $total_key => $total) {
+                $result[$total_key] = $total;
+            }
+        }
+
+        return $result;
+    }
+
     public static function row(array $element): array
     {
         $class = $element['properties']['class'] ?? '';

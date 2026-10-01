@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Σύνολο ομάδας :category_name',
     'organization' => 'Οργανισμός',
     'name' => 'Επωνυμία',
     'website' => 'Ιστοσελίδα',

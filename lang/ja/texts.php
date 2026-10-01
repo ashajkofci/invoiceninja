@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'グループ :category_name の合計',
     'organization' => '組織',
     'name' => '名前',
     'website' => 'WEBサイト',

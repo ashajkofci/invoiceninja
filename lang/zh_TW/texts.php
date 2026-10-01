@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => '群組 :category_name 總計',
     'organization' => '組織',
     'name' => '姓名',
     'website' => '網站',
