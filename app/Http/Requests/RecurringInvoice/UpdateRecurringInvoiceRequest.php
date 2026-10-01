@@ -94,7 +94,7 @@ class UpdateRecurringInvoiceRequest extends Request
         }
 
         if (!isset($input['next_send_date']) || $input['next_send_date'] == '') {
-            $input['next_send_date'] = now()->format('Y-m-d');
+            $input['next_send_date'] = $this->recurring_invoice->next_send_date ?? now()->format('Y-m-d');
         }
 
         if (array_key_exists('next_send_date', $input) && is_string($input['next_send_date'])) {

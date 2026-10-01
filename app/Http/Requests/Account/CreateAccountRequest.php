@@ -54,6 +54,7 @@ class CreateAccountRequest extends Request
             'utm_campaign'      => 'sometimes|nullable|string',
             'utm_term'          => 'sometimes|nullable|string',
             'utm_content'       => 'sometimes|nullable|string',
+            // 'cf-turnstile' => 'required|string',
         ];
     }
 
