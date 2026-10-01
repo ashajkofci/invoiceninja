@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Tổng nhóm :category_name',
     'organization' => 'Công ty',
     'name' => 'Tên khách hàng',
     'website' => 'Trang web',

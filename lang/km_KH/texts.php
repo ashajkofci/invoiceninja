@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'សរុបក្រុម :category_name',
     'organization' => 'អង្គការ',
     'name' => 'ឈ្មោះ',
     'website' => 'គេហទំព័រ',

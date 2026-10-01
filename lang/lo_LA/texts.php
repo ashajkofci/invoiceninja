@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'ຍອດລວມກຸ່ມ :category_name',
     'organization' => 'ອົງການ',
     'name' => 'ຊື່',
     'website' => 'ເວັບໄຊ',

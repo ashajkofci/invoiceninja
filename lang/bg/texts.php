@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Общо за група :category_name',
     'organization' => 'Организация',
     'name' => 'Име',
     'website' => 'Уебсайт',

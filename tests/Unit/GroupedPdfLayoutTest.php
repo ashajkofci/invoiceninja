@@ -37,6 +37,10 @@ class GroupedPdfLayoutTest extends TestCase
         // No kernel/providers, environment file, database, cache or business data.
         $app = new Application(dirname(__DIR__, 2));
         $app->instance('config', new Repository(['app' => ['key' => '', 'cipher' => 'AES-256-CBC']]));
+        $app->instance('translator', new \Illuminate\Translation\Translator(
+            new \Illuminate\Translation\FileLoader(new \Illuminate\Filesystem\Filesystem(), dirname(__DIR__, 2).'/lang'),
+            'en'
+        ));
         Facade::setFacadeApplication($app);
         $resolver = $this->createMock(ConnectionResolverInterface::class);
         $resolver->expects(self::never())->method('connection');
@@ -70,9 +74,9 @@ class GroupedPdfLayoutTest extends TestCase
         [$renderer, $builder, $invoice] = $this->renderers($pipeline, $fields);
         $rows = $renderer->buildTableBody('$product');
         $headers = $renderer->buildTableHeader('product');
-        self::assertCount(5, $rows);
+        self::assertCount(7, $rows);
         self::assertCount(count($fields), $headers);
-        self::assertSame(['group-header', 'group-item', 'group-header', 'group-item', ''], array_column(array_column($rows, 'properties'), 'class'));
+        self::assertSame(['group-header', 'group-item', '', 'group-header', 'group-item', '', ''], array_column(array_column($rows, 'properties'), 'class'));
         foreach ($fields as $column => $field) {
             $headerField = $field === 'product_key' ? 'item' : $field;
             self::assertSame("product_table-product.$headerField-th", $headers[$column]['properties']['data-ref']);
@@ -86,10 +90,10 @@ class GroupedPdfLayoutTest extends TestCase
                 self::assertArrayNotHasKey('colspan', $cell['properties']);
                 self::assertArrayNotHasKey('rowspan', $cell['properties']);
                 $style = $cell['properties']['style'] ?? '';
-                if (in_array($index, [0, 2], true)) {
+                if (in_array($index, [0, 3], true)) {
                     self::assertStringContainsString('font-weight: 700 !important', $style);
                     self::assertStringContainsString('background-color: #e8edf3 !important', $style);
-                } elseif (in_array($index, [1, 3], true)) {
+                } elseif (in_array($index, [1, 4], true)) {
                     self::assertStringContainsString('font-weight: 400', $style);
                     if (in_array($field, ['product_key', 'item'], true)) {
                         self::assertSame('div', $cell['elements'][0]['element']);
@@ -113,7 +117,18 @@ class GroupedPdfLayoutTest extends TestCase
             }
         }
 
-        foreach ([0, 2] as $index) {
+        foreach ([2 => ['Fixed package', '$450.00'], 5 => ['Automatic package', '$150.00']] as $index => [$title, $total]) {
+            foreach ($rows[$index]['elements'] as $column => $cell) {
+                $expected = match ($fields[$column]) {
+                    'notes' => 'Total group '.$title,
+                    'line_total' => $total,
+                    default => '',
+                };
+                self::assertSame($expected, $cell['content']);
+            }
+        }
+
+        foreach ([0, 3] as $index) {
             self::assertStringContainsString('break-after: avoid', $rows[$index]['properties']['style']);
         }
         self::assertFalse($invoice->exists);
@@ -126,11 +141,45 @@ class GroupedPdfLayoutTest extends TestCase
             ['element' => 'tbody', 'elements' => $rows],
         ]);
         $xpath = new \DOMXPath($document);
-        self::assertSame(5, $xpath->query('//tbody/tr')->length);
-        self::assertSame(count($fields) * 5, $xpath->query('//tbody/tr/td')->length);
+        self::assertSame(7, $xpath->query('//tbody/tr')->length);
+        self::assertSame(count($fields) * 7, $xpath->query('//tbody/tr/td')->length);
         self::assertSame(2, $xpath->query('//tr[@class="group-item"]/td/div')->length);
         self::assertSame(0, $xpath->query('//tr[@class="group-item"]/td[@data-state="encoded-html"]')->length);
         self::assertStringContainsString('font-style: italic', html_entity_decode($document->saveHTML()));
+    }
+
+    #[DataProvider('pipelines')]
+    public function testGroupTotalFollowsLastChildOrEmptyHeader(string $pipeline): void
+    {
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['notes', 'line_total']);
+        $items = $invoice->line_items;
+        $line_items = [
+            4 => $items[0],
+            6 => $items[1],
+            7 => $items[4],
+            9 => $items[1],
+            12 => $items[2],
+        ];
+        $data = $renderer->transformLineItems($line_items, '$product');
+        self::assertSame([4, 6, 7, 9, 'group-total-4', 12, 'group-total-12'], array_keys($data));
+        self::assertSame('$450.00', $data['group-total-4']['$product.line_total']);
+        self::assertSame('$150.00', $data['group-total-12']['$product.line_total']);
+        self::assertSame('$25.00', $data[7]['$product.line_total']);
+    }
+
+    public function testGroupTotalLabelIsTranslatedInEverySupportedLanguage(): void
+    {
+        [$renderer, , $invoice] = $this->renderers('builder', ['notes', 'line_total']);
+        $translator = Application::getInstance()->make('translator');
+        foreach (glob(dirname(__DIR__, 2).'/lang/*/texts.php') as $path) {
+            $locale = basename(dirname($path));
+            $translations = require $path;
+            self::assertArrayHasKey('total_group', $translations, $locale);
+            self::assertSame(1, substr_count($translations['total_group'], ':category_name'), $locale);
+            $translator->setLocale($locale);
+            $data = $renderer->transformLineItems($invoice->line_items, '$product');
+            self::assertSame(str_replace(':category_name', 'Fixed package', $translations['total_group']), $data['group-total-0']['$product.notes'], $locale);
+        }
     }
 
     public static function pipelines(): iterable
@@ -150,11 +199,22 @@ class GroupedPdfLayoutTest extends TestCase
         foreach ([0 => ['Fixed package', '$450.00'], 2 => ['Automatic package', '$150.00']] as $index => [$title, $total]) {
             self::assertTrue($data[$index]['__is_group_header']);
             self::assertSame($title, $data[$index]['$product.item']);
-            self::assertSame($total, $data[$index]['$product.line_total']);
+            self::assertSame('', $data[$index]['$product.line_total']);
+            $summary = $data['group-total-'.$index];
+            self::assertSame($total, $summary['$product.line_total']);
+            self::assertSame('Total group '.$title, $summary['$product.notes']);
+            self::assertSame($summary['$product.notes'], $summary['$product.description']);
+            foreach ($summary as $field => $value) {
+                if (in_array($field, ['$product.notes', '$product.description', '$product.line_total', '$product.gross_line_total'], true)) {
+                    continue;
+                }
+                self::assertEmpty($value, $field);
+            }
             foreach (['unit_cost', 'cost'] as $field) {
                 self::assertSame('', $data[$index]['$product.'.$field]);
             }
         }
+        self::assertSame([0, 1, 'group-total-0', 2, 3, 'group-total-2', 4], array_keys($data));
         self::assertSame('10%', $data[0]['$product.discount']);
         self::assertSame('', $data[2]['$product.discount']);
         self::assertSame('', $data[0]['$product.quantity']);

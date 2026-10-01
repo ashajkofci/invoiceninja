@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Grupas :category_name kopsumma',
     'organization' => 'Uzņēmums',
     'name' => 'Nosaukums',
     'website' => 'Mājas lapa',

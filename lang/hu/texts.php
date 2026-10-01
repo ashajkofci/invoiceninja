@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'A(z) :category_name csoport végösszege',
     'organization' => 'Szervezet',
     'name' => 'Név',
     'website' => 'Weboldal',

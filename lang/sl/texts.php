@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Skupaj za skupino :category_name',
     'organization' => 'Organizacija',
     'name' => 'Ime',
     'website' => 'Spletna stran',
