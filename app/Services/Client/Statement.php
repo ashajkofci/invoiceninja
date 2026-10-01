@@ -20,14 +20,12 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Utils\HtmlEngine;
 use Illuminate\Support\Carbon;
-use App\Factory\InvoiceFactory;
 use App\Utils\Traits\MakesHash;
 use App\Utils\PhantomJS\Phantom;
 use App\Utils\Traits\MakesDates;
 use App\Utils\HostedPDF\NinjaPdf;
 use App\Utils\Traits\Pdf\PdfMaker;
 use App\Factory\InvoiceItemFactory;
-use App\Factory\InvoiceInvitationFactory;
 use Illuminate\Database\Eloquent\Builder;
 
 class Statement
@@ -215,13 +213,27 @@ class Statement
             $settings->industry_id = '';
             $settings->size_id = '';
 
+            $this->client->settings = $settings;
+
             $this->entity = \App\Models\Invoice::factory()->make(); //@phpstan-ignore-line
-            $this->entity->client = \App\Models\Client::factory()->make(['settings' => $settings]); //@phpstan-ignore-line
+            $this->entity->client =$this->client;
+            $ii = \App\Models\InvoiceInvitation::factory()->make(); //@phpstan-ignore-line
+            $ii->setRelation('invoice', $this->entity); //@phpstan-ignore-line
+            $ii->setRelation('contact', $this->client->contacts->first()); //@phpstan-ignore-line
+            $ii->setRelation('company', $this->client->company);
+            $ii->setRelation('user', $this->client->user);
             $this->entity->client->setRelation('company', $this->client->company);
-            $this->entity->setRelation('invitations', \App\Models\InvoiceInvitation::factory()->make()); //@phpstan-ignore-line
+            $this->entity->setRelation('invitations', $ii); //@phpstan-ignore-line
             $this->entity->setRelation('company', $this->client->company);
             $this->entity->setRelation('user', $this->client->user);
 
+            // $this->entity = \App\Models\Invoice::factory()->make(); //@phpstan-ignore-line
+            // $this->entity->client = \App\Models\Client::factory()->make(['settings' => $settings]); //@phpstan-ignore-line
+            // $this->entity->client->setRelation('company', $this->client->company);
+            // $this->entity->setRelation('invitations', \App\Models\InvoiceInvitation::factory()->make()); //@phpstan-ignore-line
+            // $this->entity->setRelation('company', $this->client->company);
+            // $this->entity->setRelation('user', $this->client->user);
+            
         }
 
         return $this;

@@ -151,8 +151,8 @@ class ACH implements MethodInterface, LivewireMethodInterface
             'options' => [
                 'submitForSettlement' => true,
             ],
-            'tax_amount' => $total_taxes,
-            'purchase_order_number' => $po_number,
+            'taxAmount' => $total_taxes,
+            'purchaseOrderNumber' => substr($po_number, 0, 16),
         ]);
 
         if ($result->success) {

@@ -85,8 +85,8 @@ class PayPal implements LivewireMethodInterface
                     'description' => 'Meaningful description.',
                 ],
             ],
-            'tax_amount' => $total_taxes,
-            'purchase_order_number' => $po_number,
+            'taxAmount' => $total_taxes,
+            'purchaseOrderNumber' => substr($po_number, 0, 16),
         ]);
 
         if ($result->success) {
