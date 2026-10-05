@@ -149,6 +149,10 @@
         }
     },
     "extra": {
+        "google/apiclient-services": [
+            "Gmail",
+            "Oauth2"
+        ],
         "laravel": {
             "dont-discover": []
         },
@@ -167,6 +171,7 @@
         }
     },
     "scripts": {
+        "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
         "post-install-cmd": [],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"

@@ -6,7 +6,7 @@ namespace App\Services\Pdf;
 final class GroupTableStyle
 {
     /** Move each group total to a description-only row after its last item. */
-    public static function totals(array $rows, array $items, string $table_type): array
+    public static function totals(array $rows, array $items, string $table_type, string $label_template = ''): array
     {
         if ($table_type !== '$product') {
             return $rows;
@@ -28,11 +28,18 @@ final class GroupTableStyle
             $total = array_fill_keys(array_keys($row), '');
             $total['__is_group_header'] = false;
             $total['__is_group_child'] = false;
-            $label = ctrans('texts.total_group', [
-                'category_name' => $row[$table_type.'.product_key'],
-            ]);
-            if ($label === 'texts.total_group') {
-                $label = ctrans('texts.total').' '.ctrans('texts.group').' '.$row[$table_type.'.product_key'];
+            $name = $row[$table_type.'.product_key'];
+            $description = $row[$table_type.'.notes'] ?? '';
+            // Rich-text editors can save an empty description as <p><br></p>.
+            $plain_description = html_entity_decode(strip_tags($description), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $group = preg_match('/[^\s\x{00a0}]/u', $plain_description) ? $description : $name;
+            if (trim($label_template) !== '') {
+                $label = strtr($label_template, ['$group' => $group, '$group_name' => $name]);
+            } else {
+                $label = ctrans('texts.total_group', ['category_name' => $group]);
+                if ($label === 'texts.total_group') {
+                    $label = ctrans('texts.total').' '.ctrans('texts.group').' '.$group;
+                }
             }
             $total[$table_type.'.notes'] = $label;
             $total[$table_type.'.description'] = $total[$table_type.'.notes'];

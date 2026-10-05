@@ -210,6 +210,55 @@ class GroupedPdfLayoutTest extends TestCase
         self::assertSame('Package subtotal Fixed package', $data['group-total-0']['$product.notes']);
     }
 
+    #[DataProvider('pipelines')]
+    public function testGroupTotalUsesDescriptionAndPreservesHeader(string $pipeline): void
+    {
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['notes', 'line_total']);
+        $items = $invoice->line_items;
+        $items[0]->notes = '<b>Weekend equipment rental</b><br>Delivery included';
+        $data = $renderer->transformLineItems($items, '$product');
+
+        self::assertSame('Total group <b>Weekend equipment rental</b><br>Delivery included', $data['group-total-0']['$product.notes']);
+        self::assertSame($items[0]->notes, $data[0]['$product.notes']);
+        self::assertSame('Fixed package', $data[0]['$product.item']);
+        self::assertSame('$450.00', $data['group-total-0']['$product.line_total']);
+    }
+
+    #[DataProvider('pipelines')]
+    public function testCompanyGroupTotalTemplateInBothRenderers(string $pipeline): void
+    {
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['notes', 'line_total'], 'product', 'Subtotal $group ($group_name)');
+        $items = $invoice->line_items;
+        $items[0]->notes = 'Equipment rental';
+        $data = $renderer->transformLineItems($items, '$product');
+
+        self::assertSame('Subtotal Equipment rental (Fixed package)', $data['group-total-0']['$product.notes']);
+        self::assertSame('Subtotal Automatic package (Automatic package)', $data['group-total-2']['$product.notes']);
+        self::assertSame($data['group-total-0']['$product.notes'], $data['group-total-0']['$product.description']);
+    }
+
+    #[DataProvider('pipelines')]
+    public function testEmptyRichTextDescriptionAndBlankTemplateUseDefaults(string $pipeline): void
+    {
+        [$renderer, , $invoice] = $this->renderers($pipeline, ['notes', 'line_total'], 'product', '  ');
+        $items = $invoice->line_items;
+        foreach (['', '  ', '<p><br></p>', '<p>&nbsp;</p>'] as $description) {
+            $items[0]->notes = $description;
+            $data = $renderer->transformLineItems($items, '$product');
+            self::assertSame('Total group Fixed package', $data['group-total-0']['$product.notes']);
+        }
+    }
+
+    public function testGroupTotalSettingSupportsExistingAndNewSettings(): void
+    {
+        $settings = \App\DataMapper\CompanySettings::setProperties((object) []);
+        self::assertSame('', $settings->pdf_group_total_label);
+        $settings->pdf_group_total_label = 'Subtotal $group';
+        self::assertSame('Subtotal $group', \App\DataMapper\CompanySettings::setProperties($settings)->pdf_group_total_label);
+        $rule = new \App\Http\ValidationRules\ValidSettingsRule();
+        self::assertTrue($rule->passes('settings', ['pdf_group_total_label' => 'Subtotal $group']));
+    }
+
     public static function pipelines(): iterable
     {
         yield 'builder' => ['builder'];
@@ -376,12 +425,13 @@ class GroupedPdfLayoutTest extends TestCase
         }
     }
 
-    private function renderers(string $pipeline, array $fields, string $type = 'product'): array
+    private function renderers(string $pipeline, array $fields, string $type = 'product', string $label_template = ''): array
     {
         $company = new Company();
         $company->custom_fields = (object) [];
         $company->enable_product_discount = true;
         $company->markdown_enabled = false;
+        $company->settings = (object) ['pdf_group_total_label' => $label_template];
         $currency = new Currency();
         $currency->forceFill(['code' => 'USD', 'symbol' => '$', 'precision' => 2, 'thousand_separator' => ',', 'decimal_separator' => '.', 'swap_currency_symbol' => false]);
         $country = new Country();
@@ -392,9 +442,9 @@ class GroupedPdfLayoutTest extends TestCase
         $invoice = new Invoice();
         $invoice->setRelation('company', $company)->setRelation('client', $client);
         $invoice->line_items = [
-            $this->item(['type_id' => '7', 'group_id' => 'fixed', 'group_title' => 'Fixed package', 'group_has_price' => true, 'group_price' => 500, 'group_hide_item_prices' => true, 'group_show_item_unit_price' => true, 'cost' => 500, 'quantity' => 1, 'time_coefficient' => 2, 'time_coefficient_name' => 'Weekend', 'discount' => 10, 'is_amount_discount' => false, 'line_total' => 450]),
+            $this->item(['type_id' => '7', 'group_id' => 'fixed', 'group_title' => 'Fixed package', 'notes' => '', 'group_has_price' => true, 'group_price' => 500, 'group_hide_item_prices' => true, 'group_show_item_unit_price' => true, 'cost' => 500, 'quantity' => 1, 'time_coefficient' => 2, 'time_coefficient_name' => 'Weekend', 'discount' => 10, 'is_amount_discount' => false, 'line_total' => 450]),
             $this->item(['group_id' => 'fixed', 'product_key' => 'Included equipment with a long wrapping label', 'cost' => 100, 'quantity' => 2, 'time_coefficient' => 1.5, 'line_total' => 300, 'gross_line_total' => 324, 'tax_amount' => 24, 'discount' => 5, 'tax_rate1' => 8, 'tax_rate2' => 2, 'tax_rate3' => 1]),
-            $this->item(['type_id' => '7', 'group_id' => 'auto', 'group_title' => 'Automatic package', 'cost' => 150, 'quantity' => 3, 'time_coefficient' => 2.5, 'time_coefficient_name' => 'Weekly', 'line_total' => 150]),
+            $this->item(['type_id' => '7', 'group_id' => 'auto', 'group_title' => 'Automatic package', 'notes' => '', 'cost' => 150, 'quantity' => 3, 'time_coefficient' => 2.5, 'time_coefficient_name' => 'Weekly', 'line_total' => 150]),
             $this->item(['group_id' => 'auto', 'product_key' => 'Metered equipment', 'cost' => 50, 'quantity' => 2, 'time_coefficient' => 1.5, 'line_total' => 150]),
             $this->item(['product_key' => 'Standalone delivery', 'cost' => 25, 'quantity' => 1, 'line_total' => 25]),
         ];
