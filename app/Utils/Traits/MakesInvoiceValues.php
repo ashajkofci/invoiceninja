@@ -422,7 +422,7 @@ trait MakesInvoiceValues
 
         //nlog(microtime(true) - $start);
 
-        return $data;
+        return \App\Services\Pdf\GroupTableStyle::totals($data, $items, $table_type, $this->company->settings->pdf_group_total_label ?? '');
     }
 
     /**

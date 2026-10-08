@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Total group :category_name',
     'organization' => 'Organization',
     'name' => 'Name',
     'website' => 'Website',
@@ -5589,6 +5590,7 @@ $lang = array(
     'start_and_end_date_required' => 'Start and end date are required',
     'project_value' => 'Project Value',
     'invalid_csv_data' => 'Invalid CSV data, your import was cancelled.',
+    'selected_products' => 'Selected Products',
 );
 
 return $lang;

@@ -57,6 +57,8 @@ class CompanySettings extends BaseSettings
 
     public $show_currency_code = false; //@implemented
 
+    public $pdf_group_total_label = ''; // Blank uses the translated label; $group inserts the description.
+
     public $company_gateway_ids = ''; //@implemented
 
     public $currency_id = '1'; //@implemented
@@ -529,6 +531,7 @@ class CompanySettings extends BaseSettings
     public bool $unlock_invoice_documents_after_payment = false;
 
     public static $casts = [
+        'pdf_group_total_label' => 'string',
         'unlock_invoice_documents_after_payment' => 'bool',
         'preference_product_notes_for_html_view' => 'bool',
         'enable_client_profile_update'       => 'bool',

@@ -240,8 +240,8 @@ class BraintreePaymentDriver extends BaseDriver
             'options' => [
                 'submitForSettlement' => true,
             ],
-            'tax_amount' => $total_taxes,
-            'purchase_order_number' => $invoice->po_number ?? $invoice->number,
+            'taxAmount' => $total_taxes,
+            'purchaseOrderNumber' => substr($invoice->po_number ?? $invoice->number, 0, 16),
         ]);
 
         if ($result->success) {

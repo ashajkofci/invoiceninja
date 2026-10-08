@@ -271,6 +271,8 @@ class Nordigen
             return;
         }
 
+        Cache::put($cache_key, true, 60 * 60 * 24);
+
         App::setLocale($bank_integration->company->getLocale());
 
         $mo = new EmailObject();
@@ -285,7 +287,7 @@ class Nordigen
 
         Email::dispatch($mo, $bank_integration->company);
 
-        Cache::put($cache_key, true, 60 * 60 * 24);
+        
 
     }
 

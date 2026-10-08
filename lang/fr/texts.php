@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Total du groupe :category_name',
     'organization' => 'Entreprise',
     'name' => 'Nom',
     'website' => 'Site web',
@@ -2380,7 +2381,7 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'contact_custom2' => 'Second champ de contact personnalisé',
     'currency' => 'Devise',
     'ofx_help' => 'Pour résoudre un problème, consultez les commentaires sur :ofxhome_link et testez avec :ofxget_link.',
-    'comments' => 'commentaires',
+    'comments' => 'Comments',
 
     'item_product' => 'Produit de l\'article',
     'item_notes' => 'Notes de l\'article',
@@ -2887,7 +2888,7 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'reopened' => 'Ré-ouvrir',
     'priority' => 'Prioritée',
     'last_updated' => 'Dernière mise à jour',
-    'comment' => 'Commentaire',
+    'comment' => 'Comment',
     'tags' => 'Tags',
     'linked_objects' => 'Objets liés',
     'low' => 'Faible',
@@ -5572,6 +5573,7 @@ Lorsque les montant apparaîtront sur votre relevé, veuillez revenir sur cette 
     'invalid_date_create_syntax' => 'Invalid date syntax',
     'start_and_end_date_required' => 'Start and end date are required',
     'project_value' => 'Project Value',
+    'invalid_csv_data' => 'Invalid CSV data, your import was cancelled.',
 );
 
 return $lang;

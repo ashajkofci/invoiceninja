@@ -129,8 +129,8 @@ class CreditCard implements LivewireMethodInterface
                 'postalCode' => $this->braintree->client->postal_code ?: '',
                 'countryCodeAlpha2' => $this->braintree->client->country ? $this->braintree->client->country->iso_3166_2 : 'US',
             ],
-            'tax_amount' => $total_taxes,
-            'purchase_order_number' => $po_number,
+            'taxAmount' => $total_taxes,
+            'purchaseOrderNumber' => substr($po_number, 0, 16),
         ];
 
         if ($this->braintree->company_gateway->getConfigField('merchantAccountId')) {

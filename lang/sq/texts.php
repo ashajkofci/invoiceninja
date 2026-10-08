@@ -1,6 +1,7 @@
 <?php
 
 $lang = array(
+    'total_group' => 'Totali i grupit :category_name',
     'organization' => 'Organizata',
     'name' => 'Emri',
     'website' => 'Website',
