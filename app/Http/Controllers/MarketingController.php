@@ -56,7 +56,7 @@ class MarketingController extends Controller
         $labels = json_decode(file_get_contents(resource_path('marketing/labels.json')),true);
         $language = substr($request->string('language', 'en'),0,2);
         $clients = $this->visible(Client::without(['gateway_tokens','documents','contacts.company'])->where('company_id',$company->id)->where('is_deleted',false),'client')->get();
-        $quotes = $this->visible(Quote::where('company_id',$company->id)->where('is_deleted',false),'quote')->get();
+        $quotes = $this->visible(Quote::where('company_id',$company->id)->where('is_deleted',false)->where('status_id','!=',Quote::STATUS_CONVERTED),'quote')->get();
         $options = [
             'clients'=>$clients->map(fn ($c) => ['id'=>$c->hashed_id,'name'=>$c->present()->name()])->values(),
             'contacts'=>ClientContact::where('company_id',$company->id)->whereIn('client_id',$clients->pluck('id'))->get()->map(fn ($c) => ['id'=>$c->hashed_id,'name'=>trim($c->first_name.' '.$c->last_name).' <'.$c->email.'>','client_id'=>$this->encodePrimaryKey($c->client_id)])->values(),
